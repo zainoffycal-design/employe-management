@@ -1,20 +1,38 @@
-# Environment Setup for Production
+# Environment Setup for Local Development and Production
 
-## Firebase Configuration
+## Local Development Setup
 
-Before deploying to Hostinger, you need to set up your Firebase configuration for production:
-
-### 1. Create Production Environment File
-Create a `.env.production` file in your project root with your Firebase credentials:
+### 1. Create Local Environment File
+Create a `.env.local` file in your project root with your local Firebase credentials:
 
 ```env
-VITE_FIREBASE_API_KEY=your_firebase_api_key_here
-VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+VITE_FIREBASE_API_KEY=AIzaSyDRMUag85s9OZeDFPcKnvafxavFtOPFITU
+VITE_FIREBASE_AUTH_DOMAIN=task-local-cc1b1.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=task-local-cc1b1
+VITE_FIREBASE_STORAGE_BUCKET=task-local-cc1b1.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=146478096862
+VITE_FIREBASE_APP_ID=1:146478096862:web:3666c564d4e48f6daf7d4f
+VITE_FIREBASE_MEASUREMENT_ID=G-Y045DEZFYT
+```
+
+### 2. Run Development Server
+```bash
+npm run dev
+```
+
+## Production Setup
+
+### 1. Create Production Environment File
+Create a `.env.production` file in your project root with your production Firebase credentials:
+
+```env
+VITE_FIREBASE_API_KEY=your_production_firebase_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_production_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_production_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_production_project_id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_production_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_production_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_production_measurement_id
 ```
 
 ### 2. Get Firebase Credentials
@@ -50,4 +68,11 @@ After setting up the environment file:
 npm run build
 ```
 
-This will use the production environment variables for the build. 
+This will use the production environment variables for the build.
+
+## Security Notes
+
+- `.env.local` is automatically ignored by git for security
+- Never commit environment files with real credentials
+- Use different Firebase projects for local development and production
+- Rotate API keys regularly for security 
