@@ -287,12 +287,23 @@
   display: flex !important;
   align-items: center !important;
   gap: 0.5rem !important;
-  background: var(--danger-color) !important;
-  color: white !important;
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
   padding: 0.75rem 1rem !important;
   border-radius: var(--border-radius) !important;
   margin-bottom: 1.5rem !important;
   font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  
+  svg {
+    flex-shrink: 0 !important;
+    color: #dc2626 !important;
+  }
+  
+  span {
+    flex: 1 !important;
+  }
 }
 
 // =============================================================================

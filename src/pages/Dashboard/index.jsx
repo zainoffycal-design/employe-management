@@ -1,41 +1,36 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
-  FiTrendingUp, 
-  FiTrendingDown, 
-  FiClock,
-  FiCheckCircle,
-  FiAlertCircle,
+  FiHome,
+  FiFolder,
   FiUsers,
-  FiCalendar,
-  FiSettings,
-  FiFileText,
+  FiClock,
+  FiAlertCircle,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiLayout,
+  FiPlus,
   FiBarChart,
   FiUserPlus,
-  FiTarget,
-  FiMessageSquare,
-  FiHome
+  FiUserCheck
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTaskContext } from '../../contexts/TaskContext';
+import { useTask } from '../../contexts/TaskContext';
 import { userManagementService } from '../../services/firebaseService';
-import TaskCard from '../../components/TaskCard';
 import PageTitle from '../../components/PageTitle';
-import { formatTimestamp, getTimestampForSort } from '../../utils/dateUtils';
+import Button from '../../components/Button';
+import ProjectCard from '../../components/ProjectCard';
 import './Dashboard.scss';
 
 const Dashboard = () => {
-  const { currentUser, canEditTasks, canManageTasks, canManageUsers, canManageEmployees, canViewAnalytics } = useAuth();
-  const { 
-    filteredTasks, 
-    getOverdueTasks,
-    getDueSoonTasks
-  } = useTaskContext();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { tasks, projects } = useTask();
   const [users, setUsers] = useState([]);
 
-  // Load users for statistics
-  React.useEffect(() => {
+  // Load users for roles overview
+  useEffect(() => {
     const loadUsers = async () => {
       try {
         const allUsers = await userManagementService.getAllUsers();
@@ -47,194 +42,180 @@ const Dashboard = () => {
     loadUsers();
   }, []);
 
-  // Color functions for badges
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'low': return 'success';
-      case 'medium': return 'warning';
-      case 'high': return 'danger';
-      case 'urgent': return 'danger';
-      default: return 'secondary';
-    }
-  };
+  // Calculate task statistics
+  const overdueTasks = tasks.filter(task => 
+    task.deadline && new Date(task.deadline) < new Date() && task.status !== 'done'
+  );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'todo': return 'secondary';
-      case 'in-progress': return 'warning';
-      case 'review': return 'info';
-      case 'done': return 'success';
-      default: return 'secondary';
-    }
-  };
+  const dueSoonTasks = tasks.filter(task => {
+    if (!task.deadline || task.status === 'done') return false;
+    const deadline = new Date(task.deadline);
+    const today = new Date();
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(today.getDate() + 3);
+    return deadline > today && deadline <= threeDaysFromNow;
+  });
 
-  // Calculate statistics based on user's accessible tasks
-  const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter(task => task.status === 'done').length;
-  const inProgressTasks = filteredTasks.filter(task => task.status === 'in-progress').length;
-  const pendingTasks = filteredTasks.filter(task => task.status === 'todo').length;
-  const activeUsers = users.filter(user => user.isActive).length;
-
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const avgTasksPerUser = activeUsers > 0 ? Math.round(totalTasks / activeUsers) : 0;
-
-  // Get recent tasks (only accessible ones)
-  const recentTasks = filteredTasks
-    .sort((a, b) => getTimestampForSort(b.createdAt) - getTimestampForSort(a.createdAt))
-    .slice(0, 5);
-
-  // Get role performance (only for accessible tasks)
-  const roles = ['designer', 'developer', 'bd', 'manager', 'super_manager'];
-  const roleStats = roles.map(role => {
-    const roleMembers = users.filter(user => user.role === role && user.isActive);
-    const roleTasks = filteredTasks.filter(task => {
-      const assignee = users.find(user => user.id === task.assignee);
-      return assignee && assignee.role === role;
+  // Get role-based statistics
+  const getRoleStats = () => {
+    const roles = ['designer', 'developer', 'bd'];
+    return roles.map(role => {
+      const roleMembers = users.filter(user => user.role === role && user.isActive);
+      const totalRoleMembers = users.filter(user => user.role === role);
+      
+      // Handle both single assignee and multiple assignees
+      const roleTasks = tasks.filter(task => {
+        if (Array.isArray(task.assignee)) {
+          // Multiple assignees - check if any assignee has this role
+          return task.assignee.some(assigneeId => {
+            const assignee = users.find(user => user.id === assigneeId);
+            return assignee && assignee.role === role;
+          });
+        } else {
+          // Single assignee
+          const assignee = users.find(user => user.id === task.assignee);
+          return assignee && assignee.role === role;
+        }
+      });
+      
+      // Calculate task status counts
+      const todoTasks = roleTasks.filter(task => task.status === 'todo').length;
+      const inProgressTasks = roleTasks.filter(task => task.status === 'in-progress').length;
+      const completedTasks = roleTasks.filter(task => task.status === 'done').length;
+      
+      return {
+        role,
+        activeMembers: roleMembers.length,
+        totalMembers: totalRoleMembers.length,
+        tasks: roleTasks.length,
+        todo: todoTasks,
+        inProgress: inProgressTasks,
+        completed: completedTasks,
+        status: roleMembers.length > 0 ? 'active' : 'inactive'
+      };
     });
-    const completed = roleTasks.filter(t => t.status === 'done').length;
-    const total = roleTasks.length;
-    return {
-      name: role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      role: role,
-      total,
-      completed,
-      members: roleMembers.length,
-      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
-    };
-  }).filter(stat => stat.members > 0); // Only show roles with active members
+  };
 
   const stats = [
     {
+      title: 'Total Projects',
+      value: projects.length,
+      icon: FiFolder,
+      color: '#15A970',
+      trendUp: projects.length > 0,
+      trend: projects.length > 0 ? `${projects.length} active` : 'No projects'
+    },
+    {
+      title: 'Completed Projects',
+      value: projects.filter(project => {
+        const projectTasks = tasks.filter(task => task.projectId === project.id);
+        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+        const totalTasks = projectTasks.length;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        const isCompleted = totalTasks > 0 && progressPercentage === 100;
+        
+        console.log(`Project ${project.name}:`, {
+          totalTasks,
+          completedTasks,
+          progressPercentage: `${progressPercentage}%`,
+          isCompleted,
+          taskStatuses: projectTasks.map(t => t.status)
+        });
+        
+        return isCompleted;
+      }).length,
+      icon: FiUserCheck,
+      color: '#10B981',
+      trendUp: projects.filter(project => {
+        const projectTasks = tasks.filter(task => task.projectId === project.id);
+        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+        const totalTasks = projectTasks.length;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        return totalTasks > 0 && progressPercentage === 100;
+      }).length > 0,
+      trend: projects.filter(project => {
+        const projectTasks = tasks.filter(task => task.projectId === project.id);
+        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+        const totalTasks = projectTasks.length;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        return totalTasks > 0 && progressPercentage === 100;
+      }).length > 0 ? '100% progress' : 'None completed'
+    },
+    {
       title: 'Total Tasks',
-      value: totalTasks,
-      icon: FiCalendar,
-      color: 'var(--primary-color)',
-      trend: '+12%',
-      trendUp: true
-    },
-    {
-      title: 'Completed',
-      value: completedTasks,
-      icon: FiCheckCircle,
-      color: 'var(--success-color)',
-      trend: `+${completionRate}%`,
-      trendUp: true
-    },
-    {
-      title: 'In Progress',
-      value: inProgressTasks,
-      icon: FiClock,
-      color: 'var(--warning-color)',
-      trend: '-5%',
-      trendUp: false
-    },
-    {
-      title: 'Active Members',
-      value: activeUsers,
-      icon: FiUsers,
-      color: 'var(--accent-color)',
-      trend: '+2',
-      trendUp: true
+      value: tasks.length,
+      icon: FiLayout,
+      color: '#6366F1',
+      trendUp: tasks.length > 0,
+      trend: tasks.length > 0 ? `${tasks.length} tasks` : 'No tasks'
     }
   ];
 
   // Quick Actions based on user role
   const getQuickActions = () => {
-    // For super manager: Project Board, Team Management, Analytics, User Management
+    const baseActions = [
+      {
+        icon: FiFolder,
+        title: 'Projects',
+        description: 'Manage your projects',
+        link: '/projects',
+        color: '#15A970'
+      }
+    ];
+
+    // For super manager: Projects, Analytics, User Management, Settings
     if (currentUser?.role === 'super_manager') {
       return [
-        {
-          icon: FiFileText,
-          title: 'Project Board',
-          description: 'View and manage all tasks',
-          link: '/project-board',
-          color: 'var(--primary-color)'
-        },
-        {
-          icon: FiUsers,
-          title: 'Team Management',
-          description: 'Manage team members',
-          link: '/team',
-          color: 'var(--accent-color)'
-        },
+        ...baseActions,
         {
           icon: FiBarChart,
           title: 'Analytics',
           description: 'View performance metrics',
           link: '/analytics',
-          color: 'var(--success-color)'
+          color: '#6366F1'
         },
         {
           icon: FiUserPlus,
           title: 'User Management',
-          description: 'Manage user accounts and roles',
+          description: 'Manage user accounts',
           link: '/users',
-          color: 'var(--primary-light)'
+          color: '#F59E0B'
         }
       ];
     }
 
-    // For manager: Project Board, Team Management, Analytics
+    // For manager: Projects, Analytics, User Management
     if (currentUser?.role === 'manager') {
       return [
-        {
-          icon: FiFileText,
-          title: 'Project Board',
-          description: 'View and manage all tasks',
-          link: '/project-board',
-          color: 'var(--primary-color)'
-        },
-        {
-          icon: FiUsers,
-          title: 'Team Management',
-          description: 'Manage team members',
-          link: '/team',
-          color: 'var(--accent-color)'
-        },
+        ...baseActions,
         {
           icon: FiBarChart,
           title: 'Analytics',
           description: 'View performance metrics',
           link: '/analytics',
-          color: 'var(--success-color)'
-        }
-      ];
-    }
-
-    // For designer, developer, bd: Project Board only
-    if (['designer', 'developer', 'bd'].includes(currentUser?.role)) {
-      return [
+          color: '#6366F1'
+        },
         {
-          icon: FiFileText,
-          title: 'Project Board',
-          description: 'View and manage your tasks',
-          link: '/project-board',
-          color: 'var(--primary-color)'
+          icon: FiUserPlus,
+          title: 'User Management',
+          description: 'Manage user accounts',
+          link: '/users',
+          color: '#F59E0B'
         }
       ];
     }
 
-    // Default fallback
+    // For other roles: Just Projects
     return [
-      {
-        icon: FiFileText,
-        title: 'Project Board',
-        description: 'View and manage tasks',
-        link: '/project-board',
-        color: 'var(--primary-color)'
-      }
+      ...baseActions
     ];
   };
-
-  // Get overdue and due soon tasks
-  const overdueTasks = getOverdueTasks();
-  const dueSoonTasks = getDueSoonTasks();
 
   return (
     <div className="page-container">
       <PageTitle 
         title="Dashboard"
-        subtitle={`Welcome back, ${currentUser?.name}! Here's what's happening with your tasks.`}
+        subtitle={`Welcome back, ${currentUser?.name}! Here's what's happening with your projects.`}
         icon={FiHome}
       />
 
@@ -256,7 +237,13 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Statistics Cards */}
+      {/* Overview Section */}
+      <div className="section-header">
+        <div className="section-title">
+          <FiBarChart className="section-icon" />
+          <h2>Overview</h2>
+        </div>
+      </div>
       <div className="stats-grid">
         {stats.map((stat, index) => (
           <motion.div
@@ -281,137 +268,238 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="dashboard-content">
-        <div className="content-grid">
-          {/* Recent Tasks */}
-          <motion.div 
-            className="recent-tasks-card"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="recent-tasks-header">
-              <span className="recent-tasks-icon">📝</span>
-              <h3>Recent Tasks</h3>
-              <span className="recent-tasks-count">{recentTasks.length}</span>
-            </div>
-            <div className="recent-tasks-list">
-              {recentTasks.length === 0 ? (
-                <div className="recent-tasks-empty">
-                  <span>📭</span>
-                  <p>No recent tasks</p>
-                </div>
-              ) : (
-                recentTasks.map(task => {
-                  const assignee = users.find(user => user.id === task.assignee);
-                  return (
-                    <div key={task.id} className="recent-task-row">
-                      <div className="task-main">
-                        <span className={`role-dot ${assignee?.role || 'unassigned'}`}></span>
-                        <span className="task-title">{task.title}</span>
-                        <span className="task-assignee">{assignee?.name || 'Unassigned'}</span>
-                      </div>
-                      <div className="task-meta">
-                        <span className={`badge bg-${getPriorityColor(task.priority)}`}>{task.priority}</span>
-                        <span className={`badge bg-${getStatusColor(task.status)}`}>{task.status}</span>
-                        <span className="task-date">{formatTimestamp(task.createdAt)}</span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </motion.div>
-
-          {/* Team Performance - Only show if user can view analytics */}
-          {canViewAnalytics() && (
-            <motion.div 
-              className="team-performance-card"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="team-performance-header">
-                <span className="performance-icon">📊</span>
-                <h3>Role Performance</h3>
-              </div>
-              <div className="team-performance-list">
-                {roleStats.length === 0 ? (
-                  <div className="team-performance-empty">
-                    <span>🚩</span>
-                    <p>No role progress yet</p>
-                  </div>
-                ) : (
-                  roleStats.map(role => (
-                    <div key={role.name} className="team-row">
-                      <div className="team-accent" style={{ 
-                        background: role.role === 'designer' ? 'var(--primary-color)' : 
-                                   role.role === 'developer' ? '#7b1fa2' : 
-                                   role.role === 'bd' ? '#388e3c' :
-                                   role.role === 'manager' ? '#ff9800' : '#f44336'
-                      }} />
-                      <div className="team-info">
-                        <span className="team-name">{role.name}</span>
-                        <span className="team-progress-numbers">{role.completed}/{role.total} ({role.members} members)</span>
-                      </div>
-                      <div className="team-progress-bar-bg">
-                        <div
-                          className="team-progress-bar-fill"
-                          style={{
-                            width: role.total > 0 ? `${role.completionRate}%` : '0%',
-                            background: role.role === 'designer'
-                              ? 'linear-gradient(90deg, var(--primary-color), var(--primary-light))'
-                              : role.role === 'developer'
-                              ? 'linear-gradient(90deg, #7b1fa2, #b39ddb)'
-                              : role.role === 'bd'
-                              ? 'linear-gradient(90deg, #388e3c, #66bb6a)'
-                              : role.role === 'manager'
-                              ? 'linear-gradient(90deg, #ff9800, #ffb74d)'
-                              : 'linear-gradient(90deg, #f44336, #ef5350)'
-                          }}
-                        />
-                      </div>
-                      <span className="team-progress-percent">{role.total > 0 ? `${role.completionRate}%` : '0%'}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
+      {/* Roles Overview Section - Only for managers and super managers */}
+      {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
+        <div className="section-header">
+          <div className="section-title">
+            <FiUserCheck className="section-icon" />
+            <h2>Roles Overview</h2>
+          </div>
         </div>
-
-        {/* Quick Actions */}
-        <motion.div 
-          className="quick-actions"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h3>Quick Actions</h3>
-          <div className="actions-grid">
-            {getQuickActions().map((action, index) => (
+      )}
+      {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
+        <div className="roles-overview-section">
+          <div className="roles-grid">
+            {getRoleStats().map((roleStat, index) => (
               <motion.div
-                key={action.title}
-                initial={{ opacity: 0, y: 10 }}
+                key={roleStat.role}
+                className="role-card"
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
+                transition={{ delay: index * 0.1 }}
               >
-                <Link className="action-card" to={action.link}>
-                  <div className="action-icon" style={{ color: action.color }}>
-                    <action.icon size={24} />
+                <div className="role-header">
+                  <div className="role-info">
+                    <div className={`role-color ${roleStat.role}`} />
+                    <span className="role-name text-capitalize">{roleStat.role.replace('_', ' ')}</span>
+                    <span className={`role-status ${roleStat.status}`}>
+                      {roleStat.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                  <div className="action-content">
-                    <span className="action-title">{action.title}</span>
-                    <span className="action-description">{action.description}</span>
+                  <div className="role-badges">
+                    <span className="badge bg-secondary">
+                      <span className="badge-label">Tasks:</span>
+                      {roleStat.todo + roleStat.inProgress + roleStat.completed}
+                    </span>
+                    <span className="badge bg-primary">
+                      <span className="badge-label">Active:</span>
+                      {roleStat.activeMembers}
+                    </span>
+                    <span className="badge bg-info">
+                      <span className="badge-label">Total:</span>
+                      {roleStat.totalMembers}
+                    </span>
                   </div>
-                </Link>
+                </div>
+                
+                <div className="role-stats">
+                  <div className="stat-item">
+                    <span className="stat-label todo">
+                      <span className="dot"></span>To Do
+                    </span>
+                    <span className="stat-value">{roleStat.todo}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label in-progress">
+                      <span className="dot"></span>In Progress
+                    </span>
+                    <span className="stat-value">{roleStat.inProgress}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label done">
+                      <span className="dot"></span>Done
+                    </span>
+                    <span className="stat-value">{roleStat.completed}</span>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </div>
+      )}
+
+      {/* Projects and Tasks Side by Side */}
+      <div className="side-by-side-sections">
+        {/* Projects Section */}
+        <div className="section-half">
+          <div className="section-header">
+            <div className="section-title">
+              <FiFolder className="section-icon" />
+              <h2>Your Projects</h2>
+            </div>
+          </div>
+
+          <div className="projects-card">
+            <div className="projects-container">
+              {projects.length > 0 ? (
+                <>
+                  <div className="projects-grid mb-3">
+                    {projects.slice(0, 4).map((project, index) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        tasks={tasks}
+                        index={index}
+                        variant="dashboard"
+                        users={users}
+                      />
+                    ))}
+                  </div>
+                  <div className="card-footer">
+                    <Button 
+                      variant="primary"
+                      onClick={() => navigate('/projects')}
+                    >
+                      <FiFolder size={16} />
+                      View All Projects
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <motion.div 
+                  className="empty-state-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="empty-state-icon">
+                    <FiFolder size={48} />
+                  </div>
+                  <h3>No Projects Available</h3>
+                  <p>There are no projects in the system yet. Contact your manager to create projects.</p>
+                  <Button 
+                    variant="primary"
+                    onClick={() => navigate('/projects')}
+                  >
+                    <FiFolder size={16} />
+                    View Projects
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Tasks Section */}
+        <div className="section-half">
+          <div className="section-header">
+            <div className="section-title">
+              <FiClock className="section-icon" />
+              <h2>Recent Tasks</h2>
+            </div>
+          </div>
+
+          <div className="tasks-card">
+            <div className="tasks-container">
+              {tasks.length > 0 ? (
+                <div className="tasks-list">
+                  {tasks.slice(0, 5).map(task => {
+                    const project = projects.find(p => p.id === task.projectId);
+                    return (
+                      <motion.div
+                        key={task.id}
+                        className="task-item"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                      >
+                        <div className="task-status" data-status={task.status}>
+                          {task.status}
+                        </div>
+                        <div className="task-content">
+                          <h4>{task.title}</h4>
+                          <p>{project?.name}</p>
+                        </div>
+                        <div className="task-meta">
+                          {task.deadline && (
+                            <span className="task-deadline">
+                              <FiClock size={12} />
+                              {new Date(task.deadline).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <Button 
+                          variant="primary" 
+                          size="sm"
+                          onClick={() => navigate(`/project/${task.projectId}/board`)}
+                        >
+                          <FiLayout size={14} />
+                          View Board
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <motion.div 
+                  className="empty-state-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="empty-state-icon">
+                    <FiClock size={48} />
+                  </div>
+                  <h3>No Tasks Yet</h3>
+                  <p>Once you create projects and add tasks, your recent activity will appear here.</p>
+                  <Button 
+                    variant="primary"
+                    onClick={() => navigate('/projects')}
+                  >
+                    <FiPlus size={16} />
+                    Add Tasks
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-
+      {/* Quick Actions */}
+      <div className="section-header">
+        <div className="section-title">
+          <FiLayout className="section-icon" />
+          <h2>Quick Actions</h2>
+        </div>
+      </div>
+      <div className="quick-actions">
+        {getQuickActions().map((action, index) => (
+          <motion.div
+            key={action.title}
+            className="action-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            onClick={() => navigate(action.link)}
+          >
+            <div className="action-icon" style={{ color: action.color }}>
+              <action.icon size={24} />
+            </div>
+            <div className="action-content">
+              <h3>{action.title}</h3>
+              <p>{action.description}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };

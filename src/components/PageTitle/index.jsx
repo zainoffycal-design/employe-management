@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { FiArrowLeft } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 const PageTitle = ({ 
   title, 
@@ -8,8 +10,16 @@ const PageTitle = ({
   className = '',
   showIcon = true,
   actions,
-  filters
+  filters,
+  showBackButton = false,
+  backTo = '/dashboard'
 }) => {
+  const navigate = useNavigate();
+
+  const handleBackClick = () => {
+    navigate(backTo);
+  };
+
   return (
     <motion.div 
       className={`page-header ${className}`}
@@ -20,6 +30,15 @@ const PageTitle = ({
       <div className="page-header-content">
         <div className="page-title-container">
           <h1 className="page-title">
+            {showBackButton && (
+              <button 
+                className="back-icon-btn"
+                onClick={handleBackClick}
+                title="Go back"
+              >
+                <FiArrowLeft size={20} />
+              </button>
+            )}
             {showIcon && Icon && <Icon className="page-title-icon" />}
             {title}
           </h1>

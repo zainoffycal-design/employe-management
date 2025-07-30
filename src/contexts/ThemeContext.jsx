@@ -46,7 +46,7 @@ export const ThemeProvider = ({ children }) => {
     if (theme === 'dark') {
       root.style.setProperty('--bg-color', '#111827');
       root.style.setProperty('--text-color', '#f9fafb');
-      root.style.setProperty('--text-secondary', '#d1d5db');
+      root.style.setProperty('--text-secondary', '#374151');
       root.style.setProperty('--border-color', '#374151');
     } else {
       root.style.setProperty('--bg-color', '#ffffff');

@@ -86,12 +86,20 @@ export const AuthProvider = ({ children }) => {
   const hasPermission = (permission) => {
     if (!currentUser) return false;
     
-    // Super admin has all permissions
-    if (currentUser.role === 'super_admin') return true;
+    // Super manager has all permissions
+    if (currentUser.role === 'super_manager') return true;
     
-    // Admin permissions
-    if (currentUser.role === 'admin') {
-      return ['edit_tasks', 'delete_tasks', 'move_tasks', 'manage_tasks', 'view_analytics', 'assign_tasks'].includes(permission);
+    // Manager permissions
+    if (currentUser.role === 'manager') {
+      return [
+        'edit_tasks',
+        'delete_tasks',
+        'move_tasks',
+        'manage_tasks',
+        'view_analytics',
+        'assign_tasks',
+        'manage_users'  // Added permission for user management
+      ].includes(permission);
     }
     
     // Designer permissions
@@ -116,15 +124,15 @@ export const AuthProvider = ({ children }) => {
   const canDeleteTasks = () => hasPermission('delete_tasks');
   const canMoveTasks = () => hasPermission('move_tasks');
   const canManageTasks = () => hasPermission('manage_tasks');
-  const canManageEmployees = () => currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
-  const canManageUsers = () => currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+  const canManageEmployees = () => currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
+  const canManageUsers = () => currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
   const canViewAnalytics = () => hasPermission('view_analytics');
   const canAssignTasks = () => hasPermission('assign_tasks');
   const canViewOwnTasks = () => hasPermission('view_own_tasks');
 
   // Check if user can view all tasks or only their own
   const canViewAllTasks = () => {
-    return currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+    return currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
   };
 
   const value = {

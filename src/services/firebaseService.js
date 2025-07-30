@@ -23,57 +23,142 @@ import {
   updateProfile
 } from 'firebase/auth';
 import toast from 'react-hot-toast';
+import { generateAvatarUrl } from '../utils/avatarUtils';
 
-// Task Service
-export const taskService = {
-  subscribeToTasks: (callback) => {
-    const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      const tasks = snapshot.docs.map(doc => ({
+// Project Management
+export const projectService = {
+  async createProject(projectData) {
+    try {
+      const projectsRef = collection(db, 'projects');
+      const docRef = await addDoc(projectsRef, {
+        ...projectData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tasks: []
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  },
+
+  async updateProject(projectId, projectData) {
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, {
+        ...projectData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  },
+
+  async deleteProject(projectId) {
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await deleteDoc(projectRef);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  },
+
+  async getProjectsByManager(managerId) {
+    try {
+      const projectsRef = collection(db, 'projects');
+      const q = query(
+        projectsRef,
+        where('managerId', '==', managerId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      callback(tasks);
-    });
+    } catch (error) {
+      console.error('Error getting projects by manager:', error);
+      throw error;
+    }
   },
 
-  createTask: async (taskData) => {
-    const docRef = await addDoc(collection(db, 'tasks'), {
-      ...taskData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef;
+  async getProjectsByTeamMember(userId) {
+    try {
+      const projectsRef = collection(db, 'projects');
+      const q = query(
+        projectsRef,
+        where('teamMembers', 'array-contains', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Error getting projects by team member:', error);
+      throw error;
+    }
+  }
+};
+
+// Task Management
+export const taskService = {
+  async createTask(projectId, taskData) {
+    try {
+      const tasksRef = collection(db, `projects/${projectId}/tasks`);
+      const docRef = await addDoc(tasksRef, {
+        ...taskData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: taskData.status || 'todo'
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
   },
 
-  updateTask: async (taskId, updates) => {
-    const taskRef = doc(db, 'tasks', taskId);
-    await updateDoc(taskRef, {
-      ...updates,
-      updatedAt: serverTimestamp()
-    });
+  async updateTask(projectId, taskId, taskData) {
+    try {
+      const taskRef = doc(db, `projects/${projectId}/tasks`, taskId);
+      await updateDoc(taskRef, {
+        ...taskData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
   },
 
-  deleteTask: async (taskId) => {
-    const taskRef = doc(db, 'tasks', taskId);
-    await deleteDoc(taskRef);
+  async deleteTask(projectId, taskId) {
+    try {
+      const taskRef = doc(db, `projects/${projectId}/tasks`, taskId);
+      await deleteDoc(taskRef);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
   },
 
-  moveTask: async (taskId, newStatus) => {
-    const taskRef = doc(db, 'tasks', taskId);
-    await updateDoc(taskRef, {
-      status: newStatus,
-      updatedAt: serverTimestamp()
-    });
-  },
-
-  updateTaskOrder: async (orderedTaskIds) => {
-    const batch = [];
-    orderedTaskIds.forEach((taskId, index) => {
-      const taskRef = doc(db, 'tasks', taskId);
-      batch.push(updateDoc(taskRef, { order: index }));
-    });
-    await Promise.all(batch);
+  async getProjectTasks(projectId) {
+    try {
+      const tasksRef = collection(db, `projects/${projectId}/tasks`);
+      const q = query(tasksRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Error getting project tasks:', error);
+      throw error;
+    }
   }
 };
 
@@ -108,6 +193,17 @@ export const userManagementService = {
     });
   },
 
+  updateUserProfile: async (userId, userData) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      name: userData.name,
+      role: userData.role,
+      permissions: userData.permissions,
+      avatar: generateAvatarUrl(userData.name),
+      updatedAt: serverTimestamp()
+    });
+  },
+
   createUser: async (userData) => {
     const auth = getAuth();
     const userCredential = await createUserWithEmailAndPassword(
@@ -121,7 +217,7 @@ export const userManagementService = {
       email: userData.email,
       role: userData.role,
       permissions: userData.permissions,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=15a970&color=fff`,
+      avatar: generateAvatarUrl(userData.name),
       isActive: true,
       createdAt: serverTimestamp()
     };
@@ -148,7 +244,7 @@ export const userManagementService = {
       email: userData.email,
       role: userData.role,
       permissions: userData.permissions,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=15a970&color=fff`,
+      avatar: generateAvatarUrl(userData.name),
       isActive: true,
       createdAt: serverTimestamp()
     };

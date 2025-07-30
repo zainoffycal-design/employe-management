@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiUser, FiSettings, FiLogOut, FiMenu } from 'react-icons/fi';
+import { FiLogOut, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTaskContext } from '../../contexts/TaskContext';
-import { userManagementService } from '../../services/firebaseService';
+import { useTask } from '../../contexts/TaskContext';
 import { useNavigate } from 'react-router-dom';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { auth } from '../../firebase';
 import logo from '../../assets/logo.png';
 import Modal from '../Modal';
+import Button from '../Button';
+import Avatar from '../Avatar';
 import './Header.scss';
 
 const AnimatedMenuIcon = ({ open }) => (
@@ -19,43 +22,29 @@ const AnimatedMenuIcon = ({ open }) => (
 
 const Header = ({ onMenuClick, sidebarOpen }) => {
   const { currentUser, logout } = useAuth();
-  const { addTask } = useTaskContext();
-  const [users, setUsers] = useState([]);
+  const { projects } = useTask();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
-  const [quickTask, setQuickTask] = useState({ 
-    title: '', 
-    description: '',
-    priority: 'medium',
-    assignee: ''
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
-  const assigneeDropdownRef = useRef(null);
 
-  // Load users for assignment
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const allUsers = await userManagementService.getAllUsers();
-        setUsers(allUsers);
-      } catch (error) {
-        console.error('Error loading users:', error);
-      }
-    };
-    loadUsers();
-  }, []);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
-      }
-      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target)) {
-        setShowAssigneeDropdown(false);
       }
     };
 
@@ -65,40 +54,60 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
     };
   }, []);
 
-  const handleQuickAdd = (e) => {
+
+
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
-    if (quickTask.title.trim() && quickTask.assignee) {
-      addTask({
-        title: quickTask.title,
-        description: quickTask.description,
-        priority: quickTask.priority,
-        assignee: quickTask.assignee,
-        status: 'todo'
+    setPasswordLoading(true);
+    setPasswordError('');
+
+    // Validate passwords
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      // Re-authenticate user
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        passwordData.currentPassword
+      );
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      // Update password
+      await updatePassword(auth.currentUser, passwordData.newPassword);
+      
+      // Reset form and close modal
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
       });
-      setQuickTask({ 
-        title: '', 
-        description: '',
-        priority: 'medium',
-        assignee: ''
-      });
-      setShowQuickAdd(false);
+      setShowPasswordChange(false);
+      
+      // Success feedback could be added here
+      alert('Password updated successfully!');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      if (error.code === 'auth/wrong-password') {
+        setPasswordError('Current password is incorrect');
+      } else {
+        setPasswordError('Failed to update password');
+      }
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
-  // Filter users based on search
-  const filteredUsers = users.filter(user => 
-    user.isActive && user.name.toLowerCase().includes(assigneeSearch.toLowerCase())
-  );
 
-  // Get selected user name
-  const selectedUser = users.find(user => user.id === quickTask.assignee);
-
-  // Scroll dropdown into view when opened
-  useEffect(() => {
-    if (showAssigneeDropdown && assigneeDropdownRef.current) {
-      assigneeDropdownRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [showAssigneeDropdown]);
 
   const handleDropdownNav = (path) => {
     setShowUserMenu(false);
@@ -113,12 +122,16 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
 
   const getRoleDisplayName = (role) => {
     switch (role) {
-      case 'super_admin':
-        return 'Super Admin';
-      case 'admin':
-        return 'Admin';
-      case 'user':
-        return 'User';
+      case 'super_manager':
+        return 'Super Manager';
+      case 'manager':
+        return 'Manager';
+      case 'designer':
+        return 'Designer';
+      case 'developer':
+        return 'Developer';
+      case 'bd':
+        return 'Business Developer';
       default:
         return role;
     }
@@ -127,12 +140,12 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
   return (
     <header className="header navbar navbar-expand-lg navbar-light bg-white border-bottom">
       <div className="container-fluid">
-        <button className="menu-btn btn btn-link me-3" onClick={onMenuClick} aria-label="Toggle sidebar">
+        <button className="menu-btn" onClick={onMenuClick} aria-label="Toggle sidebar">
           <AnimatedMenuIcon open={sidebarOpen} />
         </button>
         <div className="navbar-brand">
           <button 
-            className="btn btn-link p-0" 
+            className="logo-btn" 
             onClick={() => navigate('/')}
           >
             <img src={logo} alt="Logo" className="logo-img" />
@@ -140,71 +153,112 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
         </div>
         
         <div className="navbar-nav ms-auto align-items-center">
-          <div className="nav-item me-3">
-            {currentUser?.role === 'admin' && (
-              <button 
-                className="btn btn--primary"
-                onClick={() => setShowQuickAdd(!showQuickAdd)}
-              >
-                <FiPlus className="me-2" />
-                Quick Add
-              </button>
-            )}
-          </div>
-          
           <div className="nav-item dropdown" ref={userMenuRef}>
             <button 
-              className="btn btn-link nav-link dropdown-toggle d-flex align-items-center"
+              className="user-dropdown-btn d-flex align-items-center"
               onClick={() => setShowUserMenu(!showUserMenu)}
               aria-expanded={showUserMenu}
             >
-              <img 
+              <Avatar 
                 src={currentUser?.avatar} 
-                alt={currentUser?.name}
-                className="user-avatar me-2"
+                name={currentUser?.name || 'User'}
+                size="medium"
+                className="me-2"
               />
-              <span className="user-name">{currentUser?.name}</span>
+              <span className="user-name">{currentUser?.name || 'User'}</span>
+              <svg 
+                width="12" 
+                height="12" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`}
+                style={{ marginLeft: '4px', transition: 'transform 0.2s ease' }}
+              >
+                <polyline points="6,9 12,15 18,9"></polyline>
+              </svg>
             </button>
             
             <AnimatePresence>
               {showUserMenu && (
                 <motion.div 
-                  className="dropdown-menu dropdown-menu-end show"
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="dropdown-menu show"
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ 
+                    duration: 0.25,
+                    ease: [0.4, 0, 0.2, 1]
+                  }}
                 >
-                  <div className="dropdown-header">
-                   <div className='d-flex justify-content-center'>
-                    <img 
-                      src={currentUser?.avatar} 
-                      alt={currentUser?.name}
-                      className="dropdown-avatar me-3"
-                    />
-                   </div>
+                  <motion.div 
+                    className="dropdown-header"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.2 }}
+                  >
+                    <div className='d-flex justify-content-center'>
+                      <Avatar 
+                        src={currentUser?.avatar} 
+                        name={currentUser?.name || 'User'}
+                        size="large"
+                        className="dropdown-avatar"
+                      />
+                    </div>
                     <div className="dropdown-user-info">
-                      <h6 className="mb-1">{currentUser?.name}</h6>
-                      <small>{currentUser?.email}</small>
+                      <h6 className="mb-1">{currentUser?.name || 'User'}</h6>
+                      <small>{currentUser?.email || 'No email'}</small>
                       <div className="mt-1">
                         <span className="badge bg-primary">{getRoleDisplayName(currentUser?.role)}</span>
                       </div>
                     </div>
-                  </div>
-                  <div className="dropdown-divider"></div>
-                  <button className="dropdown-item" onClick={() => handleDropdownNav('/settings')}>
-                    <FiUser className="me-2" size={16} />
-                    Profile
-                  </button>
-                  <button className="dropdown-item" onClick={() => handleDropdownNav('/settings')}>
-                    <FiSettings className="me-2" size={16} />
-                    Settings
-                  </button>
-                  <div className="dropdown-divider"></div>
-                  <button className="dropdown-item text-danger" onClick={handleLogout}>
-                    <FiLogOut className="me-2" size={16} />
-                    Logout
-                  </button>
+                  </motion.div>
+                  
+                  <motion.div 
+                    className="dropdown-divider"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.15, duration: 0.3 }}
+                  />
+                  
+                  <motion.button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      setShowPasswordChange(true);
+                    }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.2 }}
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <FiLock className="dropdown-icon" size={16} />
+                    <span>Change Password</span>
+                  </motion.button>
+                  
+                  <motion.div 
+                    className="dropdown-divider"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.25, duration: 0.3 }}
+                  />
+                  
+                  <motion.button 
+                    className="dropdown-item text-danger" 
+                    onClick={handleLogout}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3, duration: 0.2 }}
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <FiLogOut className="dropdown-icon" size={16} />
+                    <span>Logout</span>
+                  </motion.button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -212,142 +266,120 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
         </div>
       </div>
 
+
+
+      {/* Change Password Modal */}
       <Modal
-        isOpen={showQuickAdd}
-        onClose={() => setShowQuickAdd(false)}
-        title="Quick Add Task"
+        isOpen={showPasswordChange}
+        onClose={() => {
+          setShowPasswordChange(false);
+          setPasswordData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          });
+          setPasswordError('');
+        }}
+        title="Change Password"
         size="medium"
       >
-        {currentUser?.role === 'admin' && (
-          <form onSubmit={handleQuickAdd}>
-            <div className="form-group">
-              <label>Task Title</label>
+        <form onSubmit={handlePasswordChange}>
+          {passwordError && (
+            <div className="alert alert-danger">
+              {passwordError}
+            </div>
+          )}
+          
+          <div className="form-group">
+            <label>Current Password</label>
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
               <input
-                type="text"
+                type={showCurrentPassword ? 'text' : 'password'}
                 className="form-control"
-                placeholder="Enter task title..."
-                value={quickTask.title}
-                onChange={(e) => setQuickTask({ ...quickTask, title: e.target.value })}
-                autoFocus
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                placeholder="Enter current password"
                 required
               />
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                className="form-control"
-                placeholder="Enter description..."
-                value={quickTask.description}
-                onChange={(e) => setQuickTask({ ...quickTask, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="form-group">
-              <label>Priority</label>
-              <select
-                className="form-select"
-                value={quickTask.priority}
-                onChange={(e) => setQuickTask({ ...quickTask, priority: e.target.value })}
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
+                {showCurrentPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
             </div>
+          </div>
 
-            <div className="form-group" ref={assigneeDropdownRef}>
-              <label>Assignee *</label>
-              <div className="position-relative">
-                <div
-                  className="form-control d-flex justify-content-between align-items-center"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                >
-                  <span style={{ color: quickTask.assignee ? '#333' : '#6c757d' }}>
-                    {selectedUser ? selectedUser.name : 'Select assignee...'}
-                  </span>
-                  <i className={`fas fa-chevron-${showAssigneeDropdown ? 'up' : 'down'}`}></i>
-                </div>
-                
-                {showAssigneeDropdown && (
-                  <div 
-                    className="position-absolute w-100 bg-white border rounded mt-1"
-                    style={{ 
-                      zIndex: 2000, 
-                      maxHeight: '200px', 
-                      overflowY: 'auto',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                      top: '100%',
-                      left: 0
-                    }}
-                  >
-                    <div className="p-2 border-bottom">
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Search users..."
-                        value={assigneeSearch}
-                        onChange={(e) => setAssigneeSearch(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map(user => (
-                        <div
-                          key={user.id}
-                          className="p-2 border-bottom"
-                          style={{ 
-                            cursor: 'pointer',
-                            backgroundColor: quickTask.assignee === user.id ? '#f8f9fa' : 'white'
-                          }}
-                          onClick={() => {
-                            setQuickTask({ ...quickTask, assignee: user.id });
-                            setShowAssigneeDropdown(false);
-                            setAssigneeSearch('');
-                          }}
-                        >
-                          <div className="d-flex align-items-center">
-                            <img 
-                              src={user.avatar || 'https://via.placeholder.com/32'} 
-                              alt={user.name}
-                              className="rounded-circle me-2"
-                              style={{ width: '24px', height: '24px' }}
-                            />
-                            <div>
-                              <div style={{ fontSize: '14px', fontWeight: '500' }}>
-                                {user.name}
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                                {user.role}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-2 text-muted text-center">
-                        No users found
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="modal-actions">
-              <button 
-                type="button" 
-                className="btn btn-secondary"
-                onClick={() => setShowQuickAdd(false)}
+          <div className="form-group">
+            <label>New Password</label>
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                className="form-control"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                placeholder="Enter new password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowNewPassword(!showNewPassword)}
               >
-                Cancel
-              </button>
-              <button type="submit" className="btn btn--primary">
-                Add Task
+                {showNewPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
-          </form>
-        )}
+          </div>
+
+          <div className="form-group">
+            <label>Confirm New Password</label>
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="form-control"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                placeholder="Confirm new password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <Button 
+              variant="secondary"
+              onClick={() => {
+                setShowPasswordChange(false);
+                setPasswordData({
+                  currentPassword: '',
+                  newPassword: '',
+                  confirmPassword: ''
+                });
+                setPasswordError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              type="submit"
+              loading={passwordLoading}
+            >
+              Update Password
+            </Button>
+          </div>
+        </form>
       </Modal>
     </header>
   );

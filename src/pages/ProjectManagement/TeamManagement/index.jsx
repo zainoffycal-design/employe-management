@@ -13,7 +13,6 @@ import {
   FiUserPlus,
   FiShield,
   FiUserCheck,
-  FiUserX,
   FiEye,
   FiEyeOff
 } from 'react-icons/fi';
@@ -22,6 +21,8 @@ import { userManagementService } from '../../services/firebaseService';
 import { formatTimestamp } from '../../utils/dateUtils';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
+import Avatar from '../../components/Avatar';
+import { generateAvatarUrl } from '../../utils/avatarUtils';
 import './TeamManagement.scss';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { db } from '../../firebase';
@@ -118,7 +119,7 @@ const TeamManagement = () => {
         email: newUser.email,
         role: newUser.role,
         permissions: permissions,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(newUser.name)}&background=15a970&color=fff`,
+        avatar: generateAvatarUrl(newUser.name),
         isActive: true,
         createdBy: currentUser.uid,
         createdAt: new Date()
@@ -278,8 +279,8 @@ const TeamManagement = () => {
   return (
     <div className="page-container">
       <PageTitle 
-        title="Team Management"
-        subtitle="Manage team members and their roles"
+        title="Project Management"
+        subtitle="Create and manage projects, assign team members, and track progress"
         icon={FiUsers}
         actions={
           canManageEmployees() && (
@@ -346,9 +347,10 @@ const TeamManagement = () => {
               >
                 <div className="employee-header">
                   <div className="employee-info">
-                    <img 
-                    src={user.avatar} 
-                    alt={user.name}
+                    <Avatar 
+                      src={user.avatar} 
+                      name={user.name}
+                      size="large"
                       className="employee-avatar"
                     />
                     <div className="employee-details">

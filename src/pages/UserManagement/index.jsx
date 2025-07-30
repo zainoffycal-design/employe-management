@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   FiPlus, 
   FiEdit2, 
@@ -22,9 +23,99 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
+import Button from '../../components/Button';
+import Avatar from '../../components/Avatar';
 import './UserManagement.scss';
 
+// Add a function to sort and group users by role
+const groupAndSortUsers = (users) => {
+  // Define role order
+  const roleOrder = {
+    'super_manager': 0,
+    'manager': 1,
+    'designer': 2,
+    'developer': 3,
+    'bd': 4
+  };
+
+  // Group users by role
+  const groupedUsers = users.reduce((acc, user) => {
+    const role = user.role;
+    if (!acc[role]) {
+      acc[role] = [];
+    }
+    acc[role].push(user);
+    return acc;
+  }, {});
+
+  // Sort users within each role group by name
+  Object.keys(groupedUsers).forEach(role => {
+    groupedUsers[role].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  return groupedUsers;
+};
+
+const getRoleBadgeColor = (role) => {
+  switch (role) {
+    case 'super_manager': return 'danger';
+    case 'manager': return 'warning';
+    case 'designer': return 'info';
+    case 'developer': return 'primary';
+    case 'bd': return 'success';
+    default: return 'secondary';
+  }
+};
+
+const getRoleDisplayName = (role) => {
+  switch (role) {
+    case 'super_manager': return 'Super Manager';
+    case 'manager': return 'Manager';
+    case 'designer': return 'Designer';
+    case 'developer': return 'Developer';
+    case 'bd': return 'Business Developer';
+    default: return role;
+  }
+};
+
+const UserCard = ({ user, onEdit, onDelete, canManageUsers }) => {
+  return (
+    <div className="user-card">
+      <Avatar 
+        src={user.avatar}
+        name={user.name}
+        size="large"
+        className="user-avatar"
+      />
+      <div className="user-info">
+        <h3>{user.name}</h3>
+        <div className="user-email">{user.email}</div>
+        <div className="badge badge--role">{getRoleDisplayName(user.role)}</div>
+      </div>
+      {canManageUsers && (
+        <div className="user-actions">
+          <button
+            className="action-btn edit"
+            onClick={() => onEdit(user)}
+            title="Edit user"
+          >
+            <FiEdit3 />
+          </button>
+          <button
+            className="action-btn delete"
+            onClick={() => onDelete(user.id)}
+            title="Delete user"
+          >
+            <FiTrash2 />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const UserManagement = () => {
+  const navigate = useNavigate();
   const { currentUser, canManageUsers } = useAuth();
   const [users, setUsers] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -41,6 +132,44 @@ const UserManagement = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showEditUser, setShowEditUser] = useState(false); // New state for edit modal
+
+  // Get available roles based on current user's role
+  const getAvailableRoles = () => {
+    const roles = [
+      { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },
+      { value: 'developer', label: 'Developer', description: 'Can manage development tasks and assign to team' },
+      { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
+    ];
+
+    // Only super manager can create other managers or super manager
+    if (currentUser.role === 'super_manager') {
+      // Add manager roles at the beginning of the array to match our display order
+      roles.unshift(
+        { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' },
+        { value: 'super_manager', label: 'Super Manager', description: 'Full access to all features' }
+      );
+    } else if (currentUser.role === 'manager') {
+      // Managers can only create regular users
+      return roles;
+    }
+
+    return roles;
+  };
+
+  // Filter users based on current user's role
+  const filteredUsers = users.filter(user => {
+    if (currentUser.role === 'super_manager') return true;
+    if (currentUser.role === 'manager') {
+      // Managers can see other managers but can't edit them
+      return true;
+    }
+    return false;
+  });
+
+  // Group and sort users
+  const groupedUsers = groupAndSortUsers(filteredUsers);
+  const roleOrder = ['super_manager', 'manager', 'designer', 'developer', 'bd'];
 
   // Check if user has access to user management
   if (!canManageUsers()) {
@@ -87,17 +216,24 @@ const UserManagement = () => {
       return;
     }
 
-    // Check if trying to create super manager and one already exists
-    if (newUser.role === 'super_manager') {
-      const existingSuperManager = users.find(user => user.role === 'super_manager');
-      if (existingSuperManager) {
-        setError('A Super Manager already exists. Only one Super Manager is allowed.');
+    try {
+      // Check if trying to create super manager and one already exists
+      if (newUser.role === 'super_manager') {
+        const existingSuperManager = users.find(user => user.role === 'super_manager');
+        if (existingSuperManager) {
+          setError('A Super Manager already exists. Only one Super Manager is allowed.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Only super manager can create other managers or super manager
+      if (currentUser.role === 'manager' && (newUser.role === 'super_manager' || newUser.role === 'manager')) {
+        setError('You do not have permission to create manager or super manager roles.');
         setLoading(false);
         return;
       }
-    }
 
-    try {
       // Set user permissions based on role
       let permissions = [];
       switch (newUser.role) {
@@ -172,6 +308,29 @@ const UserManagement = () => {
     }
 
     try {
+      // Check if trying to change role to super manager and one already exists
+      if (editingUser.role === 'super_manager') {
+        const existingSuperManager = users.find(user =>
+          user.role === 'super_manager' && user.id !== editingUser.id
+        );
+        if (existingSuperManager) {
+          setError('A Super Manager already exists. Only one Super Manager is allowed.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Only super manager can edit roles to manager or super manager
+      if (currentUser.role === 'manager') {
+        const existingUser = users.find(user => user.id === editingUser.id);
+        if (existingUser.role === 'super_manager' || existingUser.role === 'manager' ||
+            editingUser.role === 'super_manager' || editingUser.role === 'manager') {
+          setError('You do not have permission to modify manager or super manager roles.');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Set user permissions based on role
       let permissions = [];
       switch (editingUser.role) {
@@ -194,8 +353,13 @@ const UserManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      await userManagementService.updateUserRole(editingUser.id, editingUser.role, permissions);
+      await userManagementService.updateUserProfile(editingUser.id, {
+        name: editingUser.name,
+        role: editingUser.role,
+        permissions: permissions
+      });
       setEditingUser(null);
+      setShowEditUser(false);
       await loadUsers();
     } catch (error) {
       console.error('Error updating user:', error);
@@ -218,120 +382,51 @@ const UserManagement = () => {
     }
   };
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'super_manager': return 'danger';
-      case 'manager': return 'warning';
-      case 'designer': return 'info';
-      case 'developer': return 'primary';
-      case 'bd': return 'success';
-      default: return 'secondary';
-    }
-  };
-
-  const getRoleDisplayName = (role) => {
-    switch (role) {
-      case 'super_manager': return 'Super Manager';
-      case 'manager': return 'Manager';
-      case 'designer': return 'Designer';
-      case 'developer': return 'Developer';
-      case 'bd': return 'Business Developer';
-      default: return role;
-    }
-  };
-
-  const roles = [
-    { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },
-    { value: 'developer', label: 'Developer', description: 'Can manage development tasks and assign to team' },
-    { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' },
-    { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' }
-  ];
-
   return (
-    <div className="page-container">
+    <div className="user-management">
       <PageTitle 
         title="User Management"
-        subtitle="Manage user accounts, roles, and permissions"
-        icon={FiUser}
+        subtitle="Manage your team members and their roles"
+        icon={FiUsers}
+        showBackButton={true}
+        backTo="/dashboard"
         actions={
-          <button 
-            className="btn btn--primary"
+          canManageUsers && (
+            <Button
+              variant="primary"
             onClick={() => setShowAddUser(true)}
           >
-            <FiUserPlus size={16} />
-            Add User
-          </button>
+            <FiUserPlus /> Add New User
+            </Button>
+          )
         }
       />
 
-      {/* Users List */}
-      <div className="users-section">
-        <h2>All Users</h2>
-        <div className="users-grid">
-          {users.map((user, index) => (
-            <motion.div
-              key={user.id}
-              className="user-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className="user-header">
-                <img src={user.avatar} alt={user.name} className="user-avatar" />
-                <div className="user-info">
-                  <h3>{user.name}</h3>
-                  <p>{user.email}</p>
-                  <span className={`badge badge--${getRoleBadgeColor(user.role)}`}>
-                    {getRoleDisplayName(user.role)}
-                  </span>
-                </div>
-                <div className="user-actions">
-                  <button
-                    className="btn btn--icon"
-                    onClick={() => setEditingUser(user)}
-                    title="Edit user"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  {user.id !== currentUser.uid && (
-                    <button
-                      className="btn btn--icon btn--danger"
-                      onClick={() => handleDeleteUser(user.id)}
-                      title="Delete user"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="user-details">
+      <div className="users-container">
+        {roleOrder.map(role => {
+          const usersInRole = groupedUsers[role] || [];
+          if (usersInRole.length === 0) return null;
 
-                <div className="detail-item">
-                  <span className="label">Status:</span>
-                  <span className={`value ${user.isActive ? 'active' : 'inactive'}`}>
-                    {user.isActive ? (
-                      <>
-                        <FiUserCheck size={14} />
-                        Active
-                      </>
-                    ) : (
-                      <>
-                        <FiUserX size={14} />
-                        Inactive
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="label"><b>Permissions:</b></span>
-                  <span className="value">
-                    {user.permissions?.includes('all') ? 'All' : user.permissions?.join(', ') || 'None'}
-                  </span>
-                </div>
+          return (
+            <div key={role} className="role-section">
+              <h2 className="role-title">{getRoleDisplayName(role)}</h2>
+              <div className="users-list">
+                {usersInRole.map(user => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    onEdit={(user) => {
+                      setEditingUser(user);
+                      setShowEditUser(true);
+                    }}
+                    onDelete={handleDeleteUser}
+                    canManageUsers={canManageUsers}
+                  />
+                ))}
               </div>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add User Modal */}
@@ -436,7 +531,7 @@ const UserManagement = () => {
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
               required
             >
-              {roles.map(role => (
+              {getAvailableRoles().map(role => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>
@@ -445,28 +540,27 @@ const UserManagement = () => {
           </div>
 
           <div className="modal-actions">
-            <button 
-              type="button" 
-              className="btn btn--secondary"
+            <Button 
+              variant="secondary"
               onClick={() => setShowAddUser(false)}
             >
               Cancel
-            </button>
-            <button 
+            </Button>
+            <Button 
+              variant="primary"
               type="submit" 
-              className="btn btn--primary"
-              disabled={loading}
+              loading={loading}
             >
-              {loading ? 'Creating...' : 'Create User'}
-            </button>
+              Create User
+            </Button>
           </div>
         </form>
       </Modal>
 
       {/* Edit User Modal */}
       <Modal
-        isOpen={!!editingUser}
-        onClose={() => setEditingUser(null)}
+        isOpen={showEditUser}
+        onClose={() => setShowEditUser(false)}
         title="Edit User"
         size="medium"
       >
@@ -510,7 +604,7 @@ const UserManagement = () => {
               onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
               required
             >
-              {roles.map(role => (
+              {getAvailableRoles().map(role => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>
@@ -519,20 +613,19 @@ const UserManagement = () => {
           </div>
 
           <div className="modal-actions">
-            <button 
-              type="button" 
-              className="btn btn--secondary"
-              onClick={() => setEditingUser(null)}
+            <Button 
+              variant="secondary"
+              onClick={() => setShowEditUser(false)}
             >
               Cancel
-            </button>
-            <button 
+            </Button>
+            <Button 
+              variant="primary"
               type="submit" 
-              className="btn btn--primary"
-              disabled={loading}
+              loading={loading}
             >
-              {loading ? 'Updating...' : 'Update User'}
-            </button>
+              Update User
+            </Button>
           </div>
         </form>
       </Modal>

@@ -4,6 +4,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
+import Button from '../../components/Button';
 import './Login.scss';
 
 const Login = () => {
@@ -109,13 +110,14 @@ const Login = () => {
                 </button>
               </div>
             </div>
-            <button 
+            <Button 
               type="submit" 
+              variant="primary"
               className="login-button"
-              disabled={isLoading}
+              loading={isLoading}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
-            </button>
+              Sign In
+            </Button>
           </form>
         </motion.div>
       </div>

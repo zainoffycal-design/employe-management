@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiClock, FiUser, FiTag, FiMoreVertical, FiEdit2, FiTrash2,
-  FiCalendar, FiAlertTriangle, FiCheckCircle
+  FiCalendar, FiCheckCircle
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTimestamp } from '../../utils/dateUtils';
@@ -13,7 +13,17 @@ const TaskCard = ({ task, compact = false, showActions = true, onEdit, onDelete,
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
-  const assignee = task.assignee ? getUserById?.(task.assignee) : null;
+  const getAssigneeNames = () => {
+    if (!task.assignee) return null;
+    
+    if (Array.isArray(task.assignee)) {
+      return task.assignee.map(id => getUserById?.(id)?.name || 'Unknown').join(', ');
+    } else {
+      return getUserById?.(task.assignee)?.name || 'Unknown';
+    }
+  };
+
+  const assignee = getAssigneeNames();
   const assignedBy = task.assignedBy ? getUserById?.(task.assignedBy) : null;
 
   const isOverdue = () => {
@@ -131,10 +141,10 @@ const TaskCard = ({ task, compact = false, showActions = true, onEdit, onDelete,
               {assignee && (
                 <div className="meta-item">
                   <FiUser size={14} />
-                  <span>Assigned to {assignee.name}</span>
+                  <span>Assigned to {assignee}</span>
                 </div>
               )}
-              {assignedBy && assignedBy.id !== assignee?.id && (
+              {assignedBy && (
                 <div className="meta-item">
                   <FiUser size={14} />
                   <span>Assigned by {assignedBy.name}</span>

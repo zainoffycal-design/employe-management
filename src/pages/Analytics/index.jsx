@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   FiBarChart2, 
   FiTrendingUp, 
@@ -8,20 +9,20 @@ import {
   FiClock, 
   FiAlertCircle,
   FiCalendar,
-  FiTarget,
-  FiActivity,
-  FiFilter,
   FiDownload
 } from 'react-icons/fi';
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { useTaskContext } from '../../contexts/TaskContext';
+import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import PageTitle from '../../components/PageTitle';
+import Button from '../../components/Button';
+import Avatar from '../../components/Avatar';
 import './Analytics.scss';
 
 const Analytics = () => {
-  const { tasks, currentUser } = useTaskContext();
+  const navigate = useNavigate();
+  const { tasks, currentUser } = useTask();
   const { canViewAnalytics } = useAuth();
   const [users, setUsers] = useState([]);
   const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year
@@ -165,9 +166,20 @@ const Analytics = () => {
   return (
     <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle 
-        title="Analytics Dashboard"
-        subtitle="Real-time insights into team performance and productivity"
+        title="Analytics"
+        subtitle="Track your team's performance and project metrics"
         icon={FiBarChart2}
+        showBackButton={true}
+        backTo="/dashboard"
+        actions={
+          <Button 
+            variant="secondary"
+            onClick={exportAnalytics}
+          >
+            <FiDownload size={16} />
+            Export Data
+          </Button>
+        }
       />
       
       {/* Filters */}
@@ -205,11 +217,6 @@ const Analytics = () => {
             }
           </select>
         </div>
-        
-        <button className="export-btn" onClick={exportAnalytics}>
-          <FiDownload size={16} />
-          Export Data
-        </button>
       </div>
 
       {/* Key Metrics */}
@@ -339,14 +346,11 @@ const Analytics = () => {
                 <div className="performer-rank">#{index + 1}</div>
                 <div className="performer-info">
                   <div className="performer-avatar">
-                    {/* Assuming users have an avatar property */}
-                    {userStat.avatar ? (
-                      <img src={userStat.avatar} alt={userStat.name} />
-                    ) : (
-                      <div className="avatar-placeholder">
-                        {userStat.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar 
+                      src={userStat.avatar}
+                      name={userStat.name}
+                      size="medium"
+                    />
                   </div>
                   <div className="performer-details">
                     <h4>{userStat.name}</h4>

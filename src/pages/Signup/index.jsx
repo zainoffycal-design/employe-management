@@ -4,6 +4,8 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle, FiUser } from 'react-ic
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
+import Button from '../../components/Button';
+import { generateAvatarUrl } from '../../utils/avatarUtils';
 import './Signup.scss';
 
 const Signup = () => {
@@ -53,9 +55,9 @@ const Signup = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: 'super_admin',
+        role: 'super_manager',
         permissions: ['all'],
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=15a970&color=fff`,
+        avatar: generateAvatarUrl(formData.name),
         isActive: true,
       });
       if (result.success) {
@@ -173,13 +175,14 @@ const Signup = () => {
                 </button>
               </div>
             </div>
-            <button 
+            <Button 
               type="submit" 
+              variant="primary"
               className="signup-button"
-              disabled={isLoading}
+              loading={isLoading}
             >
-              {isLoading ? 'Creating Account...' : 'Create Super Admin Account'}
-            </button>
+              Create Super Admin Account
+            </Button>
           </form>
         </motion.div>
       </div>
