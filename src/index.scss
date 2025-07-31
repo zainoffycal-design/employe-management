@@ -1031,6 +1031,32 @@ input[type="checkbox"] {
 // RESPONSIVE DESIGN
 // =============================================================================
 
+@media (max-width: 900px) {
+  .page-header {
+    .page-header-content {
+      gap: 1.5rem;
+      
+      .page-title-container {
+        .page-title {
+          font-size: 1.75rem;
+        }
+      }
+      
+      .page-header-actions {
+        .page-filters,
+        .page-actions {
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+      }
+    }
+  }
+  
+  .search-box {
+    width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .page-header {
     margin-bottom: 1.5rem;
@@ -1069,6 +1095,10 @@ input[type="checkbox"] {
         }
       }
     }
+  }
+  
+  .search-box {
+    width: 100%;
   }
 }
 
@@ -1132,6 +1162,43 @@ input[type="checkbox"] {
       color: var(--gray-400);
     }
   }
+}
+
+// =============================================================================
+// CUSTOM SCROLLBAR STYLES
+// =============================================================================
+
+// Global scrollbar styles
+* {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background: var(--gray-400);
+    }
+  }
+  
+  &::-webkit-scrollbar-corner {
+    background: var(--gray-100);
+  }
+}
+
+// Firefox scrollbar styles
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) var(--gray-100);
 }
 
 // =============================================================================

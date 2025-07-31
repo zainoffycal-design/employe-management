@@ -103,10 +103,8 @@
       align-items: center;
       gap: 1rem;
       margin-top: 1rem;
-
-   
-
-
+      flex-wrap: wrap;
+      max-width: 100%;
     }
   }
 
@@ -115,7 +113,7 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     flex: 1;
-    overflow: hidden;
+    overflow: auto;
     padding-bottom: 1rem;
 
     .board-column {
@@ -167,23 +165,6 @@
         flex: 1;
         overflow-y: auto;
         padding-right: 0.5rem;
-
-        &::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        &::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        &::-webkit-scrollbar-thumb {
-          background: var(--gray-300);
-          border-radius: 3px;
-
-          &:hover {
-            background: var(--gray-400);
-          }
-        }
       }
 
       .task-card {
@@ -600,9 +581,22 @@
 
   }
 
-  @media (max-width: 1400px) {
-    .board-columns {
-      grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 900px) {
+    .page-header {
+      .header-actions {
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+    }
+    
+    .filters-container {
+      .search-box {
+        width: 200px;
+      }
+      
+      .assignee-filter {
+        width: 180px;
+      }
     }
   }
 
@@ -616,20 +610,32 @@
       .header-actions {
         width: 100%;
         flex-wrap: wrap;
-
-       
-
-
       }
     }
 
     .board-columns {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
       padding-bottom: 1rem;
     }
 
     .board-column {
       min-width: unset !important;
+    }
+    
+    .filters-container {
+      .search-box {
+        width: 100%;
+      }
+      
+      .assignee-filter {
+        width: 100%;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .board-columns {
+      grid-template-columns: 1fr;
     }
   }
 }
@@ -706,13 +712,13 @@
   padding-bottom: 1rem;
   margin: 0;
   
-  @media (max-width: 1200px) {
+  @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
   
-  @media (max-width: 768px) {
+  @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 }
 
@@ -788,20 +794,7 @@
     border-radius: 12px;
   }
   
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: var(--gray-100);
-    border-radius: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: var(--gray-300);
-    border-radius: 3px;
-    &:hover {
-      background: var(--gray-400);
-    }
-  }
+
 }
 
 // Drag and drop enhancements
