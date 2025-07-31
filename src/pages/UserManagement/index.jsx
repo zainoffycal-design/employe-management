@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
+import { emailService } from '../../services/emailService';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -40,7 +41,10 @@ const groupAndSortUsers = (users) => {
 
   // Group users by role
   const groupedUsers = users.reduce((acc, user) => {
-    const role = user.role;
+    // Normalize role name to handle potential variations
+    const normalizedRole = user.role?.toLowerCase().replace(/[^a-z]/g, '') || 'user';
+    const role = normalizedRole === 'supermanager' ? 'super_manager' : normalizedRole;
+    
     if (!acc[role]) {
       acc[role] = [];
     }
@@ -78,9 +82,9 @@ const getRoleDisplayName = (role) => {
   }
 };
 
-const UserCard = ({ user, onEdit, onDelete, canManageUsers }) => {
+const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null }) => {
   return (
-    <div className="user-card">
+    <div className={`user-card ${isCurrentUser ? 'current-user' : ''}`}>
       <Avatar 
         src={user.avatar}
         name={user.name}
@@ -88,26 +92,57 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers }) => {
         className="user-avatar"
       />
       <div className="user-info">
-        <h3>{user.name}</h3>
-        <div className="user-email">{user.email}</div>
-        <div className="badge badge--role">{getRoleDisplayName(user.role)}</div>
+        <h3>
+          {user.name}
+          {isCurrentUser && <span className="current-user-badge">You</span>}
+        </h3>
+        <div className="user-email">
+          <FiMail />
+          {user.email}
+        </div>
+        <div className="user-details-row">
+          <div className={`badge badge--role ${getRoleBadgeColor(user.role)}`}>
+            {getRoleDisplayName(user.role)}
+          </div>
+          {!isSuperManager && (
+            <span className={`badge badge--status ${user.status}`}>
+              {user.status === 'active' ? 'Active' : 
+               user.status === 'invited' ? 'Invited' : 
+               user.status === 'inactive' ? 'Inactive' : 'Unknown'}
+            </span>
+          )}
+        </div>
       </div>
-      {canManageUsers && (
+      {canManageUsers && !isCurrentUser && (
         <div className="user-actions">
-          <button
-            className="action-btn edit"
-            onClick={() => onEdit(user)}
-            title="Edit user"
-          >
-            <FiEdit3 />
-          </button>
-          <button
-            className="action-btn delete"
-            onClick={() => onDelete(user.id)}
-            title="Delete user"
-          >
-            <FiTrash2 />
-          </button>
+          {!isSuperManager && user.status === 'invited' && (
+            <button
+              className="action-btn resend"
+              onClick={() => onResendInvitation(user.email)}
+              title="Resend invitation"
+            >
+              <FiMail />
+            </button>
+          )}
+          {/* Hide edit/delete buttons for super managers when current user is manager */}
+          {!(currentUserRole === 'manager' && isSuperManager) && (
+            <>
+              <button
+                className="action-btn edit"
+                onClick={() => onEdit(user)}
+                title="Edit user"
+              >
+                <FiEdit3 />
+              </button>
+              <button
+                className="action-btn delete"
+                onClick={() => onDelete(user.id)}
+                title="Delete user"
+              >
+                <FiTrash2 />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -142,12 +177,11 @@ const UserManagement = () => {
       { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
     ];
 
-    // Only super manager can create other managers or super manager
+    // Only super manager can create managers
     if (currentUser.role === 'super_manager') {
-      // Add manager roles at the beginning of the array to match our display order
+      // Add manager role at the beginning
       roles.unshift(
-        { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' },
-        { value: 'super_manager', label: 'Super Manager', description: 'Full access to all features' }
+        { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' }
       );
     } else if (currentUser.role === 'manager') {
       // Managers can only create regular users
@@ -157,18 +191,27 @@ const UserManagement = () => {
     return roles;
   };
 
-  // Filter users based on current user's role
-  const filteredUsers = users.filter(user => {
-    if (currentUser.role === 'super_manager') return true;
-    if (currentUser.role === 'manager') {
-      // Managers can see other managers but can't edit them
-      return true;
-    }
-    return false;
-  });
+  // Add current user to the list if they're not already included
+  const allUsersIncludingCurrent = [...users];
+  const currentUserExists = users.some(user => 
+    user.id === currentUser.uid || 
+    user.email === currentUser.email ||
+    (user.uid && user.uid === currentUser.uid)
+  );
+  
+  if (!currentUserExists) {
+    allUsersIncludingCurrent.push({
+      id: currentUser.uid,
+      name: currentUser.name,
+      email: currentUser.email,
+      role: currentUser.role,
+      avatar: currentUser.avatar,
+      isActive: true,
+      permissions: currentUser.permissions || []
+    });
+  }
 
-  // Group and sort users
-  const groupedUsers = groupAndSortUsers(filteredUsers);
+  const groupedUsers = groupAndSortUsers(allUsersIncludingCurrent);
   const roleOrder = ['super_manager', 'manager', 'designer', 'developer', 'bd'];
 
   // Check if user has access to user management
@@ -203,37 +246,7 @@ const UserManagement = () => {
     setLoading(true);
     setError('');
 
-    // Validate passwords
-    if (newUser.password !== newUser.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (newUser.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Check if trying to create super manager and one already exists
-      if (newUser.role === 'super_manager') {
-        const existingSuperManager = users.find(user => user.role === 'super_manager');
-        if (existingSuperManager) {
-          setError('A Super Manager already exists. Only one Super Manager is allowed.');
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Only super manager can create other managers or super manager
-      if (currentUser.role === 'manager' && (newUser.role === 'super_manager' || newUser.role === 'manager')) {
-        setError('You do not have permission to create manager or super manager roles.');
-        setLoading(false);
-        return;
-      }
-
       // Set user permissions based on role
       let permissions = [];
       switch (newUser.role) {
@@ -256,11 +269,10 @@ const UserManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      // Create user using the service that handles sign-out
-      await userManagementService.createUserWithoutSignIn({
+      // Create user invitation instead of creating auth account
+      await emailService.createUserInvitation({
         name: newUser.name,
         email: newUser.email,
-        password: newUser.password,
         role: newUser.role,
         permissions: permissions
       });
@@ -279,12 +291,8 @@ const UserManagement = () => {
       // Reload users
       await loadUsers();
     } catch (error) {
-      console.error('Error creating user:', error);
-      if (error.code === 'auth/email-already-in-use') {
-        setError('Email already exists');
-      } else {
-        setError('Failed to create user');
-      }
+      console.error('Error creating user invitation:', error);
+      setError(error.message || 'Failed to send invitation. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -294,18 +302,6 @@ const UserManagement = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // Check if trying to change role to super manager and one already exists
-    if (editingUser.role === 'super_manager') {
-      const existingSuperManager = users.find(user => 
-        user.role === 'super_manager' && user.id !== editingUser.id
-      );
-      if (existingSuperManager) {
-        setError('A Super Manager already exists. Only one Super Manager is allowed.');
-        setLoading(false);
-        return;
-      }
-    }
 
     try {
       // Check if trying to change role to super manager and one already exists
@@ -382,6 +378,22 @@ const UserManagement = () => {
     }
   };
 
+  const handleResendInvitation = async (email) => {
+    try {
+      setLoading(true);
+      await emailService.resendInvitation(email);
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEditUserModal = (user) => {
+    setEditingUser(user);
+    setShowEditUser(true);
+  };
+
   return (
     <div className="user-management">
       <PageTitle 
@@ -405,6 +417,8 @@ const UserManagement = () => {
       <div className="users-container">
         {roleOrder.map(role => {
           const usersInRole = groupedUsers[role] || [];
+          
+          // Only show sections that have users
           if (usersInRole.length === 0) return null;
 
           return (
@@ -412,16 +426,17 @@ const UserManagement = () => {
               <h2 className="role-title">{getRoleDisplayName(role)}</h2>
               <div className="users-list">
                 {usersInRole.map(user => (
-                  <UserCard
-                    key={user.id}
-                    user={user}
-                    onEdit={(user) => {
-                      setEditingUser(user);
-                      setShowEditUser(true);
-                    }}
-                    onDelete={handleDeleteUser}
-                    canManageUsers={canManageUsers}
-                  />
+                                      <UserCard
+                      key={user.id}
+                      user={user}
+                      onEdit={openEditUserModal}
+                      onDelete={handleDeleteUser}
+                      canManageUsers={canManageUsers}
+                      isCurrentUser={user.id === currentUser.uid}
+                      onResendInvitation={handleResendInvitation}
+                      isSuperManager={user.role === 'super_manager'}
+                      currentUserRole={currentUser.role}
+                    />
                 ))}
               </div>
             </div>
@@ -477,52 +492,6 @@ const UserManagement = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div className="input-wrapper">
-              <FiShield className="input-icon" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                placeholder="Enter password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <div className="input-wrapper">
-              <FiShield className="input-icon" />
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={newUser.confirmPassword}
-                onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
-                placeholder="Confirm password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
             <label htmlFor="role">Role</label>
             <select
               id="role"
@@ -551,7 +520,7 @@ const UserManagement = () => {
               type="submit" 
               loading={loading}
             >
-              Create User
+              Send Invitation
             </Button>
           </div>
         </form>
@@ -633,4 +602,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement; 
+export default UserManagement;

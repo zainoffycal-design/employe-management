@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FiFolder, 
@@ -84,13 +84,13 @@ const ProjectManagement = () => {
     options: users
   }));
 
-  // Create manager filter options (only for super admin)
+  // Create manager filter options (only for super manager)
   const managerFilterOptions = allUsers
-    .filter(user => user.role === 'manager' || user.role === 'super_manager' || user.role === 'super_admin')
+    .filter(user => user.role === 'manager' || user.role === 'super_manager')
     .map(user => ({
       value: user.id,
       label: user.name,
-      role: user.role === 'super_manager' ? 'Super Manager' : user.role === 'super_admin' ? 'Super Admin' : 'Manager',
+      role: user.role === 'super_manager' ? 'Super Manager' : 'Manager',
       avatar: user.avatar
     }));
 

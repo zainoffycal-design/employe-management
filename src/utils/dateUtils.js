@@ -45,30 +45,4 @@ export const formatTimestamp = (timestamp, formatStr = 'MMM dd, yyyy') => {
   }
   
   return date.toLocaleDateString();
-};
-
-/**
- * Gets a timestamp value for sorting purposes
- * @param {Object|Date|string} timestamp - Firebase timestamp object, Date object, or date string
- * @returns {number} Timestamp in milliseconds for sorting
- */
-export const getTimestampForSort = (timestamp) => {
-  if (!timestamp) return 0;
-  
-  // If it's a Firebase timestamp object
-  if (timestamp.seconds) {
-    return timestamp.seconds * 1000;
-  }
-  
-  // If it's already a Date object
-  if (timestamp instanceof Date) {
-    return timestamp.getTime();
-  }
-  
-  // If it's a string, try to parse it
-  try {
-    return new Date(timestamp).getTime();
-  } catch (error) {
-    return 0;
-  }
 }; 

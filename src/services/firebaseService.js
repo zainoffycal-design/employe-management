@@ -204,6 +204,42 @@ export const userManagementService = {
     });
   },
 
+  // Update user to ensure uid field is present
+  ensureUserUid: async (uid, email) => {
+    try {
+      // Check if user exists with UID
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // Add uid field if missing
+        if (!userData.uid) {
+          await updateDoc(userRef, {
+            uid: uid
+          });
+        }
+      } else {
+        // Check if user exists with email
+        const emailUserRef = doc(db, 'users', email);
+        const emailUserDoc = await getDoc(emailUserRef);
+        
+        if (emailUserDoc.exists()) {
+          const userData = emailUserDoc.data();
+          // Create new document with UID and add uid field
+          await setDoc(doc(db, 'users', uid), {
+            ...userData,
+            uid: uid
+          });
+          // Delete email-based document
+          await deleteDoc(emailUserRef);
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring user UID:', error);
+    }
+  },
+
   createUser: async (userData) => {
     const auth = getAuth();
     const userCredential = await createUserWithEmailAndPassword(

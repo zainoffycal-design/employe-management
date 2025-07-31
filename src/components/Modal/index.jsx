@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiX } from 'react-icons/fi';
 import './Modal.scss';
 
 const Modal = ({ 
@@ -12,8 +14,6 @@ const Modal = ({
   className = '',
   ...props 
 }) => {
-  if (!isOpen) return null;
-
   const handleOverlayClick = (e) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
       onClose();
@@ -28,35 +28,57 @@ const Modal = ({
   };
 
   return (
-    <div 
-      className="modal-overlay"
-      onClick={handleOverlayClick}
-      {...props}
-    >
-      <div 
-        className={`modal ${sizeClasses[size]} ${className}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-          {(title || showCloseButton) && (
-            <div className="modal-header">
-              {title && <h3 className="modal-title">{title}</h3>}
-              {showCloseButton && (
-                <button 
-                  type="button" 
-                  className="modal-close" 
-                  onClick={onClose}
-                  aria-label="Close modal"
-                >
-                  ×
-                </button>
-              )}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          className="modal-overlay"
+          onClick={handleOverlayClick}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          {...props}
+        >
+          <motion.div 
+            className={`modal ${sizeClasses[size]} ${className}`}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            {(title || showCloseButton) && (
+              <div className="modal-header">
+                <div className="modal-header-content">
+                  {title && (
+                    <div className="modal-title-container">
+                      <h3 className="modal-title">{title}</h3>
+                      {title && <div className="modal-title-underline"></div>}
+                    </div>
+                  )}
+                  {showCloseButton && (
+                    <motion.button 
+                      type="button" 
+                      className="modal-close" 
+                      onClick={onClose}
+                      aria-label="Close modal"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: 'easeInOut' }}
+                    >
+                      <FiX size={20} />
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="modal-content">
+              {children}
             </div>
-          )}
-          <div className="modal-content">
-            {children}
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

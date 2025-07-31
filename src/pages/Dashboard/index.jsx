@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -113,14 +113,6 @@ const Dashboard = () => {
         const totalTasks = projectTasks.length;
         const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const isCompleted = totalTasks > 0 && progressPercentage === 100;
-        
-        console.log(`Project ${project.name}:`, {
-          totalTasks,
-          completedTasks,
-          progressPercentage: `${progressPercentage}%`,
-          isCompleted,
-          taskStatuses: projectTasks.map(t => t.status)
-        });
         
         return isCompleted;
       }).length,

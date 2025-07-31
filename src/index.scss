@@ -1,7 +1,3 @@
-// =============================================================================
-// GLOBAL STYLES & VARIABLES
-// =============================================================================
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -62,9 +58,7 @@
   --z-tooltip: 1200;
 }
 
-// =============================================================================
-// RESET & BASE STYLES
-// =============================================================================
+
 
 * {
   margin: 0;
@@ -87,9 +81,7 @@ body {
   min-height: 100vh;
 }
 
-// =============================================================================
-// LAYOUT UTILITIES
-// =============================================================================
+
 
 .container {
   max-width: 1200px;
@@ -101,11 +93,6 @@ body {
   padding-top: 72px; // adjust to header height
 }
 
-// =============================================================================
-// COMPONENT STYLES
-// =============================================================================
-
-// Card Component
 .card {
   background-color: var(--white);
   border-radius: var(--border-radius-lg);
@@ -255,14 +242,14 @@ button.btn {
   100% { transform: rotate(360deg); }
 }
 
-// Page Actions Styles (for standalone use)
+
 .page-actions {
   display: flex;
   gap: 1rem;
   align-items: center;
 }
 
-// Filters Panel Styles
+
 .filters-panel {
   background: white;
   border: 1px solid var(--gray-200);
@@ -480,36 +467,7 @@ button.btn {
   }
 }
 
-// =============================================================================
-// FORM STYLES
-// =============================================================================
 
-.form-control,
-.form-select {
-  border: 2px solid var(--gray-300);
-  border-radius: var(--border-radius);
-  padding: 0.75rem;
-  transition: var(--transition);
-  font-size: 0.875rem;
-  
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
-  }
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-  
-  label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-700);
-    margin-bottom: 0.5rem;
-  }
-}
 
 // Input wrapper for icons
 .input-wrapper {
@@ -563,7 +521,7 @@ button.btn {
   }
 }
 
-// Checkbox Styles
+
 input[type="checkbox"] {
   accent-color: var(--primary-color);
   width: 18px;
@@ -581,9 +539,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
-// DROPDOWN STYLES
-// =============================================================================
+
 
 .dropdown-menu {
   border: none;
@@ -619,10 +575,6 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
-// ALERT STYLES
-// =============================================================================
-
 .alert {
   display: flex;
   align-items: center;
@@ -656,10 +608,6 @@ input[type="checkbox"] {
     border: 1px solid #bee5eb;
   }
 }
-
-// =============================================================================
-// ERROR MESSAGE STYLES
-// =============================================================================
 
 .error-message {
   display: flex;
@@ -730,9 +678,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
 // ANIMATIONS
-// =============================================================================
 
 @keyframes fadeIn {
   from {
@@ -789,9 +735,7 @@ input[type="checkbox"] {
   animation: scaleIn 0.2s ease-out;
 }
 
-// =============================================================================
 // UTILITY CLASSES
-// =============================================================================
 
 // Text Gradients
 .text-gradient {
@@ -845,9 +789,7 @@ input[type="checkbox"] {
 .gap-3 { gap: 1rem; }
 .gap-4 { gap: 1.5rem; }
 
-// =============================================================================
 // RESPONSIVE DESIGN
-// =============================================================================
 
 @media (max-width: 768px) {
   .container {
@@ -868,9 +810,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
 // CUSTOM SCROLLBAR
-// =============================================================================
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -890,9 +830,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
 // PAGE TRANSITIONS
-// =============================================================================
 
 .page-enter {
   opacity: 0;
@@ -916,9 +854,7 @@ input[type="checkbox"] {
   transition: opacity 300ms, transform 300ms;
 }
 
-// =============================================================================
-// PAGE CONTAINER STYLES
-// =============================================================================
+
 
 .page-container {
   min-height: 100vh;
@@ -930,9 +866,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
-// PAGE TITLE COMPONENT STYLES
-// =============================================================================
+
 
 .page-header {
   margin-bottom: 2rem;
@@ -1025,9 +959,7 @@ input[type="checkbox"] {
   align-items: center;
 }
 
-// =============================================================================
 // RESPONSIVE DESIGN
-// =============================================================================
 
 @media (max-width: 900px) {
   .page-header {
@@ -1100,9 +1032,7 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
-// SHARED PAGE HEADER STYLES
-// =============================================================================
+
 
 .section-header {
   display: flex;
@@ -1162,11 +1092,46 @@ input[type="checkbox"] {
   }
 }
 
-// =============================================================================
-// CUSTOM SCROLLBAR STYLES
-// =============================================================================
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
 
-// Global scrollbar styles
+
 * {
   &::-webkit-scrollbar {
     width: 6px;
@@ -1193,34 +1158,12 @@ input[type="checkbox"] {
   }
 }
 
-// Firefox scrollbar styles
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--gray-300) var(--gray-100);
 }
 
-// =============================================================================
-// UTILITY CLASSES
-// =============================================================================
-
-// Text utilities
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
-
-.text-sm { font-size: 0.875rem; }
-.text-base { font-size: 1rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
-.text-2xl { font-size: 1.5rem; }
-
-.font-light { font-weight: 300; }
-.font-normal { font-weight: 400; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-
-// Color utilities
 .text-primary { color: var(--primary-color); }
 .text-secondary { color: var(--secondary-color); }
 .text-success { color: var(--success-color); }
@@ -1239,90 +1182,16 @@ input[type="checkbox"] {
 .text-gray-800 { color: var(--gray-800); }
 .text-gray-900 { color: var(--gray-900); }
 
-// Display utilities
-.block { display: block; }
-.inline-block { display: inline-block; }
-.inline { display: inline; }
-.flex { display: flex; }
-.inline-flex { display: inline-flex; }
-.grid { display: grid; }
-.hidden { display: none; }
-
-// Flex utilities
-.flex-row { flex-direction: row; }
-.flex-col { flex-direction: column; }
-.flex-wrap { flex-wrap: wrap; }
-.flex-nowrap { flex-wrap: nowrap; }
-.items-start { align-items: flex-start; }
-.items-center { align-items: center; }
-.items-end { align-items: flex-end; }
-.justify-start { justify-content: flex-start; }
-.justify-center { justify-content: center; }
-.justify-end { justify-content: flex-end; }
-.justify-between { justify-content: space-between; }
-.justify-around { justify-content: space-around; }
-
-// Position utilities
-.relative { position: relative; }
-.absolute { position: absolute; }
-.fixed { position: fixed; }
-.sticky { position: sticky; }
-
-// Width and height utilities
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-.min-h-screen { min-height: 100vh; }
-
-// Border utilities
-.border { border: 1px solid var(--gray-200); }
-.border-t { border-top: 1px solid var(--gray-200); }
-.border-b { border-bottom: 1px solid var(--gray-200); }
-.border-l { border-left: 1px solid var(--gray-200); }
-.border-r { border-right: 1px solid var(--gray-200); }
-
-.rounded { border-radius: var(--border-radius-lg); }
-.rounded-sm { border-radius: var(--border-radius); }
-.rounded-lg { border-radius: var(--border-radius-xl); }
-.rounded-xl { border-radius: var(--border-radius-xl); }
-.rounded-full { border-radius: 9999px; }
-
-// Shadow utilities
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.shadow-md { box-shadow: var(--shadow-md); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
-.shadow-xl { box-shadow: var(--shadow-xl); }
-
-// Background utilities
-.bg-white { background-color: white; }
-.bg-gray-50 { background-color: var(--gray-50); }
-.bg-gray-100 { background-color: var(--gray-100); }
-.bg-gray-200 { background-color: var(--gray-200); }
 .bg-primary { background-color: var(--primary-color); }
 .bg-secondary { background-color: var(--secondary-color); }
 .bg-success { background-color: var(--success-color); }
 .bg-warning { background-color: var(--warning-color); }
 .bg-error { background-color: var(--error-color); }
 
-// Cursor utilities
-.cursor-pointer { cursor: pointer; }
-.cursor-default { cursor: default; }
-.cursor-not-allowed { cursor: not-allowed; }
-
-// Overflow utilities
-.overflow-hidden { overflow: hidden; }
-.overflow-auto { overflow: auto; }
-.overflow-scroll { overflow: scroll; }
-
-// Z-index utilities
-.z-10 { z-index: 10; }
-.z-20 { z-index: 20; }
-.z-30 { z-index: 30; }
-.z-40 { z-index: 40; }
-.z-50 { z-index: 50; }
-
-// =============================================================================
-// FOCUS STYLES
-// =============================================================================
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
 
 *:focus {
   outline: 2px solid var(--primary-color);
@@ -1332,10 +1201,6 @@ input[type="checkbox"] {
 *:focus:not(:focus-visible) {
   outline: none;
 }
-
-// =============================================================================
-// SELECTION STYLES
-// =============================================================================
 
 ::selection {
   background-color: var(--primary-color);

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
+import { userManagementService } from '../services/firebaseService';
 
 const AuthContext = createContext();
 
@@ -14,11 +15,28 @@ export const AuthProvider = ({ children }) => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Fetch user profile from Firestore
-        const userRef = doc(db, 'users', user.uid);
-        const snapshot = await getDoc(userRef);
+        // First try to fetch user profile using UID
+        let userRef = doc(db, 'users', user.uid);
+        let snapshot = await getDoc(userRef);
+        
+        // If not found with UID, try with email (for invited users)
+        if (!snapshot.exists()) {
+          userRef = doc(db, 'users', user.email);
+          snapshot = await getDoc(userRef);
+        }
+        
         if (snapshot.exists()) {
-          setCurrentUser({ uid: user.uid, email: user.email, ...snapshot.data() });
+          const userData = snapshot.data();
+          // Ensure uid field is present for consistency
+          const userWithUid = { 
+            uid: user.uid, 
+            email: user.email, 
+            ...userData 
+          };
+          setCurrentUser(userWithUid);
+          
+          // Ensure user has uid field in database
+          await userManagementService.ensureUserUid(user.uid, user.email);
         } else {
           setCurrentUser({ uid: user.uid, email: user.email });
         }
@@ -59,11 +77,25 @@ export const AuthProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Fetch user profile from Firestore
-      const userRef = doc(db, 'users', user.uid);
-      const snapshot = await getDoc(userRef);
+      // First try to fetch user profile using UID
+      let userRef = doc(db, 'users', user.uid);
+      let snapshot = await getDoc(userRef);
+      
+      // If not found with UID, try with email (for invited users)
+      if (!snapshot.exists()) {
+        userRef = doc(db, 'users', user.email);
+        snapshot = await getDoc(userRef);
+      }
+      
       if (snapshot.exists()) {
-        setCurrentUser({ uid: user.uid, email: user.email, ...snapshot.data() });
+        const userData = snapshot.data();
+        // Ensure uid field is present for consistency
+        const userWithUid = { 
+          uid: user.uid, 
+          email: user.email, 
+          ...userData 
+        };
+        setCurrentUser(userWithUid);
       } else {
         setCurrentUser({ uid: user.uid, email: user.email });
       }

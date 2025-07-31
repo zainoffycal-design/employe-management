@@ -320,43 +320,8 @@
     }
   }
 
-  // Form Styles
-  .form-group {
-    margin-bottom: 1.5rem;
+  // Removed .form-group style. Use shared utility classes from index.scss.
 
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .form-text {
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
-    }
-  }
-
-  .form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-
-    &:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px var(--primary-light);
-    }
-  }
-
-  textarea.form-control {
-    min-height: 100px;
-    resize: vertical;
-  }
 
   .modal-actions {
     display: flex;
@@ -367,7 +332,6 @@
     border-top: 1px solid var(--border-color);
   }
 
-  // Responsive styles
   @media (max-width: 768px) {
     padding: 1rem;
 

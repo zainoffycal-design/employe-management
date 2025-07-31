@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -69,37 +69,112 @@ const ProjectBoard = () => {
 
   // Custom styles for react-select
   const customStyles = {
-    control: (base) => ({
+    control: (base, state) => ({
       ...base,
-      minHeight: '38px',
+      minHeight: '47px',
+      height: '47px',
       backgroundColor: 'white',
-      borderColor: '#e2e8f0',
-      boxShadow: 'none',
+      borderColor: state.isFocused ? '#15a970' : '#dee2e6',
+      borderWidth: '1px',
+      borderRadius: '0.375rem',
+      boxShadow: state.isFocused ? '0 0 0 0.2rem rgba(21, 169, 112, 0.25)' : 'none',
+      fontSize: '1rem',
+      lineHeight: '1.5',
+      padding: '0',
       '&:hover': {
-        borderColor: '#cbd5e1'
+        borderColor: state.isFocused ? '#15a970' : '#adb5bd'
+      }
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      padding: '0.375rem 0.75rem',
+      margin: '0'
+    }),
+    input: (base) => ({
+      ...base,
+      margin: '0',
+      padding: '0'
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: '#6c757d',
+      margin: '0'
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: '#e9ecef',
+      borderRadius: '0.25rem',
+      margin: '2px 4px 2px 0',
+      padding: '0'
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: '#495057',
+      fontSize: '0.875rem',
+      padding: '2px 6px'
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: '#6c757d',
+      padding: '2px 6px',
+      ':hover': {
+        backgroundColor: '#dc3545',
+        color: 'white'
       }
     }),
     option: (base, state) => ({
       ...base,
       padding: '8px 12px',
       backgroundColor: state.isSelected 
-        ? '#f1f5f9'
+        ? '#15a970'
         : state.isFocused 
-        ? '#f8fafc'
+        ? '#f8f9fa'
         : 'white',
-      color: '#334155',
+      color: state.isSelected ? 'white' : '#495057',
       '&:active': {
-        backgroundColor: '#f1f5f9'
+        backgroundColor: '#15a970'
       }
     }),
     singleValue: (base) => ({
       ...base,
-      color: '#334155'
+      color: '#495057'
     }),
     menu: (base) => ({
       ...base,
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      borderRadius: '6px'
+      boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+      borderRadius: '0.375rem',
+      border: '1px solid #dee2e6',
+      zIndex: 1050
+    }),
+    menuList: (base) => ({
+      ...base,
+      padding: '0.5rem 0'
+    }),
+    indicatorsContainer: (base) => ({
+      ...base,
+      height: '45px',
+      paddingRight: '0.75rem'
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: '#dee2e6',
+      marginLeft: '0.5rem'
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: '#6c757d',
+      padding: '0',
+      ':hover': {
+        color: '#495057'
+      }
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      color: '#6c757d',
+      padding: '0',
+      ':hover': {
+        color: '#dc3545'
+      }
     })
   };
 
@@ -111,20 +186,39 @@ const ProjectBoard = () => {
         style={{
           padding: '8px 12px',
           cursor: 'pointer',
-          backgroundColor: props.isFocused ? '#f8fafc' : 'white',
+          backgroundColor: props.isSelected ? '#15a970' : props.isFocused ? '#f8f9fa' : 'white',
+          color: props.isSelected ? 'white' : '#495057',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          borderRadius: '0.25rem',
+          margin: '2px 8px',
+          transition: 'all 0.15s ease-in-out'
         }}
       >
         <Avatar 
           src={data.avatar} 
           name={data.label}
           size="small"
-          style={{ marginRight: '8px' }}
+          style={{ 
+            marginRight: '8px',
+            border: props.isSelected ? '2px solid white' : '2px solid #e9ecef'
+          }}
         />
         <div>
-          <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
+          <div style={{ 
+            fontSize: '0.875rem', 
+            color: props.isSelected ? 'white' : '#495057',
+            fontWeight: '500'
+          }}>
+            {data.label}
+          </div>
+          <div style={{ 
+            fontSize: '0.75rem', 
+            color: props.isSelected ? 'rgba(255, 255, 255, 0.8)' : '#6c757d',
+            textTransform: 'capitalize'
+          }}>
+            {data.role}
+          </div>
         </div>
       </div>
     );
@@ -884,19 +978,21 @@ const ProjectBoard = () => {
                 <FiUsers className="me-2" />
                 Assignees
               </label>
-              <Select
-                options={assigneeOptions}
-                value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
-                onChange={(selectedOptions) => setNewTask({ 
-                  ...newTask, 
-                  assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
-                })}
-                placeholder="Select Assignees"
-                isMulti
-                isClearable
-                styles={customStyles}
-                components={{ Option: CustomOption }}
-              />
+              <div className="form-control" style={{ padding: 0, border: 'none', boxShadow: 'none' }}>
+                <Select
+                  options={assigneeOptions}
+                  value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
+                  onChange={(selectedOptions) => setNewTask({ 
+                    ...newTask, 
+                    assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
+                  })}
+                  placeholder="Select Assignees"
+                  isMulti
+                  isClearable
+                  styles={customStyles}
+                  components={{ Option: CustomOption }}
+                />
+              </div>
             </div>
           </div>
 

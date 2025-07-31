@@ -22,7 +22,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser',
+    minify: 'esbuild',
     terserOptions: {
       compress: {
         drop_console: true,
@@ -30,18 +30,10 @@ export default defineConfig({
       },
     },
     rollupOptions: {
+      treeshake: true,
       output: {
         // Code splitting for better caching
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          ui: ['framer-motion', 'react-icons', 'react-hot-toast'],
-          utils: ['date-fns', 'uuid'],
-        },
-        // Optimize chunk naming
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        manualChunks: undefined,
       },
     },
     // Optimize CSS
@@ -51,15 +43,7 @@ export default defineConfig({
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'framer-motion',
-      'react-icons/fi',
-      'react-hot-toast',
-      'date-fns',
-      'uuid',
-    ],
+    include: [],
+    exclude: [],
   },
 }) 
