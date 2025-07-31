@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -10,7 +10,9 @@ import {
   FiSearch,
   FiUser,
   FiEdit3,
-  FiTrash2
+  FiTrash2,
+  FiVolume2,
+  FiVolumeX
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +22,7 @@ import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
 import Select from 'react-select';
+import soundManager from '../../utils/soundUtils';
 import './ProjectBoard.scss';
 
 const ProjectBoard = () => {
@@ -48,12 +51,18 @@ const ProjectBoard = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    // Get sound preference from localStorage, default to true
+    const saved = localStorage.getItem('taskManagerSoundEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
-  // Drag and drop state
+  // Optimized drag and drop state
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState(null);
   const [draggedOverTask, setDraggedOverTask] = useState(null);
-  const [reorderedTasks, setReorderedTasks] = useState({});
+  const [optimisticTasks, setOptimisticTasks] = useState({});
+  const [pendingUpdates, setPendingUpdates] = useState(new Set());
 
   // Find the current project
   const currentProject = projects.find(p => p.id === projectId);
@@ -121,6 +130,16 @@ const ProjectBoard = () => {
     );
   };
 
+  // Initialize sound manager
+  useEffect(() => {
+    soundManager.setEnabled(soundEnabled);
+  }, [soundEnabled]);
+
+  // Save sound preference to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('taskManagerSoundEnabled', JSON.stringify(soundEnabled));
+  }, [soundEnabled]);
+
   // Load project team members
   useEffect(() => {
     const loadUsers = async () => {
@@ -139,9 +158,10 @@ const ProjectBoard = () => {
     }
   }, [currentProject]);
 
-  // Clear reordered tasks when tasks data changes
+  // Clear optimistic tasks when tasks data changes
   useEffect(() => {
-    setReorderedTasks({});
+    setOptimisticTasks({});
+    setPendingUpdates(new Set());
   }, [tasks]);
 
   // Create assignee options for react-select
@@ -212,6 +232,25 @@ const ProjectBoard = () => {
     'Complete': filteredTasks.filter(task => task.status === 'done')
   };
 
+  // Optimized task management with optimistic updates
+  const getOptimisticTasksForColumn = useCallback((columnId) => {
+    const status = getStatusFromColumnId(columnId);
+    const optimisticTasksForColumn = optimisticTasks[columnId];
+    
+    if (optimisticTasksForColumn) {
+      return optimisticTasksForColumn;
+    }
+    
+    return tasksByStatus[status] || [];
+  }, [optimisticTasks, tasksByStatus]);
+
+  const updateOptimisticTasks = useCallback((columnId, newTasks) => {
+    setOptimisticTasks(prev => ({
+      ...prev,
+      [columnId]: newTasks
+    }));
+  }, []);
+
   const handleAddTask = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -234,6 +273,7 @@ const ProjectBoard = () => {
       };
 
       await createTask(projectId, taskData);
+      soundManager.playSuccess();
 
       setNewTask({
         title: '',
@@ -247,6 +287,7 @@ const ProjectBoard = () => {
     } catch (error) {
       console.error('Error creating task:', error);
       setError('Failed to create task');
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
@@ -282,12 +323,14 @@ const ProjectBoard = () => {
       };
 
       await updateTask(projectId, editingTask.id, taskData);
+      soundManager.playSuccess();
 
       setShowEditTask(false);
       setEditingTask(null);
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task');
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
@@ -304,115 +347,173 @@ const ProjectBoard = () => {
 
     try {
       await deleteTask(projectId, deletingTask.id);
+      soundManager.playSuccess();
       setShowDeleteConfirm(false);
       setDeletingTask(null);
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task');
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
   };
 
-  // Drag and drop handlers
-  const handleDragStart = (e, task) => {
+  // Optimized drag and drop handlers
+  const handleDragStart = useCallback((e, task) => {
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDragOver = (e, columnId, taskId = null) => {
+  const handleDragOver = useCallback((e, columnId, taskId = null) => {
     e.preventDefault();
     setDraggedOverColumn(columnId);
     if (taskId) {
       setDraggedOverTask(taskId);
     }
-  };
+  }, []);
 
-  const handleDrop = (e, columnId, targetTaskId = null) => {
+  const handleDrop = useCallback((e, columnId, targetTaskId = null) => {
     e.preventDefault();
     
     if (!draggedTask) return;
 
-    try {
-      // If dropping on a specific task (reordering within same column)
-      if (targetTaskId && draggedTask.status === columnId) {
-        // Get current tasks in the column (either reordered or original)
-        const currentTasksInColumn = getTasksForColumn(columnId);
-        const draggedIndex = currentTasksInColumn.findIndex(t => t.id === draggedTask.id);
-        
-        if (targetTaskId === 'top') {
-          // Dropping at the top of the column
-          if (draggedIndex !== -1 && draggedIndex !== 0) {
-            const newTasks = [...currentTasksInColumn];
-            const [movedTask] = newTasks.splice(draggedIndex, 1);
-            newTasks.unshift(movedTask);
-            
-            setReorderedTasks(prev => ({
-              ...prev,
-              [columnId]: newTasks
-            }));
-          }
-        } else {
-          // Dropping on a specific task
-          const targetIndex = currentTasksInColumn.findIndex(t => t.id === targetTaskId);
-          
-          if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
-            // Reorder tasks within the same column
-            const newTasks = [...currentTasksInColumn];
-            const [movedTask] = newTasks.splice(draggedIndex, 1);
-            newTasks.splice(targetIndex, 0, movedTask);
-            
-            // Update the reordered tasks state
-            setReorderedTasks(prev => ({
-              ...prev,
-              [columnId]: newTasks
-            }));
-          }
-        }
-      } else if (draggedTask.status === columnId && !targetTaskId) {
-        // Dropping at the end of the same column
-        const currentTasksInColumn = getTasksForColumn(columnId);
-        const draggedIndex = currentTasksInColumn.findIndex(t => t.id === draggedTask.id);
-        
-        if (draggedIndex !== -1 && draggedIndex !== currentTasksInColumn.length - 1) {
-          // Move task to the end of the column
-          const newTasks = [...currentTasksInColumn];
+    const currentTasksInColumn = getOptimisticTasksForColumn(columnId);
+    const draggedIndex = currentTasksInColumn.findIndex(t => t.id === draggedTask.id);
+    
+    let newTasks = [...currentTasksInColumn];
+    let taskMoved = false;
+
+    // Handle reordering within same column
+    if (draggedTask.status === columnId) {
+      if (targetTaskId === 'top') {
+        // Dropping at the top of the column
+        if (draggedIndex !== -1 && draggedIndex !== 0) {
           const [movedTask] = newTasks.splice(draggedIndex, 1);
-          newTasks.push(movedTask);
-          
-          // Update the reordered tasks state
-          setReorderedTasks(prev => ({
-            ...prev,
-            [columnId]: newTasks
-          }));
+          newTasks.unshift(movedTask);
+          taskMoved = true;
+          soundManager.playMove();
         }
-      } else if (draggedTask.status !== columnId) {
-        // Moving to a different column - update immediately for instant feedback
-        updateTask(projectId, draggedTask.id, { status: columnId }).catch(error => {
-          console.error('Error moving task:', error);
-        });
+      } else if (targetTaskId) {
+        // Dropping on a specific task - use visual position calculation
+        // The issue is that task IDs don't match visual positions consistently
         
-        // Clear reordered tasks for the source column to refresh the view
-        setReorderedTasks(prev => {
+        // Find the target task in the current array
+        const targetTask = currentTasksInColumn.find(t => t.id === targetTaskId);
+        let targetIndex = -1;
+        
+        if (targetTask) {
+          targetIndex = currentTasksInColumn.indexOf(targetTask);
+        }
+        
+        console.log('=== REORDERING DEBUG ===');
+        console.log('Original array:', currentTasksInColumn.map(t => t.title));
+        console.log('Dragged task:', draggedTask.title);
+        console.log('Dragged index:', draggedIndex);
+        console.log('Target task ID:', targetTaskId);
+        console.log('Target task title:', targetTask?.title);
+        console.log('Target index:', targetIndex);
+        console.log('All task IDs:', currentTasksInColumn.map(t => t.id));
+        
+        if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
+          // Create a new array
+          newTasks = [...currentTasksInColumn];
+          
+          // Remove the dragged task
+          const [movedTask] = newTasks.splice(draggedIndex, 1);
+          console.log('After removing dragged task:', newTasks.map(t => t.title));
+          
+          // Calculate insert position based on visual order
+          let insertIndex = targetIndex;
+          if (draggedIndex < targetIndex) {
+            // Dragging down: after removing the item, target index shifts by 1
+            insertIndex = targetIndex - 1;
+          }
+          
+          console.log('Calculated insert index:', insertIndex);
+          console.log('Direction:', draggedIndex < targetIndex ? 'DOWN' : 'UP');
+          
+          newTasks.splice(insertIndex, 0, movedTask);
+          console.log('Final array:', newTasks.map(t => t.title));
+          console.log('=== END DEBUG ===');
+          
+          taskMoved = true;
+          soundManager.playMove();
+        }
+      } else {
+        // Dropping at the end of the same column
+        if (draggedIndex !== -1 && draggedIndex !== currentTasksInColumn.length - 1) {
+          const [movedTaskEnd] = newTasks.splice(draggedIndex, 1);
+          newTasks.push(movedTaskEnd);
+          taskMoved = true;
+          soundManager.playMove();
+        }
+      }
+    } else {
+      // Moving to different column
+      const updatedTask = { ...draggedTask, status: columnId };
+      
+      // Remove from source column
+      const sourceColumnId = draggedTask.status;
+      const sourceTasks = getOptimisticTasksForColumn(sourceColumnId);
+      const sourceNewTasks = sourceTasks.filter(t => t.id !== draggedTask.id);
+      
+      // Add to target column
+      newTasks = [...currentTasksInColumn, updatedTask];
+      
+      // Update both columns optimistically
+      updateOptimisticTasks(sourceColumnId, sourceNewTasks);
+      updateOptimisticTasks(columnId, newTasks);
+      
+      // Mark for background update
+      setPendingUpdates(prev => new Set([...prev, draggedTask.id]));
+      
+      // Play different sounds based on target column
+      if (columnId === 'done') {
+        soundManager.playComplete(); // Special completion sound
+      } else if (columnId === 'in-progress') {
+        soundManager.playMove(); // Move sound for progress
+      } else {
+        soundManager.playDrop(); // Drop sound for todo
+      }
+      
+      // Update in background
+      updateTask(projectId, draggedTask.id, { status: columnId }).catch(error => {
+        console.error('Error moving task:', error);
+        soundManager.playError();
+        // Revert optimistic update on error
+        setOptimisticTasks(prev => {
           const newState = { ...prev };
-          delete newState[draggedTask.status];
+          delete newState[sourceColumnId];
+          delete newState[columnId];
           return newState;
         });
-      }
-    } catch (error) {
-      console.error('Error moving task:', error);
+      }).finally(() => {
+        setPendingUpdates(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(draggedTask.id);
+          return newSet;
+        });
+      });
+      
+      taskMoved = true;
+    }
+
+    // Update optimistic state for same-column reordering
+    if (taskMoved && draggedTask.status === columnId) {
+      updateOptimisticTasks(columnId, newTasks);
     }
     
     setDraggedTask(null);
     setDraggedOverColumn(null);
     setDraggedOverTask(null);
-  };
+  }, [draggedTask, getOptimisticTasksForColumn, updateOptimisticTasks, updateTask, projectId]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedTask(null);
     setDraggedOverColumn(null);
     setDraggedOverTask(null);
-  };
+  }, []);
 
   const getStatusFromColumnId = (columnId) => {
     switch (columnId) {
@@ -421,17 +522,6 @@ const ProjectBoard = () => {
       case 'done': return 'Complete';
       default: return 'Not Started';
     }
-  };
-
-  const getTasksForColumn = (columnId) => {
-    const status = getStatusFromColumnId(columnId);
-    const reorderedTasksForColumn = reorderedTasks[columnId];
-    
-    if (reorderedTasksForColumn) {
-      return reorderedTasksForColumn;
-    }
-    
-    return tasksByStatus[status] || [];
   };
 
   const columns = [
@@ -516,6 +606,12 @@ const ProjectBoard = () => {
     }
   };
 
+  const toggleSound = () => {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    soundManager.setEnabled(newState);
+  };
+
   return (
     <div className="project-board">
       <PageTitle 
@@ -565,15 +661,25 @@ const ProjectBoard = () => {
               </div>
             </div>
             
-            {hasEditAccess && (
-              <Button 
-                variant="primary"
-                onClick={() => setShowAddTask(true)}
+            <div className="header-actions">
+              <button
+                onClick={toggleSound}
+                className="sound-toggle-btn"
+                title={soundEnabled ? "Disable sounds" : "Enable sounds"}
               >
-                <FiPlus size={16} />
-                Add Task
-              </Button>
-            )}
+                {soundEnabled ? <FiVolume2 size={16} /> : <FiVolumeX size={16} />}
+              </button>
+              
+              {hasEditAccess && (
+                <Button 
+                  variant="primary"
+                  onClick={() => setShowAddTask(true)}
+                >
+                  <FiPlus size={16} />
+                  Add Task
+                </Button>
+              )}
+            </div>
           </>
         }
       />
@@ -590,7 +696,7 @@ const ProjectBoard = () => {
               <div className="status-badge" style={{ backgroundColor: column.color }}>
                 {column.title}
               </div>
-              <span className="task-count">{tasksByStatus[column.status]?.length || 0}</span>
+              <span className="task-count">{getOptimisticTasksForColumn(column.id).length}</span>
             </div>
 
             <div className="task-list">
@@ -604,10 +710,10 @@ const ProjectBoard = () => {
               )}
               
               <AnimatePresence>
-                {getTasksForColumn(column.id).map((task, index) => (
+                {getOptimisticTasksForColumn(column.id).map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`task-card ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''}`}
+                    className={`task-card ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''}`}
                     draggable={hasEditAccess}
                     onDragStart={hasEditAccess ? (e) => handleDragStart(e, task) : undefined}
                     onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id, task.id) : undefined}
@@ -617,7 +723,10 @@ const ProjectBoard = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.1 }}
-                    style={{ opacity: draggedTask?.id === task.id ? 0.5 : 1 }}
+                    style={{ 
+                      opacity: draggedTask?.id === task.id ? 0.5 : 1,
+                      transform: draggedTask?.id === task.id ? 'scale(0.95)' : 'scale(1)'
+                    }}
                   >
                     <div className="task-header">
                     <div className="task-status" style={{ backgroundColor: getColumnColorByStatus(task.status) }}>

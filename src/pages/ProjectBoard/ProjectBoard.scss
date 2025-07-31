@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-right: 1rem;
+   
 
     .search-box {
       width: 240px;
@@ -102,9 +102,38 @@
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-top: 1rem;
       flex-wrap: wrap;
       max-width: 100%;
+
+      .sound-toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        background: white;
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: var(--shadow-sm);
+
+        &:hover {
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+          transform: scale(1.05);
+          box-shadow: var(--shadow-md);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        svg {
+          transition: all 0.2s ease;
+        }
+      }
     }
   }
 
@@ -123,11 +152,14 @@
       display: flex;
       flex-direction: column;
       min-width: 300px;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
       max-height: calc(100vh - 255px);
 
       &.drag-over {
         background-color: var(--gray-200);
+        border: 2px dashed var(--primary-color);
+        transform: scale(1.02);
+        box-shadow: 0 8px 32px rgba(21, 169, 112, 0.15);
       }
 
       .column-header {
@@ -175,11 +207,12 @@
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--gray-200);
         cursor: grab;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform, opacity, box-shadow;
 
         &:hover {
           box-shadow: var(--shadow-md);
           transform: translateY(-2px);
-          transition: all 0.2s ease;
         }
 
         &:active {
@@ -194,6 +227,32 @@
           transform: scale(1.02);
           box-shadow: 0 4px 12px rgba(21, 169, 112, 0.2);
           transition: none;
+        }
+
+        &.updating {
+          opacity: 0.7;
+          position: relative;
+          
+          &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(21, 169, 112, 0.1), transparent);
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--border-radius);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
         }
 
         .task-header {
@@ -422,7 +481,7 @@
       }
 
       .drop-zone-start {
-        
+        height: 20px;
         margin-bottom: 0.5rem;
         border: 2px dashed transparent;
         border-radius: var(--border-radius);
@@ -436,6 +495,8 @@
         &.drag-over {
           border-color: var(--primary-color);
           background-color: rgba(21, 169, 112, 0.05);
+          height: 40px;
+          transform: scale(1.02);
         }
       }
 
@@ -454,6 +515,8 @@
         &.drag-over {
           border-color: var(--primary-color);
           background-color: rgba(21, 169, 112, 0.05);
+          height: 40px;
+          transform: scale(1.02);
         }
       }
     }
