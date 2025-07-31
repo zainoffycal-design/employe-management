@@ -387,7 +387,6 @@ const ProjectBoard = () => {
     // Handle reordering within same column
     if (draggedTask.status === columnId) {
       if (targetTaskId === 'top') {
-        // Dropping at the top of the column
         if (draggedIndex !== -1 && draggedIndex !== 0) {
           const [movedTask] = newTasks.splice(draggedIndex, 1);
           newTasks.unshift(movedTask);
@@ -395,56 +394,17 @@ const ProjectBoard = () => {
           soundManager.playMove();
         }
       } else if (targetTaskId) {
-        // Dropping on a specific task - use visual position calculation
-        // The issue is that task IDs don't match visual positions consistently
-        
-        // Find the target task in the current array
-        const targetTask = currentTasksInColumn.find(t => t.id === targetTaskId);
-        let targetIndex = -1;
-        
-        if (targetTask) {
-          targetIndex = currentTasksInColumn.indexOf(targetTask);
-        }
-        
-        console.log('=== REORDERING DEBUG ===');
-        console.log('Original array:', currentTasksInColumn.map(t => t.title));
-        console.log('Dragged task:', draggedTask.title);
-        console.log('Dragged index:', draggedIndex);
-        console.log('Target task ID:', targetTaskId);
-        console.log('Target task title:', targetTask?.title);
-        console.log('Target index:', targetIndex);
-        console.log('All task IDs:', currentTasksInColumn.map(t => t.id));
-        
+        const targetIndex = currentTasksInColumn.findIndex(t => t.id === targetTaskId);
         if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
-          // Create a new array
-          newTasks = [...currentTasksInColumn];
-          
-          // Remove the dragged task
           const [movedTask] = newTasks.splice(draggedIndex, 1);
-          console.log('After removing dragged task:', newTasks.map(t => t.title));
-          
-          // Calculate insert position based on visual order
-          let insertIndex = targetIndex;
-          if (draggedIndex < targetIndex) {
-            // Dragging down: after removing the item, target index shifts by 1
-            insertIndex = targetIndex - 1;
-          }
-          
-          console.log('Calculated insert index:', insertIndex);
-          console.log('Direction:', draggedIndex < targetIndex ? 'DOWN' : 'UP');
-          
-          newTasks.splice(insertIndex, 0, movedTask);
-          console.log('Final array:', newTasks.map(t => t.title));
-          console.log('=== END DEBUG ===');
-          
+          newTasks.splice(targetIndex, 0, movedTask);
           taskMoved = true;
           soundManager.playMove();
         }
       } else {
-        // Dropping at the end of the same column
         if (draggedIndex !== -1 && draggedIndex !== currentTasksInColumn.length - 1) {
-          const [movedTaskEnd] = newTasks.splice(draggedIndex, 1);
-          newTasks.push(movedTaskEnd);
+          const [movedTask] = newTasks.splice(draggedIndex, 1);
+          newTasks.push(movedTask);
           taskMoved = true;
           soundManager.playMove();
         }
