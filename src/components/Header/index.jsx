@@ -10,6 +10,7 @@ import logo from '../../assets/logo.png';
 import Modal from '../Modal';
 import Button from '../Button';
 import Avatar from '../Avatar';
+import NotificationBell from '../NotificationBell';
 import './Header.scss';
 
 const AnimatedMenuIcon = ({ open }) => (
@@ -153,6 +154,9 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
         </div>
         
         <div className="navbar-nav ms-auto align-items-center">
+          <div className="nav-item notification-item">
+            <NotificationBell />
+          </div>
           <div className="nav-item dropdown" ref={userMenuRef}>
             <button 
               className="user-dropdown-btn d-flex align-items-center"

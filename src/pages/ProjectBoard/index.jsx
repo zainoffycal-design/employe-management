@@ -17,6 +17,7 @@ import {
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
+import { notificationService } from '../../services/notificationService';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
@@ -57,12 +58,15 @@ const ProjectBoard = () => {
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(true);
+
   // Optimized drag and drop state
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState(null);
   const [draggedOverTask, setDraggedOverTask] = useState(null);
   const [optimisticTasks, setOptimisticTasks] = useState({});
   const [pendingUpdates, setPendingUpdates] = useState(new Set());
+  const [notifiedTasks, setNotifiedTasks] = useState(new Set());
 
   // Find the current project
   const currentProject = projects.find(p => p.id === projectId);
@@ -256,6 +260,7 @@ const ProjectBoard = () => {
   useEffect(() => {
     setOptimisticTasks({});
     setPendingUpdates(new Set());
+    setNotifiedTasks(new Set());
   }, [tasks]);
 
   // Create assignee options for react-select
@@ -326,15 +331,17 @@ const ProjectBoard = () => {
     'Complete': filteredTasks.filter(task => task.status === 'done')
   };
 
-  // Optimized task management with optimistic updates
+  // Get tasks for column with real-time data
   const getOptimisticTasksForColumn = useCallback((columnId) => {
     const status = getStatusFromColumnId(columnId);
     const optimisticTasksForColumn = optimisticTasks[columnId];
     
+    // If we have optimistic updates, use them
     if (optimisticTasksForColumn) {
       return optimisticTasksForColumn;
     }
     
+    // Otherwise use real-time data
     return tasksByStatus[status] || [];
   }, [optimisticTasks, tasksByStatus]);
 
@@ -529,13 +536,6 @@ const ProjectBoard = () => {
         newTasks = [...currentTasksInColumn, updatedTask];
       }
       
-      // Update both columns optimistically
-      updateOptimisticTasks(sourceColumnId, sourceNewTasks);
-      updateOptimisticTasks(columnId, newTasks);
-      
-      // Mark for background update
-      setPendingUpdates(prev => new Set([...prev, draggedTask.id]));
-      
       // Play different sounds based on target column
       if (columnId === 'done') {
         soundManager.playComplete();
@@ -545,16 +545,43 @@ const ProjectBoard = () => {
         soundManager.playDrop();
       }
       
+      // Mark for background update
+      setPendingUpdates(prev => new Set([...prev, draggedTask.id]));
+      
       // Update in background
-      updateTask(projectId, draggedTask.id, { status: columnId }).catch(error => {
+      updateTask(projectId, draggedTask.id, { status: columnId }).then(async () => {
+        // Send notification for status change only if it's not a newly created task
+        try {
+          const oldStatus = getStatusDisplayName(draggedTask.status);
+          const newStatus = getStatusDisplayName(columnId);
+          
+          // Calculate time since task creation
+          const taskCreatedTime = new Date(draggedTask.createdAt);
+          const now = new Date();
+          const timeSinceCreation = now - taskCreatedTime;
+          
+          // Only send notification when task is completed
+          if (newStatus === 'Complete') {
+            // Check if we've already sent a notification for this task
+            if (!notifiedTasks.has(draggedTask.id)) {
+              await notificationService.createTaskCompletionNotification(
+                draggedTask,
+                currentProject,
+                currentUser,
+                oldStatus,
+                newStatus
+              );
+              
+              // Mark this task as notified
+              setNotifiedTasks(prev => new Set([...prev, draggedTask.id]));
+            }
+          }
+        } catch (notificationError) {
+          console.error('Error sending status change notification:', notificationError);
+        }
+      }).catch(error => {
         console.error('Error moving task:', error);
         soundManager.playError();
-        setOptimisticTasks(prev => {
-          const newState = { ...prev };
-          delete newState[sourceColumnId];
-          delete newState[columnId];
-          return newState;
-        });
       }).finally(() => {
         setPendingUpdates(prev => {
           const newSet = new Set(prev);
@@ -729,6 +756,13 @@ const ProjectBoard = () => {
             </div>
             
             <div className="header-actions">
+              <div className="real-time-indicator">
+                <div className={`connection-dot ${isRealTimeConnected ? 'connected' : 'disconnected'}`}></div>
+                <span className="connection-text">
+                  {isRealTimeConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+              
               <button
                 onClick={toggleSound}
                 className="sound-toggle-btn"

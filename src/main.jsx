@@ -6,6 +6,7 @@ import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { TaskProvider } from './contexts/TaskContext.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import './index.scss'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -18,17 +19,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ThemeProvider>
       <AuthProvider>
         <TaskProvider>
-          <App />
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
+          <NotificationProvider>
+            <App />
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+          </NotificationProvider>
         </TaskProvider>
       </AuthProvider>
       </ThemeProvider>

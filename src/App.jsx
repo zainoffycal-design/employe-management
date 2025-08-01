@@ -6,6 +6,7 @@ import { useTask } from './contexts/TaskContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
+
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -115,6 +116,7 @@ const AppLayout = () => {
           </motion.div>
         </main>
       </div>
+      
     </div>
   );
 };
