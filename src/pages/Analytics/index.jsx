@@ -96,7 +96,7 @@ const Analytics = () => {
     const totalUsers = users.length;
 
     // Role-based statistics
-    const roles = ['designer', 'developer', 'bd', 'manager', 'super_manager'];
+    const roles = ['designer', 'developer', 'bd'];
     const roleStats = roles.map(role => {
       const roleUsers = users.filter(user => user.role === role && user.isActive);
       const roleTasks = filteredTasks.filter(task => {

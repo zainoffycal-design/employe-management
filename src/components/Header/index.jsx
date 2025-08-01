@@ -163,7 +163,6 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
                 src={currentUser?.avatar} 
                 name={currentUser?.name || 'User'}
                 size="medium"
-                className="me-2"
               />
               <span className="user-name">{currentUser?.name || 'User'}</span>
               <svg 
