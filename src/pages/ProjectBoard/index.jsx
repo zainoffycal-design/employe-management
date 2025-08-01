@@ -487,18 +487,18 @@ const ProjectBoard = () => {
           taskMoved = true;
           soundManager.playMove();
         }
+      } else if (targetTaskId === 'bottom') {
+        if (draggedIndex !== -1 && draggedIndex !== currentTasksInColumn.length - 1) {
+          const [movedTask] = newTasks.splice(draggedIndex, 1);
+          newTasks.push(movedTask);
+          taskMoved = true;
+          soundManager.playMove();
+        }
       } else if (targetTaskId) {
         const targetIndex = currentTasksInColumn.findIndex(t => t.id === targetTaskId);
         if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
           const [movedTask] = newTasks.splice(draggedIndex, 1);
           newTasks.splice(targetIndex, 0, movedTask);
-          taskMoved = true;
-          soundManager.playMove();
-        }
-      } else {
-        if (draggedIndex !== -1 && draggedIndex !== currentTasksInColumn.length - 1) {
-          const [movedTask] = newTasks.splice(draggedIndex, 1);
-          newTasks.push(movedTask);
           taskMoved = true;
           soundManager.playMove();
         }
@@ -512,8 +512,22 @@ const ProjectBoard = () => {
       const sourceTasks = getOptimisticTasksForColumn(sourceColumnId);
       const sourceNewTasks = sourceTasks.filter(t => t.id !== draggedTask.id);
       
-      // Add to target column
-      newTasks = [...currentTasksInColumn, updatedTask];
+      // Add to target column at specific position
+      if (targetTaskId === 'top') {
+        newTasks = [updatedTask, ...currentTasksInColumn];
+      } else if (targetTaskId === 'bottom') {
+        newTasks = [...currentTasksInColumn, updatedTask];
+      } else if (targetTaskId) {
+        const targetIndex = currentTasksInColumn.findIndex(t => t.id === targetTaskId);
+        if (targetIndex !== -1) {
+          newTasks = [...currentTasksInColumn];
+          newTasks.splice(targetIndex, 0, updatedTask);
+        } else {
+          newTasks = [...currentTasksInColumn, updatedTask];
+        }
+      } else {
+        newTasks = [...currentTasksInColumn, updatedTask];
+      }
       
       // Update both columns optimistically
       updateOptimisticTasks(sourceColumnId, sourceNewTasks);
@@ -524,18 +538,17 @@ const ProjectBoard = () => {
       
       // Play different sounds based on target column
       if (columnId === 'done') {
-        soundManager.playComplete(); // Special completion sound
+        soundManager.playComplete();
       } else if (columnId === 'in-progress') {
-        soundManager.playMove(); // Move sound for progress
+        soundManager.playMove();
       } else {
-        soundManager.playDrop(); // Drop sound for todo
+        soundManager.playDrop();
       }
       
       // Update in background
       updateTask(projectId, draggedTask.id, { status: columnId }).catch(error => {
         console.error('Error moving task:', error);
         soundManager.playError();
-        // Revert optimistic update on error
         setOptimisticTasks(prev => {
           const newState = { ...prev };
           delete newState[sourceColumnId];
@@ -901,7 +914,7 @@ const ProjectBoard = () => {
                 <div 
                   className={`drop-zone-end ${draggedOverColumn === column.id && !draggedOverTask ? 'drag-over' : ''}`}
                   onDragOver={(e) => handleDragOver(e, column.id)}
-                  onDrop={(e) => handleDrop(e, column.id)}
+                  onDrop={(e) => handleDrop(e, column.id, 'bottom')}
                 />
               )}
             </div>

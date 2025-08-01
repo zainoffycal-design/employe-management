@@ -156,10 +156,10 @@
       max-height: calc(100vh - 255px);
 
       &.drag-over {
-        background-color: var(--gray-200);
-        border: 2px dashed var(--primary-color);
-        transform: scale(1.02);
-        box-shadow: 0 8px 32px rgba(21, 169, 112, 0.15);
+        background-color: rgba(21, 169, 112, 0.05);
+        border: 2px solid var(--primary-color);
+       
+        box-shadow: 0 8px 32px rgba(21, 169, 112, 0.2);
       }
 
       .column-header {
@@ -222,10 +222,10 @@
         }
 
         &.drag-over-task {
-          border: 2px dashed var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.05);
+          border: 2px solid var(--primary-color);
+          background-color: rgba(21, 169, 112, 0.08);
           transform: scale(1.02);
-          box-shadow: 0 4px 12px rgba(21, 169, 112, 0.2);
+          box-shadow: 0 4px 12px rgba(21, 169, 112, 0.25);
           transition: none;
         }
 
@@ -483,42 +483,30 @@
       }
 
       .drop-zone-start {
-        height: 10px;
-        margin-bottom: 0.25rem;
+        height: 8px;
+        margin-bottom: 0.5rem;
         border: 2px dashed transparent;
         border-radius: var(--border-radius);
         transition: all 0.2s ease;
         
-        &:hover {
-          border-color: var(--gray-300);
-          background-color: var(--gray-50);
-        }
-        
         &.drag-over {
           border-color: var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.05);
-          height: 20px;
-          transform: scale(1.02);
+          background-color: rgba(21, 169, 112, 0.1);
+          height: 16px;
         }
       }
 
       .drop-zone-end {
-        height: 20px;
+        height: 8px;
         margin-top: 0.5rem;
         border: 2px dashed transparent;
         border-radius: var(--border-radius);
         transition: all 0.2s ease;
         
-        &:hover {
-          border-color: var(--gray-300);
-          background-color: var(--gray-50);
-        }
-        
         &.drag-over {
           border-color: var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.05);
-          height: 40px;
-          transform: scale(1.02);
+          background-color: rgba(21, 169, 112, 0.1);
+          height: 16px;
         }
       }
     }
