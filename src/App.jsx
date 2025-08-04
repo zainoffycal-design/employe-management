@@ -47,6 +47,12 @@ const AppLayout = () => {
   const { currentUser } = useAuth();
   const hideHeaderSidebar = location.pathname.startsWith('/setup-password');
 
+  const handleMainContentClick = () => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
     <div className="app">
       <ScrollToTop />
@@ -62,7 +68,10 @@ const AppLayout = () => {
       {!hideHeaderSidebar && (
         <Sidebar sidebarOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       )}
-      <div className={`app-main${sidebarOpen ? ' sidebar-open' : ''}`}> 
+      <div 
+        className={`app-main${sidebarOpen ? ' sidebar-open' : ''}`}
+        onClick={handleMainContentClick}
+      > 
         <main className="app-content">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

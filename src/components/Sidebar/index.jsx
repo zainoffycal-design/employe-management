@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { 
   FiHome, 
   FiUserCheck,
-  FiBarChart2
+  FiBarChart2,
+  FiFolder
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +20,9 @@ const Sidebar = ({ sidebarOpen }) => {
 
   const navigation = [
     { path: '/', icon: FiHome, label: 'Dashboard' },
+    ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
+      { path: '/projects', icon: FiFolder, label: 'Project Management' }
+    ] : []),
     ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
       { path: '/users', icon: FiUserCheck, label: 'User Management' }
     ] : []),
