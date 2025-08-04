@@ -41,53 +41,10 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-const AppRoutes = () => {
-  const { currentUser } = useAuth();
-  
-  return (
-    <Suspense fallback={<LoadingSpinner size="large" />}>
-      <Routes>
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/projects" element={
-          <ProtectedRoute>
-            <ProjectManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/project/:projectId/board" element={
-          <ProtectedRoute>
-            <ProjectBoard />
-          </ProtectedRoute>
-        } />
-        <Route path="/users" element={
-          <ProtectedRoute>
-            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
-              <UserManagement />
-            ) : (
-              <Navigate to="/" replace />
-            )}
-          </ProtectedRoute>
-        } />
-        <Route path="/analytics" element={
-          <ProtectedRoute>
-            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
-              <Analytics />
-            ) : (
-              <Navigate to="/" replace />
-            )}
-          </ProtectedRoute>
-        } />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
-  );
-};
-
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  // Hide header/sidebar for setup-password
+  const { currentUser } = useAuth();
   const hideHeaderSidebar = location.pathname.startsWith('/setup-password');
 
   return (
@@ -112,11 +69,43 @@ const AppLayout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <AppRoutes />
+            <Suspense fallback={<LoadingSpinner size="large" />}>
+              <Routes>
+                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/projects" element={
+                  <ProtectedRoute>
+                    <ProjectManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/project/:projectId/board" element={
+                  <ProtectedRoute>
+                    <ProjectBoard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/users" element={
+                  <ProtectedRoute>
+                    {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
+                      <UserManagement />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute>
+                    {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
+                      <Analytics />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </motion.div>
         </main>
       </div>
-      
     </div>
   );
 };
@@ -159,9 +148,7 @@ function App() {
           noUsers ? (
             <Navigate to="/signup" replace />
           ) : (
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
+            <AppLayout />
           )
         } />
       </Routes>

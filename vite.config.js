@@ -43,7 +43,15 @@ export default defineConfig({
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: [],
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'framer-motion',
+      'react-hot-toast',
+      'react-icons',
+      'react-select'
+    ],
     exclude: [],
   },
 }) 
