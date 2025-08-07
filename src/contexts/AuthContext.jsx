@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
-import { db } from '../firebase';
+import { firebaseUtils } from '../utils/firebaseUtils';
 import { userManagementService } from '../services/firebaseService';
+import { permissionUtils, PERMISSIONS } from '../utils/permissionUtils';
 
 const AuthContext = createContext();
 
@@ -12,22 +11,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = firebaseUtils.onAuthStateChanged(async (user) => {
       if (user) {
-        // First try to fetch user profile using UID
-        let userRef = doc(db, 'users', user.uid);
-        let snapshot = await getDoc(userRef);
+        let userData = await firebaseUtils.getDocument('users', user.uid);
         
-        // If not found with UID, try with email (for invited users)
-        if (!snapshot.exists()) {
-          userRef = doc(db, 'users', user.email);
-          snapshot = await getDoc(userRef);
+        if (!userData) {
+          userData = await firebaseUtils.getDocument('users', user.email);
         }
         
-        if (snapshot.exists()) {
-          const userData = snapshot.data();
-          // Ensure uid field is present for consistency
+        if (userData) {
           const userWithUid = { 
             uid: user.uid, 
             email: user.email, 
@@ -35,7 +27,6 @@ export const AuthProvider = ({ children }) => {
           };
           setCurrentUser(userWithUid);
           
-          // Ensure user has uid field in database
           await userManagementService.ensureUserUid(user.uid, user.email);
         } else {
           setCurrentUser({ uid: user.uid, email: user.email });
@@ -50,17 +41,13 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Register new user
   const register = async (userData) => {
     try {
-      const auth = getAuth();
       const { email, password, ...profile } = userData;
       
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const user = await firebaseUtils.createUser({ email, password, ...profile });
       
-      // Store profile in Firestore
-      await setDoc(doc(db, 'users', user.uid), profile);
+      await firebaseUtils.createDocument('users', { uid: user.uid, ...profile });
       
       setCurrentUser({ uid: user.uid, email: user.email, ...profile });
       setIsAuthenticated(true);
@@ -70,26 +57,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login
   const login = async (email, password) => {
-    const auth = getAuth();
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const user = await firebaseUtils.signIn(email, password);
       
-      // First try to fetch user profile using UID
-      let userRef = doc(db, 'users', user.uid);
-      let snapshot = await getDoc(userRef);
+      let userData = await firebaseUtils.getDocument('users', user.uid);
       
-      // If not found with UID, try with email (for invited users)
-      if (!snapshot.exists()) {
-        userRef = doc(db, 'users', user.email);
-        snapshot = await getDoc(userRef);
+      if (!userData) {
+        userData = await firebaseUtils.getDocument('users', user.email);
       }
       
-      if (snapshot.exists()) {
-        const userData = snapshot.data();
-        // Ensure uid field is present for consistency
+      if (userData) {
         const userWithUid = { 
           uid: user.uid, 
           email: user.email, 
@@ -100,71 +78,34 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser({ uid: user.uid, email: user.email });
       }
       setIsAuthenticated(true);
-      return { success: true, user: { uid: user.uid, email: user.email, ...snapshot.data() } };
+      return { success: true, user: { uid: user.uid, email: user.email, ...userData } };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
-  // Logout
   const logout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
+    await firebaseUtils.signOut();
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
 
-  // Permissions based on user role
   const hasPermission = (permission) => {
-    if (!currentUser) return false;
-    
-    // Super manager has all permissions
-    if (currentUser.role === 'super_manager') return true;
-    
-    // Manager permissions
-    if (currentUser.role === 'manager') {
-      return [
-        'edit_tasks',
-        'delete_tasks',
-        'move_tasks',
-        'manage_tasks',
-        'view_analytics',
-        'assign_tasks',
-        'manage_users'  // Added permission for user management
-      ].includes(permission);
-    }
-    
-    // Designer permissions
-    if (currentUser.role === 'designer') {
-      return ['move_tasks', 'view_own_tasks', 'assign_tasks'].includes(permission);
-    }
-    
-    // Developer permissions
-    if (currentUser.role === 'developer') {
-      return ['move_tasks', 'view_own_tasks', 'assign_tasks'].includes(permission);
-    }
-    
-    // Business Developer permissions
-    if (currentUser.role === 'bd') {
-      return ['move_tasks', 'view_own_tasks', 'assign_tasks'].includes(permission);
-    }
-    
-    return false;
+    return permissionUtils.hasPermission(currentUser, permission);
   };
   
-  const canEditTasks = () => hasPermission('edit_tasks');
-  const canDeleteTasks = () => hasPermission('delete_tasks');
-  const canMoveTasks = () => hasPermission('move_tasks');
-  const canManageTasks = () => hasPermission('manage_tasks');
-  const canManageEmployees = () => currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
-  const canManageUsers = () => currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
-  const canViewAnalytics = () => hasPermission('view_analytics');
-  const canAssignTasks = () => hasPermission('assign_tasks');
-  const canViewOwnTasks = () => hasPermission('view_own_tasks');
+  const canEditTasks = () => hasPermission(PERMISSIONS.EDIT_TASKS);
+  const canDeleteTasks = () => hasPermission(PERMISSIONS.DELETE_TASKS);
+  const canMoveTasks = () => hasPermission(PERMISSIONS.MOVE_TASKS);
+  const canManageTasks = () => hasPermission(PERMISSIONS.MANAGE_TASKS);
+  const canManageEmployees = () => permissionUtils.canManageEmployees(currentUser);
+  const canManageUsers = () => permissionUtils.canManageUsers(currentUser);
+  const canViewAnalytics = () => hasPermission(PERMISSIONS.VIEW_ANALYTICS);
+  const canAssignTasks = () => hasPermission(PERMISSIONS.ASSIGN_TASKS);
+  const canViewOwnTasks = () => hasPermission(PERMISSIONS.VIEW_OWN_TASKS);
 
-  // Check if user can view all tasks or only their own
   const canViewAllTasks = () => {
-    return currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
+    return permissionUtils.canViewAllTasks(currentUser);
   };
 
   const value = {

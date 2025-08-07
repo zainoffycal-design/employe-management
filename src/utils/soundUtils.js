@@ -1,4 +1,4 @@
-// Sound utility functions for the task manager
+
 class SoundManager {
   constructor() {
     this.audioContext = null;
@@ -7,14 +7,12 @@ class SoundManager {
     this.enabled = true;
   }
 
-  // Initialize audio context
   init() {
     if (typeof window !== 'undefined' && window.AudioContext) {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
   }
 
-  // Generate a simple tone
   generateTone(frequency, duration, type = 'sine') {
     if (!this.audioContext) return;
 
@@ -35,7 +33,6 @@ class SoundManager {
     oscillator.stop(this.audioContext.currentTime + duration);
   }
 
-  // Play different sounds for different actions
   playDrop() {
     if (!this.enabled) return;
     this.generateTone(800, 0.1, 'sine');
@@ -50,8 +47,6 @@ class SoundManager {
 
   playMove() {
     if (!this.enabled) return;
-    
-    // More satisfying progress sound with a brief ascending pattern
     this.generateTone(400, 0.1, 'triangle');
     setTimeout(() => this.generateTone(500, 0.1, 'triangle'), 100);
     setTimeout(() => this.generateTone(600, 0.15, 'triangle'), 200);
@@ -65,36 +60,29 @@ class SoundManager {
 
   playComplete() {
     if (!this.enabled) return;
-    
-    // More celebratory completion sound with ascending notes
-    this.generateTone(523, 0.15, 'sine'); // C
-    setTimeout(() => this.generateTone(659, 0.15, 'sine'), 150); // E
-    setTimeout(() => this.generateTone(784, 0.15, 'sine'), 300); // G
-    setTimeout(() => this.generateTone(1047, 0.2, 'sine'), 450); // C (high)
-    setTimeout(() => this.generateTone(1319, 0.3, 'sine'), 650); // E (high)
+    this.generateTone(523, 0.15, 'sine');
+    setTimeout(() => this.generateTone(659, 0.15, 'sine'), 150);
+    setTimeout(() => this.generateTone(784, 0.15, 'sine'), 300);
+    setTimeout(() => this.generateTone(1047, 0.2, 'sine'), 450);
+    setTimeout(() => this.generateTone(1319, 0.3, 'sine'), 650);
   }
 
-  // Set volume (0-1)
   setVolume(volume) {
     this.volume = Math.max(0, Math.min(1, volume));
   }
 
-  // Enable/disable sounds
   setEnabled(enabled) {
     this.enabled = enabled;
   }
 
-  // Toggle sound
   toggle() {
     this.enabled = !this.enabled;
     return this.enabled;
   }
 }
 
-// Create a singleton instance
 const soundManager = new SoundManager();
 
-// Initialize when the module is loaded
 if (typeof window !== 'undefined') {
   soundManager.init();
 }

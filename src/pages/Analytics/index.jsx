@@ -15,6 +15,7 @@ import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'dat
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
+import { dateUtils } from '../../utils/dateUtils';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
@@ -29,7 +30,6 @@ const Analytics = () => {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedUser, setSelectedUser] = useState('all');
 
-  // Load users for analytics
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -42,7 +42,6 @@ const Analytics = () => {
     loadUsers();
   }, []);
 
-  // Check if user has access to analytics
   if (!canViewAnalytics()) {
     return (
       <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -55,7 +54,6 @@ const Analytics = () => {
     );
   }
 
-  // Calculate date range based on selected time range
   const getDateRange = () => {
     const now = new Date();
     switch (timeRange) {
@@ -74,63 +72,83 @@ const Analytics = () => {
 
   const dateRange = getDateRange();
 
-  // Filter tasks based on date range and filters
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       const taskDate = task.createdAt?.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
       const isInDateRange = isWithinInterval(taskDate, { start: dateRange.start, end: dateRange.end });
       
-      const assignee = users.find(user => user.id === task.assignee);
-      const isRoleMatch = selectedRole === 'all' || (assignee && assignee.role === selectedRole);
-      const isUserMatch = selectedUser === 'all' || task.assignee === selectedUser;
+      const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
+      const assigneeUsers = taskAssignees.map(assigneeId => users.find(user => user.id === assigneeId)).filter(Boolean);
+      
+      const isRoleMatch = selectedRole === 'all' || assigneeUsers.some(user => user.role === selectedRole);
+      const isUserMatch = selectedUser === 'all' || taskAssignees.includes(selectedUser);
       
       return isInDateRange && isRoleMatch && isUserMatch;
     });
   }, [tasks, dateRange, selectedRole, selectedUser, users]);
 
-  // Calculate analytics
   const analytics = useMemo(() => {
     const totalTasks = filteredTasks.length;
-    const completedTasks = filteredTasks.filter(task => task.status === 'done').length;
+    const taskStatusCounts = filteredTasks.reduce((acc, task) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const completedTasks = taskStatusCounts.done || 0;
+    const todoTasks = taskStatusCounts.todo || 0;
+    const inProgressTasks = taskStatusCounts['in-progress'] || 0;
+    
     const activeUsers = users.filter(user => user.isActive).length;
     const totalUsers = users.length;
 
-    // Role-based statistics
     const roles = ['designer', 'developer', 'bd'];
     const roleStats = roles.map(role => {
       const roleUsers = users.filter(user => user.role === role && user.isActive);
       const roleTasks = filteredTasks.filter(task => {
-        const assignee = users.find(user => user.id === task.assignee);
-        return assignee && assignee.role === role;
+        const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
+        return taskAssignees.some(assigneeId => {
+          const assignee = users.find(user => user.id === assigneeId);
+          return assignee && assignee.role === role;
+        });
       });
+      const completedTasks = roleTasks.filter(t => t.status === 'done').length;
       return {
         role,
         users: roleUsers.length,
         tasks: roleTasks.length,
-        completed: roleTasks.filter(t => t.status === 'done').length
+        completed: completedTasks,
+        completionRate: roleTasks.length > 0 ? Math.round((completedTasks / roleTasks.length) * 100) : 0
       };
     }).filter(stat => stat.users > 0);
 
-    // User performance statistics
     const userStats = users
       .filter(user => user.isActive)
       .map(user => {
-        const userTasks = filteredTasks.filter(task => task.assignee === user.id);
+        const userTasks = filteredTasks.filter(task => {
+          const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
+          return taskAssignees.includes(user.id);
+        });
+        const completedUserTasks = userTasks.filter(t => t.status === 'done').length;
         return {
           id: user.id,
           name: user.name,
           role: user.role,
+          avatar: user.avatar,
           totalTasks: userTasks.length,
-          completedTasks: userTasks.filter(t => t.status === 'done').length,
-          completionRate: userTasks.length > 0 ? Math.round((userTasks.filter(t => t.status === 'done').length / userTasks.length) * 100) : 0
+          completedTasks: completedUserTasks,
+          completionRate: userTasks.length > 0 ? Math.round((completedUserTasks / userTasks.length) * 100) : 0
         };
       })
       .filter(stat => stat.totalTasks > 0)
       .sort((a, b) => b.completionRate - a.completionRate);
 
+
+
     return {
       totalTasks,
       completedTasks,
+      todoTasks,
+      inProgressTasks,
       completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       activeUsers,
       totalUsers,
@@ -139,7 +157,6 @@ const Analytics = () => {
     };
   }, [filteredTasks, users]);
 
-  // Export analytics data
   const exportAnalytics = () => {
     const data = {
       timeRange,
@@ -158,7 +175,7 @@ const Analytics = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `analytics-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.download = `analytics-${dateUtils.getCurrentDate().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -281,10 +298,7 @@ const Analytics = () => {
           </div>
           <div className="analytics-metric">
             <span className="metric-value">
-              {/* This metric is not directly available in the new analytics object,
-                  as the completion time calculation was removed from the useMemo.
-                  Keeping the placeholder for now. */}
-              --
+              {analytics.totalTasks > 0 ? Math.round(analytics.totalTasks / analytics.completedTasks) : 0}
             </span>
           </div>
           <p className="metric-label">days per task</p>
@@ -318,13 +332,13 @@ const Analytics = () => {
                   </div>
                   <div className="metric">
                     <span className="label">Rate:</span>
-                    <span className="value">{roleStat.users > 0 ? Math.round((roleStat.completed / roleStat.users) * 100) : 0}%</span>
+                    <span className="value">{roleStat.completionRate}%</span>
                   </div>
                 </div>
                 <div className="role-progress">
                   <div 
                     className="progress-bar" 
-                    style={{ width: `${roleStat.users > 0 ? Math.round((roleStat.completed / roleStat.users) * 100) : 0}%` }}
+                    style={{ width: `${roleStat.completionRate}%` }}
                   />
                 </div>
               </div>
@@ -384,24 +398,24 @@ const Analytics = () => {
             <div className="status-item todo">
               <div className="status-info">
                 <span className="status-name">To Do</span>
-                <span className="status-count">{/* This metric is not directly available in the new analytics object */}</span>
+                <span className="status-count">{analytics.todoTasks}</span>
               </div>
               <div className="status-bar">
                 <div 
                   className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (0 / analytics.totalTasks) * 100 : 0}%` }}
+                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.todoTasks / analytics.totalTasks) * 100 : 0}%` }}
                 />
               </div>
             </div>
             <div className="status-item in-progress">
               <div className="status-info">
                 <span className="status-name">In Progress</span>
-                <span className="status-count">{/* This metric is not directly available in the new analytics object */}</span>
+                <span className="status-count">{analytics.inProgressTasks}</span>
               </div>
               <div className="status-bar">
                 <div 
                   className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (0 / analytics.totalTasks) * 100 : 0}%` }}
+                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.inProgressTasks / analytics.totalTasks) * 100 : 0}%` }}
                 />
               </div>
             </div>

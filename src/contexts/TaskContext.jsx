@@ -1,18 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { db } from '../firebase';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot
-} from 'firebase/firestore';
+import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
 import { notificationService } from '../services/notificationService';
 
 const TaskContext = createContext();
@@ -34,86 +22,52 @@ export const TaskProvider = ({ children }) => {
       return;
     }
 
-
-
-    // Set up real-time listener for projects
-    const projectsRef = collection(db, 'projects');
-    let projectsQuery;
-
+    let projectsQueryConstraints = [];
     if (currentUser.role === 'super_manager') {
-      projectsQuery = query(projectsRef);
+      projectsQueryConstraints = [];
     } else if (currentUser.role === 'manager') {
-      projectsQuery = query(
-        projectsRef,
-        where('managerId', '==', currentUser.uid)
-      );
+      projectsQueryConstraints = queryBuilders.byManager(currentUser.uid);
     } else {
-      // For normal users (designer, developer, bd), only show projects they are members of
-      projectsQuery = query(
-        projectsRef,
-        where('teamMembers', 'array-contains', currentUser.uid)
-      );
+      projectsQueryConstraints = queryBuilders.byTeamMember(currentUser.uid);
     }
 
-    const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
-      const projectsData = projectsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
+    const unsubscribeProjects = firebaseUtils.subscribeToCollection('projects', (projectsData) => {
       setProjects(projectsData);
 
-      // Set up real-time listeners for tasks in each project
       const taskUnsubscribers = projectsData.map(project => {
-        const tasksRef = collection(db, `projects/${project.id}/tasks`);
-        return onSnapshot(tasksRef, (tasksSnapshot) => {
-          const projectTasks = tasksSnapshot.docs.map(doc => ({
-            id: doc.id,
-            projectId: project.id,
-            ...doc.data()
+        return firebaseUtils.subscribeToCollection(`projects/${project.id}/tasks`, (projectTasks) => {
+          const tasksWithProjectId = projectTasks.map(task => ({
+            ...task,
+            projectId: project.id
           }));
 
           setTasks(prevTasks => {
-            // Remove old tasks for this project and add new ones
             const otherProjectTasks = prevTasks.filter(task => task.projectId !== project.id);
-            return [...otherProjectTasks, ...projectTasks];
+            return [...otherProjectTasks, ...tasksWithProjectId];
           });
-        }, (error) => {
-          console.error(`Error listening to tasks for project ${project.id}:`, error);
         });
       });
 
-      // Cleanup function for task listeners
       return () => {
         taskUnsubscribers.forEach(unsubscribe => unsubscribe());
       };
-    }, (error) => {
-      console.error('Error listening to projects:', error);
-    });
+    }, projectsQueryConstraints);
 
-    // Cleanup function for project listener
     return () => {
       unsubscribeProjects();
     };
   }, [currentUser]);
 
-  // Project management functions
   const createProject = async (projectData) => {
     try {
-      const projectsRef = collection(db, 'projects');
-      const docRef = await addDoc(projectsRef, {
+      const projectId = await firebaseUtils.createDocument('projects', {
         ...projectData,
-        createdAt: new Date().toISOString(),
         managerId: currentUser.uid
       });
-      
-      // Don't add to state immediately - let the real-time listener handle it
-      // This prevents duplicate projects when the listener fires
 
-      // Send notifications for project invitation
       if (projectData.teamMembers && projectData.teamMembers.length > 0) {
         try {
-          const newProject = { id: docRef.id, ...projectData, managerId: currentUser.uid, createdAt: new Date().toISOString() };
+          const newProject = { id: projectId, ...projectData, managerId: currentUser.uid, createdAt: new Date().toISOString() };
           await notificationService.createProjectInvitationNotification(
             newProject,
             projectData.teamMembers,
@@ -124,7 +78,7 @@ export const TaskProvider = ({ children }) => {
         }
       }
 
-      return docRef.id;
+      return projectId;
     } catch (error) {
       console.error('Error creating project:', error);
       throw error;
@@ -133,10 +87,7 @@ export const TaskProvider = ({ children }) => {
 
   const updateProject = async (projectId, projectData) => {
     try {
-      const projectRef = doc(db, 'projects', projectId);
-      await updateDoc(projectRef, projectData);
-      
-      // Don't update state immediately - let the real-time listener handle it
+      await firebaseUtils.updateDocument('projects', projectId, projectData);
     } catch (error) {
       console.error('Error updating project:', error);
       throw error;
@@ -145,46 +96,28 @@ export const TaskProvider = ({ children }) => {
 
   const deleteProject = async (projectId) => {
     try {
-      const projectRef = doc(db, 'projects', projectId);
-      await deleteDoc(projectRef);
-      
-      // Don't update state immediately - let the real-time listener handle it
+      await firebaseUtils.deleteDocument('projects', projectId);
     } catch (error) {
       console.error('Error deleting project:', error);
       throw error;
     }
   };
 
-  // Task management functions
   const createTask = async (projectId, taskData) => {
     try {
-      const tasksRef = collection(db, `projects/${projectId}/tasks`);
-      const docRef = await addDoc(tasksRef, {
-        ...taskData,
-        createdAt: new Date().toISOString()
-      });
-      
-      // Don't add to state immediately - let the real-time listener handle it
-      // This prevents duplicate tasks when the listener fires
+      const taskId = await firebaseUtils.createDocument(`projects/${projectId}/tasks`, taskData);
 
-      // Send notifications for task assignment to assigned users
       if (taskData.assignee && taskData.assignee.length > 0) {
         try {
-          // Get project data directly from Firestore
-          const projectRef = doc(db, 'projects', projectId);
-          const projectDoc = await getDoc(projectRef);
+          const project = await firebaseUtils.getDocument('projects', projectId);
           
-          if (projectDoc.exists()) {
-            const project = { id: projectDoc.id, ...projectDoc.data() };
+          if (project) {
             const assignedUsers = Array.isArray(taskData.assignee) ? taskData.assignee : [taskData.assignee];
-            
-            // Filter out any invalid user IDs
             const validAssignedUsers = assignedUsers.filter(userId => userId && userId.trim() !== '');
             
             if (validAssignedUsers.length > 0) {
-              // Create task data for notification
               const taskForNotification = {
-                id: docRef.id,
+                id: taskId,
                 projectId,
                 ...taskData,
                 createdAt: new Date().toISOString()
@@ -203,7 +136,7 @@ export const TaskProvider = ({ children }) => {
         }
       }
 
-      return docRef.id;
+      return taskId;
     } catch (error) {
       console.error('Error creating task:', error);
       throw error;
@@ -212,27 +145,17 @@ export const TaskProvider = ({ children }) => {
 
   const updateTask = async (projectId, taskId, taskData) => {
     try {
-      const taskRef = doc(db, `projects/${projectId}/tasks`, taskId);
-      await updateDoc(taskRef, taskData);
-      
-      // Don't update state immediately - let the real-time listener handle it
+      await firebaseUtils.updateDocument(`projects/${projectId}/tasks`, taskId, taskData);
 
-      // Send notifications for task assignment changes
       if (taskData.assignee && taskData.assignee.length > 0) {
         try {
-          // Get project data directly from Firestore
-          const projectRef = doc(db, 'projects', projectId);
-          const projectDoc = await getDoc(projectRef);
+          const project = await firebaseUtils.getDocument('projects', projectId);
           
-          if (projectDoc.exists()) {
-            const project = { id: projectDoc.id, ...projectDoc.data() };
+          if (project) {
             const assignedUsers = Array.isArray(taskData.assignee) ? taskData.assignee : [taskData.assignee];
-            
-            // Filter out any invalid user IDs
             const validAssignedUsers = assignedUsers.filter(userId => userId && userId.trim() !== '');
             
             if (validAssignedUsers.length > 0) {
-              // Create task data for notification
               const taskForNotification = {
                 id: taskId,
                 projectId,
@@ -280,17 +203,13 @@ export const TaskProvider = ({ children }) => {
 
   const deleteTask = async (projectId, taskId) => {
     try {
-      const taskRef = doc(db, `projects/${projectId}/tasks`, taskId);
-      await deleteDoc(taskRef);
-      
-      // Don't update state immediately - let the real-time listener handle it
+      await firebaseUtils.deleteDocument(`projects/${projectId}/tasks`, taskId);
     } catch (error) {
       console.error('Error deleting task:', error);
       throw error;
     }
   };
 
-  // Filter tasks based on user role and project membership
   const getAccessibleTasks = () => {
     if (!currentUser) return [];
     
