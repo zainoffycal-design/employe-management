@@ -5,17 +5,13 @@ import toast from 'react-hot-toast';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import emailjs from '@emailjs/browser';
 
-// Email invitation service using EmailJS (FREE for 200 emails/month)
 export const emailService = {
-  // Create user invitation without password
   createUserInvitation: async (userData) => {
     try {
-      // Generate a unique invitation token
       const invitationToken = generateInvitationToken();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+      expiresAt.setDate(expiresAt.getDate() + 7);
 
-      // Create user document with invitation status
       const userProfile = {
         name: userData.name,
         email: userData.email,
@@ -30,10 +26,8 @@ export const emailService = {
         createdAt: serverTimestamp()
       };
 
-      // Generate a temporary UID for the invitation document
       const tempUid = `invite_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       
-      // Store invitation data with temp UID
       await setDoc(doc(db, 'user_invitations', tempUid), {
         email: userData.email,
         invitationToken,
@@ -41,10 +35,8 @@ export const emailService = {
         invitedAt: serverTimestamp()
       });
       
-      // Store user profile with email as key for easy lookup during activation
       await setDoc(doc(db, 'users', userData.email), userProfile);
       
-      // Send invitation email
       await emailService.sendInvitationEmail(userData.email, userData.role, userData.name, invitationToken);
       
       toast.success('User invitation sent successfully!');
@@ -56,17 +48,14 @@ export const emailService = {
     }
   },
 
-  // Send invitation email using EmailJS
   sendInvitationEmail: async (email, role, name, token) => {
     try {
       const invitationLink = `${window.location.origin}/setup-password?email=${encodeURIComponent(email)}&token=${token}`;
       
-      // EmailJS configuration
       const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_nhqq0tw';
       const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_20mrm8m';
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'B7oRa4hzxw6In2ccj';
 
-      // Template parameters
       const templateParams = {
         to_email: email,
         to_name: name,
@@ -76,7 +65,6 @@ export const emailService = {
         expiry_days: '7'
       };
 
-      // Send email using EmailJS
       const response = await emailjs.send(
         serviceId,
         templateId,
@@ -94,7 +82,6 @@ export const emailService = {
     }
   },
 
-  // Verify invitation token
   verifyInvitationToken: async (email, token) => {
     try {
       const userRef = doc(db, 'users', email);
@@ -126,16 +113,13 @@ export const emailService = {
     }
   },
 
-  // Activate user account
   activateUserAccount: async (email, password) => {
     try {
       const auth = getAuth();
       
-      // Create Firebase auth account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
       
-      // Get the user profile from email-based storage
       const userRef = doc(db, 'users', email);
       const userDoc = await getDoc(userRef);
       
@@ -145,7 +129,6 @@ export const emailService = {
       
       const userData = userDoc.data();
       
-      // Create new user document with UID as key (consistent with signup)
       const newUserProfile = {
         name: userData.name,
         email: userData.email,
@@ -158,13 +141,10 @@ export const emailService = {
         createdAt: userData.createdAt || serverTimestamp()
       };
       
-      // Store user with UID as document ID (consistent with signup)
       await setDoc(doc(db, 'users', uid), newUserProfile);
       
-      // Delete the email-based user document
       await deleteDoc(userRef);
       
-      // Clean up invitation data
       const invitationsRef = collection(db, 'user_invitations');
       const invitationsQuery = query(invitationsRef, where('email', '==', email));
       const invitationsSnapshot = await getDocs(invitationsQuery);
@@ -173,7 +153,6 @@ export const emailService = {
         await deleteDoc(doc.ref);
       }
       
-      // Sign out the newly created user
       await signOut(auth);
       
       toast.success('Account activated successfully! You can now sign in.');
@@ -185,7 +164,6 @@ export const emailService = {
     }
   },
 
-  // Update user status (active/inactive)
   updateUserStatus: async (email, status) => {
     try {
       const userRef = doc(db, 'users', email);
@@ -204,7 +182,6 @@ export const emailService = {
     }
   },
 
-  // Resend invitation email
   resendInvitation: async (email) => {
     try {
       const userRef = doc(db, 'users', email);
@@ -220,19 +197,16 @@ export const emailService = {
         throw new Error('User is not in invited status');
       }
       
-      // Generate new token and expiry
       const newToken = generateInvitationToken();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
       
-      // Update user document with new token
       await updateDoc(userRef, {
         invitationToken: newToken,
         expiresAt: expiresAt.toISOString(),
         invitedAt: serverTimestamp()
       });
       
-      // Update invitation data
       const invitationsRef = collection(db, 'user_invitations');
       const invitationsQuery = query(invitationsRef, where('email', '==', email));
       const invitationsSnapshot = await getDocs(invitationsQuery);
@@ -245,7 +219,6 @@ export const emailService = {
         });
       }
       
-      // Send new invitation email
       await emailService.sendInvitationEmail(email, userData.role, userData.name, newToken);
       
       toast.success('Invitation resent successfully!');
@@ -258,12 +231,10 @@ export const emailService = {
   }
 };
 
-// Helper function to generate invitation token
 const generateInvitationToken = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
-// Helper function to get role display name
 const getRoleDisplayName = (role) => {
   switch (role) {
     case 'super_manager': return 'Super Manager';

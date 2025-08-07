@@ -12,7 +12,6 @@ const Avatar = ({
 }) => {
   const [imageError, setImageError] = useState(false);
   
-  // Ensure name is a string and has a fallback
   const displayName = name && typeof name === 'string' ? name.trim() : 'User';
   
   const getInitials = (name) => {

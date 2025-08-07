@@ -35,14 +35,12 @@ const Signup = () => {
     setIsLoading(true);
     setError('');
 
-    // Validate password confirmation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
-    // Validate password strength
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
       setIsLoading(false);

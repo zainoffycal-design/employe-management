@@ -12,13 +12,11 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    // Get theme from localStorage or system preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       return savedTheme;
     }
     
-    // Check system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
@@ -38,10 +36,8 @@ export const ThemeProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Apply theme to document
     document.documentElement.setAttribute('data-theme', theme);
     
-    // Update CSS variables based on theme
     const root = document.documentElement;
     if (theme === 'dark') {
       root.style.setProperty('--bg-color', '#111827');
@@ -56,13 +52,11 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme]);
 
-  // Listen for system theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const handleChange = (e) => {
       const savedTheme = localStorage.getItem('theme');
-      // Only auto-switch if user hasn't manually set a theme
       if (!savedTheme) {
         setTheme(e.matches ? 'dark' : 'light');
       }

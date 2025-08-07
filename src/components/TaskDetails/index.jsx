@@ -24,7 +24,6 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Get the latest task data from the real-time listener
   const currentTask = tasks.find(t => t.id === task.id) || task;
 
   const handleAddComment = async (e) => {

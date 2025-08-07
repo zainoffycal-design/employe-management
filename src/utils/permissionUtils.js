@@ -50,7 +50,6 @@ export const permissionUtils = {
   hasPermission: (user, permission) => {
     if (!user || !user.role) return false;
     
-    // Super manager has all permissions
     if (user.role === 'super_manager') return true;
     
     const userPermissions = ROLE_PERMISSIONS[user.role] || [];

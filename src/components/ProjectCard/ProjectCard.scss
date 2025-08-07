@@ -178,7 +178,7 @@
   
 
   
-  // Dashboard variant - simplified version
+
   &.dashboard-variant {
     .project-stats {
       display: none;
@@ -189,7 +189,7 @@
     }
   }
   
-  // Locked project state
+
   .project-locked {
     display: flex;
     align-items: center;
@@ -207,7 +207,7 @@
   }
 }
 
-// Responsive design
+
 @media (max-width: 768px) {
   .project-card {
     padding: 1rem;

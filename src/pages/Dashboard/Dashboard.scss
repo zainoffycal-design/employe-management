@@ -102,7 +102,7 @@
     }
   }
 
-  // Side by side sections
+
   .side-by-side-sections {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -329,7 +329,7 @@
     }
   }
 
-  // Empty state styling
+
   .empty-state-card {
     background: transparent;
     border-radius: var(--border-radius-lg);
@@ -367,7 +367,7 @@
     min-height: 0;
   }
 
-  // Roles Overview Section
+
   .roles-overview-section {
     margin-bottom: 2.5rem;
 

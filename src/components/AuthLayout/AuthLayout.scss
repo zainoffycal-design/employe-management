@@ -40,7 +40,7 @@
   }
 }
 
-// Form styles for auth pages
+
 .auth-form {
   margin-bottom: 2.5rem;
 }
@@ -63,7 +63,7 @@
   }
 }
 
-// User info card styles
+
 .user-info-card {
   background: var(--gray-50);
   border: 1px solid var(--gray-200);
@@ -105,7 +105,7 @@
   }
 }
 
-// Loading container styles
+
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -131,7 +131,7 @@
   }
 }
 
-// Error container styles
+
 .error-container {
   display: flex;
   flex-direction: column;
@@ -153,19 +153,19 @@
   }
 }
 
-// Submit button styles
+
 .submit-btn {
   width: 100%;
   margin-top: 1rem;
 }
 
-// Spin animation
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-// Responsive
+
 @media (max-width: 768px) {
   .auth-page {
     padding: 1rem;

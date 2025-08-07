@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -10,36 +11,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-
     <script>
-      // Theme detection and application
-      (function() {
+
+      (function () {
         function getTheme() {
-          // Check localStorage first
+
           const savedTheme = localStorage.getItem('theme');
           if (savedTheme) {
             return savedTheme;
           }
-          
-          // Check system preference
+
+
           if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             return 'dark';
           }
-          
+
           return 'light';
         }
-        
+
         function applyTheme(theme) {
           document.documentElement.setAttribute('data-theme', theme);
         }
-        
-        // Apply theme immediately
+
+
         const theme = getTheme();
         applyTheme(theme);
-        
-        // Listen for system theme changes
+
+
         if (window.matchMedia) {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
             const savedTheme = localStorage.getItem('theme');
             if (!savedTheme) {
               applyTheme(e.matches ? 'dark' : 'light');
@@ -49,8 +49,10 @@
       })();
     </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-</html> 
+
+</html>

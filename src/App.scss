@@ -41,7 +41,7 @@
 
 .sidebar {
   position: fixed;
-  top: 64px; // header height
+  top: 64px;
   left: 0;
   width: 260px;
   height: calc(100vh - 64px);
@@ -60,7 +60,7 @@
 .app-content {
   width: 100%;
   padding: 2rem;
-  padding-top: 100px; // header height + spacing
+  padding-top: 100px;
   box-sizing: border-box;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }

@@ -201,7 +201,7 @@
     .project-info {
       flex: 1;
       min-width: 0;
-      padding-right: 60px; // Space for action buttons
+      padding-right: 60px;
       display: flex;
       flex-direction: column;
 
@@ -320,7 +320,7 @@
     }
   }
 
-  // Removed .form-group style. Use shared utility classes from index.scss.
+
 
 
   .modal-actions {

@@ -71,7 +71,7 @@ const NotificationBell = () => {
       case 'project_invitation':
         return '#8b5cf6';
       case 'task_completion':
-        return '#059669'; // Green for completion
+        return '#059669';
       default:
         return 'var(--gray-600)';
     }

@@ -51,7 +51,6 @@ const SetupPassword = () => {
     e.preventDefault();
     setError('');
 
-    // Validate passwords
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -66,7 +65,6 @@ const SetupPassword = () => {
       setLoading(true);
       await emailService.activateUserAccount(email, formData.password);
       
-      // Redirect to login after successful activation
       setTimeout(() => {
         navigate('/login');
       }, 2000);

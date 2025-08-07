@@ -41,7 +41,6 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
 
 
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -62,7 +61,6 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
     setPasswordLoading(true);
     setPasswordError('');
 
-    // Validate passwords
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPasswordError('New passwords do not match');
       setPasswordLoading(false);
@@ -76,17 +74,14 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
     }
 
     try {
-      // Re-authenticate user
       const credential = EmailAuthProvider.credential(
         currentUser.email,
         passwordData.currentPassword
       );
       await reauthenticateWithCredential(auth.currentUser, credential);
       
-      // Update password
       await updatePassword(auth.currentUser, passwordData.newPassword);
       
-      // Reset form and close modal
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -94,7 +89,6 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
       });
       setShowPasswordChange(false);
       
-      // Success feedback could be added here
       alert('Password updated successfully!');
     } catch (error) {
       console.error('Error updating password:', error);
@@ -271,7 +265,7 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
 
 
 
-      {/* Change Password Modal */}
+      {}
       <Modal
         isOpen={showPasswordChange}
         onClose={() => {

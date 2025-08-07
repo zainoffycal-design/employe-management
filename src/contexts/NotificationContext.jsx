@@ -21,7 +21,6 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    // Clean up old notifications when user logs in
     notificationService.cleanupUserNotifications(currentUser.uid);
 
     const unsubscribe = notificationService.subscribeToNotifications(
@@ -31,7 +30,6 @@ export const NotificationProvider = ({ children }) => {
         const unread = newNotifications.filter(n => !n.read).length;
         setUnreadCount(unread);
         
-        // Show toast for new notifications
         const newNotificationsCount = newNotifications.filter(n => {
           const isNew = !n.read && n.createdAt && 
             new Date().getTime() - n.createdAt.toDate().getTime() < 5000;

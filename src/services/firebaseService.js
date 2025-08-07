@@ -2,7 +2,6 @@ import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
 
-// Project Management
 export const projectService = {
   async createProject(projectData) {
     return firebaseUtils.createDocument('projects', { ...projectData, tasks: [] });
@@ -25,7 +24,6 @@ export const projectService = {
   }
 };
 
-// Task Management
 export const taskService = {
   async createTask(projectId, taskData) {
     return firebaseUtils.createDocument(`projects/${projectId}/tasks`, {
@@ -47,9 +45,6 @@ export const taskService = {
   }
 };
 
-
-
-// User Management Service
 export const userManagementService = {
   getAllUsers: async () => {
     return firebaseUtils.getDocuments('users', [queryBuilders.orderBy('createdAt')]);
@@ -109,7 +104,6 @@ export const userManagementService = {
   }
 };
 
-// Auth Service
 export const authService = {
   signIn: async (email, password) => {
     return firebaseUtils.signIn(email, password);

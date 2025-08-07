@@ -87,7 +87,6 @@ export const notificationService = {
     try {
       const notificationsRef = collection(db, 'notifications');
       
-      // Get all super managers
       const usersRef = collection(db, 'users');
       const superManagersQuery = query(usersRef, where('role', '==', 'super_manager'));
       const superManagersSnapshot = await getDocs(superManagersQuery);
@@ -141,7 +140,6 @@ export const notificationService = {
         ...doc.data()
       }));
       
-      // Sort by createdAt in JavaScript
       notifications.sort((a, b) => {
         const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
         const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
@@ -229,14 +227,12 @@ export const notificationService = {
         ...doc.data()
       }));
       
-      // Sort by createdAt in JavaScript since we can't use orderBy in the query
       notifications.sort((a, b) => {
         const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
         const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
         return bTime - aTime;
       });
       
-      // Clean up old notifications (keep only latest 25)
       if (notifications.length > 25) {
         const notificationsToDelete = notifications.slice(25);
         await this.cleanupOldNotifications(notificationsToDelete);
@@ -281,32 +277,26 @@ export const notificationService = {
 
   async createTaskCompletionNotification(taskData, projectData, completedBy, oldStatus, newStatus) {
     try {
-      // Temporarily disable duplicate checking to avoid Firebase index error
-
       const notificationsRef = collection(db, 'notifications');
       
-      // Collect users to notify about task completion (avoid duplicates)
       const usersToNotify = new Set();
       
-      // Add project manager if different from the person completing the task
       if (projectData.managerId && projectData.managerId !== completedBy.uid) {
         usersToNotify.add(projectData.managerId);
       }
       
-      // Add super managers for high priority tasks (avoid duplicates with manager)
       if (taskData.priority === 'high') {
         const usersRef = collection(db, 'users');
         const superManagersQuery = query(usersRef, where('role', '==', 'super_manager'));
         const superManagersSnapshot = await getDocs(superManagersQuery);
         
         superManagersSnapshot.docs.forEach(doc => {
-          if (doc.id !== completedBy.uid && doc.id !== projectData.managerId) { // Don't notify the person completing the task or duplicate manager
+          if (doc.id !== completedBy.uid && doc.id !== projectData.managerId) {
             usersToNotify.add(doc.id);
           }
         });
       }
       
-      // Create completion notifications for all relevant users
       const notificationPromises = Array.from(usersToNotify).map(userId => {
         const notificationData = {
           userId,
@@ -373,14 +363,12 @@ export const notificationService = {
         ...doc.data()
       }));
       
-      // Sort by createdAt (newest first)
       notifications.sort((a, b) => {
         const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
         const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
         return bTime - aTime;
       });
       
-      // Keep only latest 25 notifications
       if (notifications.length > 25) {
         const notificationsToDelete = notifications.slice(25);
         await this.cleanupOldNotifications(notificationsToDelete);

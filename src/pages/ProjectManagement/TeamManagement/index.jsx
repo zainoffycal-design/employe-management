@@ -48,7 +48,6 @@ const TeamManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 6;
 
-  // Load users on mount
   useEffect(() => {
     loadUsers();
   }, []);
@@ -67,7 +66,6 @@ const TeamManagement = () => {
     setLoading(true);
     setError('');
     
-    // Validate passwords
     if (newUser.password !== newUser.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -80,7 +78,6 @@ const TeamManagement = () => {
       return;
     }
     
-    // Check if trying to create super manager and one already exists
     if (newUser.role === 'super_manager') {
       const existingSuperManager = users.find(user => user.role === 'super_manager');
       if (existingSuperManager) {
@@ -91,7 +88,6 @@ const TeamManagement = () => {
     }
 
     try {
-      // Set user permissions based on role
       let permissions = [];
       switch (newUser.role) {
         case 'super_manager':
@@ -113,7 +109,6 @@ const TeamManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      // Create user profile in Firestore first
       const userProfile = {
         name: newUser.name,
         email: newUser.email,
@@ -125,7 +120,6 @@ const TeamManagement = () => {
         createdAt: new Date()
       };
 
-      // Create user using the service that handles sign-out
       await userManagementService.createUserWithoutSignIn({
         name: newUser.name,
         email: newUser.email,
@@ -134,7 +128,6 @@ const TeamManagement = () => {
         permissions: permissions
       });
 
-      // Reset form
       setNewUser({
         name: '',
         email: '',
@@ -145,7 +138,6 @@ const TeamManagement = () => {
       });
       setShowAddUser(false);
       
-      // Reload users
       await loadUsers();
     } catch (error) {
       console.error('Error creating user:', error);
@@ -164,7 +156,6 @@ const TeamManagement = () => {
     setLoading(true);
     setError('');
 
-    // Check if trying to change role to super manager and one already exists
     if (editingUser.role === 'super_manager') {
       const existingSuperManager = users.find(user => 
         user.role === 'super_manager' && user.id !== editingUser.id
@@ -177,7 +168,6 @@ const TeamManagement = () => {
     }
 
     try {
-      // Set user permissions based on role
       let permissions = [];
       switch (editingUser.role) {
         case 'super_manager':
@@ -213,8 +203,6 @@ const TeamManagement = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        // Note: This would require additional Firebase Auth manager SDK for production
-        // For now, we'll just mark the user as inactive
         await userManagementService.updateUserRole(userId, 'inactive', []);
         await loadUsers();
       } catch (error) {
@@ -256,13 +244,11 @@ const TeamManagement = () => {
   const activeUsers = users.filter(user => user.isActive);
   const inactiveUsers = users.filter(user => !user.isActive);
   
-  // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = activeUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(activeUsers.length / usersPerPage);
 
-  // Get role-based statistics
   const getRoleStats = () => {
     const roles = ['designer', 'developer', 'bd', 'manager', 'super_manager'];
     return roles.map(role => {
@@ -273,7 +259,7 @@ const TeamManagement = () => {
         members: roleMembers.length,
         displayName: getRoleDisplayName(role)
       };
-    }).filter(stat => stat.members > 0); // Only show roles with active members
+    }).filter(stat => stat.members > 0);
   };
 
   return (
@@ -295,7 +281,7 @@ const TeamManagement = () => {
         }
       />
 
-      {/* Role Overview */}
+      {}
       <div className="teams-overview">
         <h2>Roles Overview</h2>
         <div className="teams-grid">
@@ -333,7 +319,7 @@ const TeamManagement = () => {
         </div>
       </div>
 
-      {/* Active Team Members */}
+      {}
       <div className="employees-section">
         <h2>Active Team Members ({activeUsers.length})</h2>
         <div className="employees-grid">
@@ -405,7 +391,7 @@ const TeamManagement = () => {
         </div>
       </div>
 
-      {/* Inactive Members */}
+      {}
       {inactiveUsers.length > 0 && (
         <div className="employees-section">
           <h2>Inactive Members</h2>
@@ -448,7 +434,7 @@ const TeamManagement = () => {
         </div>
       )}
         
-        {/* Pagination */}
+        {}
         {totalPages > 1 && (
           <div style={{ 
             display: 'flex', 
@@ -510,7 +496,7 @@ const TeamManagement = () => {
         </div>
       )}
 
-      {/* Add User Modal */}
+      {}
       <Modal
         isOpen={showAddUser}
         onClose={() => setShowAddUser(false)}
@@ -639,7 +625,7 @@ const TeamManagement = () => {
         </form>
       </Modal>
 
-      {/* Edit User Modal */}
+      {}
       <Modal
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}

@@ -22,13 +22,11 @@ const ProjectCard = ({
 
 
 
-  // Calculate task statistics
   const projectTasks = tasks.filter(task => task.projectId === project.id);
   const completedTasks = projectTasks.filter(task => task.status === 'done').length;
   const inProgressTasks = projectTasks.filter(task => task.status === 'in_progress').length;
   const todoTasks = projectTasks.filter(task => task.status === 'todo').length;
   
-  // Calculate progress percentage
   const progressPercentage = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
 
   return (
@@ -96,7 +94,6 @@ const ProjectCard = ({
           <span>Created by: {(() => {
             if (users.length === 0) return 'Loading...';
             
-            // Use managerId if available, otherwise fall back to current user
             const managerId = project.managerId || currentUser.uid;
             const creator = users.find(user => user.id === managerId);
             
@@ -110,7 +107,6 @@ const ProjectCard = ({
             });
             
             if (!creator) {
-              // If creator not found and it's the current user, show their name from auth
               if (managerId === currentUser.uid) {
                 return currentUser.displayName || currentUser.email || 'You';
               }

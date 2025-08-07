@@ -1,8 +1,7 @@
+@use './styles/_shared.scss' as *;
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import './styles/_shared.scss';
 
 :root {
-  // Color System
   --primary-color: #15a970;
   --primary-hover: #0f8a5a;
   --primary-light: #1ed4a3;
@@ -16,7 +15,6 @@
   --light-color: #ecf0f1;
   --dark-color: #1a1a1a;
   
-  // Gray Scale
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
   --gray-200: #e5e7eb;
@@ -28,29 +26,24 @@
   --gray-800: #1f2937;
   --gray-900: #111827;
   
-  // Base Colors
   --white: #ffffff;
   --black: #000000;
   --text-primary: #111111;
   --text-secondary: #222222;
   
-  // Shadows
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   
-  // Border Radius
   --border-radius: 8px;
   --border-radius-lg: 12px;
   --border-radius-xl: 16px;
   
-  // Transitions
   --transition: all 0.3s ease;
   --transition-fast: 0.15s ease-in-out;
   --transition-slow: 0.5s ease-in-out;
   
-  // Z-Index Scale
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-sidebar: 1030;
@@ -91,7 +84,7 @@ body {
 }
 
 .app-content {
-  padding-top: 72px; // adjust to header height
+  padding-top: 72px;
 }
 
 .card {
@@ -110,11 +103,9 @@ body {
   }
 }
 
-// Button Component - Using shared mixins
 button.btn {
   @include button-base;
   
-  // Button Variants
   &--primary {
     @include button-variant(var(--primary-color), var(--primary-dark));
   }
@@ -139,7 +130,6 @@ button.btn {
     @include button-variant(var(--error-color), #dc2626);
   }
   
-  // Button Sizes
   &--sm {
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
@@ -151,7 +141,6 @@ button.btn {
   }
 }
 
-// Loading Spinner
 .loading-spinner {
   width: 16px;
   height: 16px;
@@ -220,7 +209,7 @@ button.btn {
   }
 }
 
-// Badge Component
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -232,7 +221,7 @@ button.btn {
   letter-spacing: 0.05em;
   gap: 0.25rem;
   
-  // Role Badges
+
   &--designer {
     background-color: #e3f2fd;
     color: #1976d2;
@@ -258,7 +247,7 @@ button.btn {
     color: #d32f2f;
   }
   
-  // User Management Badges
+
   &--primary {
     background-color: var(--primary-color);
     color: white;
@@ -279,7 +268,7 @@ button.btn {
     color: white;
   }
   
-  // Bootstrap-style badges
+
   &.bg-primary {
     background-color: var(--primary-color) !important;
     color: white;
@@ -320,7 +309,7 @@ button.btn {
     color: white;
   }
   
-  // Text utilities
+
   &.text-dark {
     color: var(--gray-800) !important;
   }
@@ -331,7 +320,7 @@ button.btn {
   }
 }
 
-// Status Component (standalone)
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -361,7 +350,7 @@ button.btn {
   }
 }
 
-// Priority Component (standalone)
+
 .priority {
   display: inline-flex;
   align-items: center;
@@ -393,7 +382,7 @@ button.btn {
 
 
 
-// Input wrapper for icons
+
 .input-wrapper {
   @include input-wrapper;
 }
@@ -525,7 +514,7 @@ input[type="checkbox"] {
   }
 }
 
-// ANIMATIONS - Using shared keyframes from _shared.scss
+
 
 @keyframes dropdown-fade-in {
   from { 
@@ -538,9 +527,9 @@ input[type="checkbox"] {
   }
 }
 
-// UTILITY CLASSES
 
-// Text Gradients
+
+
 .text-gradient {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -548,7 +537,7 @@ input[type="checkbox"] {
   background-clip: text;
 }
 
-// Background Gradients
+
 .bg-gradient-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -565,7 +554,7 @@ input[type="checkbox"] {
   background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 }
 
-// Flexbox Utilities
+
 .d-flex {
   display: flex;
 }
@@ -586,13 +575,13 @@ input[type="checkbox"] {
   flex-direction: column;
 }
 
-// Spacing Utilities
+
 .gap-1 { gap: 0.25rem; }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 1rem; }
 .gap-4 { gap: 1.5rem; }
 
-// RESPONSIVE DESIGN
+
 
 @media (max-width: 768px) {
   .container {
@@ -613,7 +602,7 @@ input[type="checkbox"] {
   }
 }
 
-// CUSTOM SCROLLBAR
+
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -633,7 +622,7 @@ input[type="checkbox"] {
   }
 }
 
-// PAGE TRANSITIONS
+
 
 .page-enter {
   opacity: 0;
@@ -762,7 +751,7 @@ input[type="checkbox"] {
   align-items: center;
 }
 
-// RESPONSIVE DESIGN
+
 
 @media (max-width: 900px) {
   .page-header {
@@ -857,7 +846,7 @@ input[type="checkbox"] {
   }
 }
 
-// Search box component
+
 .search-box {
   display: flex;
   align-items: center;

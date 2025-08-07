@@ -58,14 +58,12 @@ const ProjectBoard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(() => {
-    // Get sound preference from localStorage, default to true
     const saved = localStorage.getItem('taskManagerSoundEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(true);
 
-  // Optimized drag and drop state
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState(null);
   const [draggedOverTask, setDraggedOverTask] = useState(null);
@@ -73,10 +71,8 @@ const ProjectBoard = () => {
   const [pendingUpdates, setPendingUpdates] = useState(new Set());
   const [notifiedTasks, setNotifiedTasks] = useState(new Set());
 
-  // Find the current project
   const currentProject = projects.find(p => p.id === projectId);
 
-  // Custom styles for react-select
   const customStyles = {
     control: (base, state) => ({
       ...base,
@@ -233,17 +229,14 @@ const ProjectBoard = () => {
     );
   };
 
-  // Initialize sound manager
   useEffect(() => {
     soundManager.setEnabled(soundEnabled);
   }, [soundEnabled]);
 
-  // Save sound preference to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('taskManagerSoundEnabled', JSON.stringify(soundEnabled));
   }, [soundEnabled]);
 
-  // Load project team members
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -261,14 +254,12 @@ const ProjectBoard = () => {
     }
   }, [currentProject]);
 
-  // Clear optimistic tasks when tasks data changes
   useEffect(() => {
     setOptimisticTasks({});
     setPendingUpdates(new Set());
     setNotifiedTasks(new Set());
   }, [tasks]);
 
-  // Create assignee options for react-select
   const assigneeOptions = users.map(user => ({
     value: user.id,
     label: user.name,
@@ -276,7 +267,6 @@ const ProjectBoard = () => {
     avatar: user.avatar
   }));
 
-  // Create assignee filter options
   const assigneeFilterOptions = users.map(user => ({
     value: user.id,
     label: user.name,
@@ -284,7 +274,6 @@ const ProjectBoard = () => {
     avatar: user.avatar
   }));
 
-  // Redirect if project doesn't exist
   useEffect(() => {
     if (!currentProject) {
       navigate('/');
@@ -292,7 +281,6 @@ const ProjectBoard = () => {
     }
   }, [currentProject, navigate]);
 
-  // Check if user has edit access
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
     currentProject?.managerId === currentUser.uid ||
@@ -300,12 +288,9 @@ const ProjectBoard = () => {
 
   if (!currentProject) return null;
 
-  // Filter tasks for this project
   const projectTasks = tasks.filter(task => task.projectId === projectId);
 
-  // Filter tasks based on search term and assignee
   const filteredTasks = projectTasks.filter(task => {
-    // Search term filter
     const matchesSearch = !searchTerm.trim() || 
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -320,7 +305,6 @@ const ProjectBoard = () => {
             })()
       );
 
-    // Assignee filter
     const matchesAssignee = !selectedAssignee || 
       (task.assignee && Array.isArray(task.assignee) 
         ? task.assignee.includes(selectedAssignee.value)
@@ -336,17 +320,14 @@ const ProjectBoard = () => {
     'Complete': filteredTasks.filter(task => task.status === 'done')
   };
 
-  // Get tasks for column with real-time data
   const getOptimisticTasksForColumn = useCallback((columnId) => {
     const status = getStatusFromColumnId(columnId);
     const optimisticTasksForColumn = optimisticTasks[columnId];
     
-    // If we have optimistic updates, use them
     if (optimisticTasksForColumn) {
       return optimisticTasksForColumn;
     }
     
-    // Otherwise use real-time data
     return tasksByStatus[status] || [];
   }, [optimisticTasks, tasksByStatus]);
 
@@ -472,7 +453,6 @@ const ProjectBoard = () => {
     }
   };
 
-  // Optimized drag and drop handlers
   const handleDragStart = useCallback((e, task) => {
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
@@ -497,7 +477,6 @@ const ProjectBoard = () => {
     let newTasks = [...currentTasksInColumn];
     let taskMoved = false;
 
-    // Handle reordering within same column
     if (draggedTask.status === columnId) {
       if (targetTaskId === 'top') {
         if (draggedIndex !== -1 && draggedIndex !== 0) {
@@ -523,15 +502,12 @@ const ProjectBoard = () => {
         }
       }
     } else {
-      // Moving to different column
-      const updatedTask = { ...draggedTask, status: columnId };
+        const updatedTask = { ...draggedTask, status: columnId };
       
-      // Remove from source column
       const sourceColumnId = draggedTask.status;
       const sourceTasks = getOptimisticTasksForColumn(sourceColumnId);
       const sourceNewTasks = sourceTasks.filter(t => t.id !== draggedTask.id);
       
-      // Add to target column at specific position
       if (targetTaskId === 'top') {
         newTasks = [updatedTask, ...currentTasksInColumn];
       } else if (targetTaskId === 'bottom') {
@@ -548,7 +524,6 @@ const ProjectBoard = () => {
         newTasks = [...currentTasksInColumn, updatedTask];
       }
       
-      // Play different sounds based on target column
       if (columnId === 'done') {
         soundManager.playComplete();
       } else if (columnId === 'in-progress') {
@@ -557,24 +532,18 @@ const ProjectBoard = () => {
         soundManager.playDrop();
       }
       
-      // Mark for background update
       setPendingUpdates(prev => new Set([...prev, draggedTask.id]));
       
-      // Update in background
       updateTask(projectId, draggedTask.id, { status: columnId }).then(async () => {
-        // Send notification for status change only if it's not a newly created task
         try {
           const oldStatus = getStatusDisplayName(draggedTask.status);
           const newStatus = getStatusDisplayName(columnId);
           
-          // Calculate time since task creation
           const taskCreatedTime = new Date(draggedTask.createdAt);
           const now = new Date();
           const timeSinceCreation = now - taskCreatedTime;
           
-          // Only send notification when task is completed
           if (newStatus === 'Complete') {
-            // Check if we've already sent a notification for this task
             if (!notifiedTasks.has(draggedTask.id)) {
               await notificationService.createTaskCompletionNotification(
                 draggedTask,
@@ -584,7 +553,6 @@ const ProjectBoard = () => {
                 newStatus
               );
               
-              // Mark this task as notified
               setNotifiedTasks(prev => new Set([...prev, draggedTask.id]));
             }
           }
@@ -605,7 +573,6 @@ const ProjectBoard = () => {
       taskMoved = true;
     }
 
-    // Update optimistic state for same-column reordering
     if (taskMoved && draggedTask.status === columnId) {
       updateOptimisticTasks(columnId, newTasks);
     }
@@ -812,8 +779,7 @@ const ProjectBoard = () => {
               <span className="task-count">{getOptimisticTasksForColumn(column.id).length}</span>
             </div>
 
-            <div className="task-list">
-              {/* Drop zone for adding tasks at the beginning */}
+            <div className="task-list">   
               {hasEditAccess && (
                 <div 
                   className={`drop-zone-start ${draggedOverColumn === column.id && !draggedOverTask ? 'drag-over' : ''}`}
@@ -964,7 +930,6 @@ const ProjectBoard = () => {
                 ))}
               </AnimatePresence>
               
-              {/* Drop zone for adding tasks at the end */}
               {hasEditAccess && (
                 <div 
                   className={`drop-zone-end ${draggedOverColumn === column.id && !draggedOverTask ? 'drag-over' : ''}`}
@@ -977,7 +942,6 @@ const ProjectBoard = () => {
         ))}
       </div>
 
-      {/* Add Task Modal */}
       <Modal
         isOpen={showAddTask}
         onClose={() => {
@@ -1128,7 +1092,6 @@ const ProjectBoard = () => {
         </form>
       </Modal>
 
-      {/* Edit Task Modal */}
       <Modal
         isOpen={showEditTask}
         onClose={() => {
@@ -1278,7 +1241,7 @@ const ProjectBoard = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => {
@@ -1320,7 +1283,7 @@ const ProjectBoard = () => {
         </div>
       </Modal>
 
-      {/* Task Details Slide Modal */}
+      {}
       <SlideModal
         isOpen={showTaskDetails}
         onClose={() => {

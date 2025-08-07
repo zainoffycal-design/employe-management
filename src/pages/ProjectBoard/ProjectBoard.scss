@@ -604,7 +604,7 @@
   }
 }
 
-// Responsive grid layout
+
 @media (min-width: 768px) {
   .project-board {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -699,7 +699,7 @@
   }
 }
 
-// Kanban Board Layout
+
 .kanban-board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -795,7 +795,7 @@
 
 }
 
-// Drag and drop enhancements
+
 .kanban-board {
   .kanban-column {
     &.drag-over {
@@ -832,7 +832,7 @@
   
   }
   
-  // Add spacing to the draggable wrapper divs
+
   .column-content > div[draggable="true"] {
     margin-bottom: 1.5rem;
     
@@ -871,7 +871,7 @@
   }
 }
 
-// Responsive adjustments
+
 @media (max-width: 900px) {
   .project-board {
     padding: 1.5rem 1rem 1rem 1rem;
@@ -913,7 +913,7 @@
   }
 }
 
-// Read-only state for non-members
+
 .board-column.read-only {
   .task-card {
     cursor: default;
@@ -935,7 +935,7 @@
   }
 }
 
-// React-select styling for ProjectBoard
+
 .project-board {
   .react-select__control {
     border: 1px solid var(--gray-300);

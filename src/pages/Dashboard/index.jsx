@@ -29,7 +29,6 @@ const Dashboard = () => {
   const { tasks, projects } = useTask();
   const [users, setUsers] = useState([]);
 
-  // Load users for roles overview
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -42,7 +41,6 @@ const Dashboard = () => {
     loadUsers();
   }, []);
 
-  // Calculate task statistics
   const overdueTasks = tasks.filter(task => 
     task.deadline && new Date(task.deadline) < new Date() && task.status !== 'done'
   );
@@ -56,29 +54,24 @@ const Dashboard = () => {
     return deadline > today && deadline <= threeDaysFromNow;
   });
 
-  // Get role-based statistics
   const getRoleStats = () => {
     const roles = ['designer', 'developer', 'bd'];
     return roles.map(role => {
       const roleMembers = users.filter(user => user.role === role && user.isActive);
       const totalRoleMembers = users.filter(user => user.role === role);
       
-      // Handle both single assignee and multiple assignees
       const roleTasks = tasks.filter(task => {
         if (Array.isArray(task.assignee)) {
-          // Multiple assignees - check if any assignee has this role
           return task.assignee.some(assigneeId => {
             const assignee = users.find(user => user.id === assigneeId);
             return assignee && assignee.role === role;
           });
         } else {
-          // Single assignee
           const assignee = users.find(user => user.id === task.assignee);
           return assignee && assignee.role === role;
         }
       });
       
-      // Calculate task status counts
       const todoTasks = roleTasks.filter(task => task.status === 'todo').length;
       const inProgressTasks = roleTasks.filter(task => task.status === 'in-progress').length;
       const completedTasks = roleTasks.filter(task => task.status === 'done').length;
@@ -143,7 +136,6 @@ const Dashboard = () => {
     }
   ];
 
-  // Quick Actions based on user role
   const getQuickActions = () => {
     const baseActions = [
       {
@@ -155,7 +147,6 @@ const Dashboard = () => {
       }
     ];
 
-    // For super manager: Projects, Analytics, User Management, Settings
     if (currentUser?.role === 'super_manager') {
       return [
         ...baseActions,
@@ -176,7 +167,6 @@ const Dashboard = () => {
       ];
     }
 
-    // For manager: Projects, Analytics, User Management
     if (currentUser?.role === 'manager') {
       return [
         ...baseActions,
@@ -197,7 +187,6 @@ const Dashboard = () => {
       ];
     }
 
-    // For other roles: Just Projects
     return [
       ...baseActions
     ];
@@ -211,7 +200,7 @@ const Dashboard = () => {
         icon={FiHome}
       />
 
-      {/* Deadline Alerts */}
+      {}
       {(overdueTasks.length > 0 || dueSoonTasks.length > 0) && (
         <div className="deadline-alerts">
           {overdueTasks.length > 0 && (
@@ -229,7 +218,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Overview Section */}
+      {}
       <div className="section-header">
         <div className="section-title">
           <FiBarChart className="section-icon" />
@@ -260,7 +249,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Roles Overview Section - Only for managers and super managers */}
+      {}
       {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
         <div className="section-header">
           <div className="section-title">
@@ -330,9 +319,9 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Projects and Tasks Side by Side */}
+      {}
       <div className="side-by-side-sections">
-        {/* Projects Section */}
+        {}
         <div className="section-half">
           <div className="section-header">
             <div className="section-title">
@@ -391,7 +380,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Tasks Section */}
+        {}
         <div className="section-half">
           <div className="section-header">
             <div className="section-title">
@@ -465,7 +454,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {}
       <div className="section-header">
         <div className="section-title">
           <FiLayout className="section-icon" />

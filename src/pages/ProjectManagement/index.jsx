@@ -46,7 +46,6 @@ const ProjectManagement = () => {
       try {
         const allUsersData = await userManagementService.getAllUsers();
         setAllUsers(allUsersData);
-        // Filter out inactive users and current user for team member selection
         const activeUsers = allUsersData.filter(user => 
           user.isActive && user.id !== currentUser.uid
         );
@@ -59,10 +58,8 @@ const ProjectManagement = () => {
     fetchUsers();
   }, [currentUser.uid]);
 
-  // Group users by role for react-select options
   const groupedOptions = Object.entries(
     users.reduce((acc, user) => {
-      // Exclude managers and super_managers from the selection
       if (user.role === 'manager' || user.role === 'super_manager') {
         return acc;
       }
@@ -84,7 +81,6 @@ const ProjectManagement = () => {
     options: users
   }));
 
-  // Create manager filter options (only for super manager)
   const managerFilterOptions = allUsers
     .filter(user => user.role === 'manager' || user.role === 'super_manager')
     .map(user => ({
@@ -258,17 +254,13 @@ const ProjectManagement = () => {
 
   const filteredProjects = projects
     ?.filter(project => {
-      // Search term filter
       const matchesSearch = !searchTerm.trim() || (() => {
       const searchLower = searchTerm.toLowerCase();
       
-      // Search in project name
       if (project.name.toLowerCase().includes(searchLower)) return true;
       
-      // Search in project description
       if (project.description.toLowerCase().includes(searchLower)) return true;
       
-      // Search in team member names
       if (project.teamMembers && project.teamMembers.length > 0) {
         const hasMatchingMember = project.teamMembers.some(memberId => {
           const user = allUsers.find(u => u.id === memberId);
@@ -280,7 +272,6 @@ const ProjectManagement = () => {
       return false;
       })();
 
-      // Manager filter - show projects managed by the selected user
       const matchesManager = !selectedManager || 
         project.managerId === selectedManager.value || 
         project.createdBy === selectedManager.value;
@@ -288,7 +279,6 @@ const ProjectManagement = () => {
       return matchesSearch && matchesManager;
     })
     ?.sort((a, b) => {
-      // Sort by creation date in ascending order (oldest first, newest last)
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
       return dateA - dateB;
@@ -560,7 +550,7 @@ const ProjectManagement = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => {

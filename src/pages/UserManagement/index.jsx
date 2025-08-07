@@ -28,9 +28,7 @@ import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
 import './UserManagement.scss';
 
-// Add a function to sort and group users by role
 const groupAndSortUsers = (users) => {
-  // Define role order
   const roleOrder = {
     'super_manager': 0,
     'manager': 1,
@@ -39,9 +37,7 @@ const groupAndSortUsers = (users) => {
     'bd': 4
   };
 
-  // Group users by role
   const groupedUsers = users.reduce((acc, user) => {
-    // Normalize role name to handle potential variations
     const normalizedRole = user.role?.toLowerCase().replace(/[^a-z]/g, '') || 'user';
     const role = normalizedRole === 'supermanager' ? 'super_manager' : normalizedRole;
     
@@ -52,7 +48,6 @@ const groupAndSortUsers = (users) => {
     return acc;
   }, {});
 
-  // Sort users within each role group by name
   Object.keys(groupedUsers).forEach(role => {
     groupedUsers[role].sort((a, b) => a.name.localeCompare(b.name));
   });
@@ -124,7 +119,7 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
               <FiMail />
             </button>
           )}
-          {/* Hide edit/delete buttons for super managers when current user is manager */}
+          {}
           {!(currentUserRole === 'manager' && isSuperManager) && (
             <>
               <button
@@ -167,9 +162,8 @@ const UserManagement = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showEditUser, setShowEditUser] = useState(false); // New state for edit modal
+  const [showEditUser, setShowEditUser] = useState(false);
 
-  // Get available roles based on current user's role
   const getAvailableRoles = () => {
     const roles = [
       { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },
@@ -177,21 +171,17 @@ const UserManagement = () => {
       { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
     ];
 
-    // Only super manager can create managers
     if (currentUser.role === 'super_manager') {
-      // Add manager role at the beginning
       roles.unshift(
         { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' }
       );
     } else if (currentUser.role === 'manager') {
-      // Managers can only create regular users
       return roles;
     }
 
     return roles;
   };
 
-  // Add current user to the list if they're not already included
   const allUsersIncludingCurrent = [...users];
   const currentUserExists = users.some(user => 
     user.id === currentUser.uid || 
@@ -214,7 +204,6 @@ const UserManagement = () => {
   const groupedUsers = groupAndSortUsers(allUsersIncludingCurrent);
   const roleOrder = ['super_manager', 'manager', 'designer', 'developer', 'bd'];
 
-  // Check if user has access to user management
   if (!canManageUsers()) {
     return (
       <div className="page-container">
@@ -227,7 +216,6 @@ const UserManagement = () => {
     );
   }
 
-  // Load users on mount
   useEffect(() => {
     loadUsers();
   }, []);
@@ -247,7 +235,6 @@ const UserManagement = () => {
     setError('');
 
     try {
-      // Set user permissions based on role
       let permissions = [];
       switch (newUser.role) {
         case 'super_manager':
@@ -269,7 +256,6 @@ const UserManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      // Create user invitation instead of creating auth account
       await emailService.createUserInvitation({
         name: newUser.name,
         email: newUser.email,
@@ -277,7 +263,6 @@ const UserManagement = () => {
         permissions: permissions
       });
 
-      // Reset form
       setNewUser({
         name: '',
         email: '',
@@ -288,7 +273,6 @@ const UserManagement = () => {
       });
       setShowAddUser(false);
       
-      // Reload users
       await loadUsers();
     } catch (error) {
       console.error('Error creating user invitation:', error);
@@ -304,7 +288,6 @@ const UserManagement = () => {
     setError('');
 
     try {
-      // Check if trying to change role to super manager and one already exists
       if (editingUser.role === 'super_manager') {
         const existingSuperManager = users.find(user =>
           user.role === 'super_manager' && user.id !== editingUser.id
@@ -316,7 +299,6 @@ const UserManagement = () => {
         }
       }
 
-      // Only super manager can edit roles to manager or super manager
       if (currentUser.role === 'manager') {
         const existingUser = users.find(user => user.id === editingUser.id);
         if (existingUser.role === 'super_manager' || existingUser.role === 'manager' ||
@@ -327,7 +309,6 @@ const UserManagement = () => {
         }
       }
 
-      // Set user permissions based on role
       let permissions = [];
       switch (editingUser.role) {
         case 'super_manager':
@@ -368,8 +349,6 @@ const UserManagement = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        // Note: This would require additional Firebase Auth manager SDK for production
-        // For now, we'll just mark the user as inactive
         await userManagementService.updateUserRole(userId, 'inactive', []);
         await loadUsers();
       } catch (error) {
@@ -418,7 +397,6 @@ const UserManagement = () => {
         {roleOrder.map(role => {
           const usersInRole = groupedUsers[role] || [];
           
-          // Only show sections that have users
           if (usersInRole.length === 0) return null;
 
           return (
@@ -444,7 +422,7 @@ const UserManagement = () => {
         })}
       </div>
 
-      {/* Add User Modal */}
+      {}
       <Modal
         isOpen={showAddUser}
         onClose={() => setShowAddUser(false)}
@@ -526,7 +504,7 @@ const UserManagement = () => {
         </form>
       </Modal>
 
-      {/* Edit User Modal */}
+      {}
       <Modal
         isOpen={showEditUser}
         onClose={() => setShowEditUser(false)}

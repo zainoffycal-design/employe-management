@@ -1,5 +1,5 @@
 
-@import '../../styles/_shared.scss';
+@use '../../styles/_shared.scss' as *;
 
 .modal-overlay {
   @include modal-overlay;

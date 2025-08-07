@@ -12,7 +12,6 @@ import { db } from './firebase';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.scss';
 
-// Lazy load all pages
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectBoard = lazy(() => import('./pages/ProjectBoard'));

@@ -134,7 +134,7 @@
     }
   }
   
-  // SIDEBAR DIVIDER
+
   
   .sidebar-divider {
     height: 1.5px;
@@ -143,7 +143,7 @@
     border-radius: 2px;
   }
   
-  // ROLES LIST
+
   
   .roles-list {
     padding: 1rem 0.5rem 0rem 0.5rem;
@@ -244,7 +244,7 @@
     }
   }
   
-  // SIDEBAR FOOTER
+
   
   .sidebar-footer {
     padding: 1rem 1.25rem 1.5rem 1.25rem;
@@ -284,7 +284,7 @@
     }
   }
   
-  // RESPONSIVE DESIGN
+
   
   @media (max-width: 1024px) {
     width: 220px;
@@ -299,7 +299,7 @@
   }
 }
 
-// CUSTOM SCROLLBAR FOR SIDEBAR
+
 
 .sidebar::-webkit-scrollbar {
   width: 6px;
@@ -319,7 +319,7 @@
   }
 }
 
-// MOBILE RESPONSIVE
+
 
 @media (max-width: 768px) {
   .sidebar {
@@ -328,14 +328,14 @@
   }
 }
 
-// SIDEBAR PADDING UTILITIES
+
 
 .sidebar-nav, .roles-list, .sidebar-footer {
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 }
 
-// SIDEBAR STATS BALANCE
+
 
 .sidebar-stats-balance {
   padding: 1rem 1.25rem 0.5rem 1.25rem;

@@ -26,7 +26,7 @@ const Analytics = () => {
   const { tasks, currentUser } = useTask();
   const { canViewAnalytics } = useAuth();
   const [users, setUsers] = useState([]);
-  const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year
+  const [timeRange, setTimeRange] = useState('month');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedUser, setSelectedUser] = useState('all');
 
@@ -199,7 +199,7 @@ const Analytics = () => {
         }
       />
       
-      {/* Filters */}
+      {}
       <div className="analytics-filters">
         <div className="filter-group">
           <label>Time Range:</label>
@@ -236,7 +236,7 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {}
       <div className="analytics-grid">
         <motion.div 
           className="analytics-card"
@@ -305,7 +305,7 @@ const Analytics = () => {
         </motion.div>
       </div>
 
-      {/* Role-based Analytics */}
+      {}
       <div className="analytics-sections">
         <motion.div 
           className="analytics-section"
@@ -346,7 +346,7 @@ const Analytics = () => {
           </div>
         </motion.div>
 
-        {/* Top Performers */}
+        {}
         <motion.div 
           className="analytics-section"
           initial={{ opacity: 0, y: 20 }}
@@ -386,7 +386,7 @@ const Analytics = () => {
           </div>
         </motion.div>
 
-        {/* Task Status Distribution */}
+        {}
         <motion.div 
           className="analytics-section"
           initial={{ opacity: 0, y: 20 }}

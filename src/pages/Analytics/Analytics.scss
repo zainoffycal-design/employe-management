@@ -1,4 +1,4 @@
-@import '../../styles/_shared.scss';
+@use '../../styles/_shared.scss' as *;
 
 .analytics {
   max-width: 1100px;
@@ -135,7 +135,7 @@
   font-size: 1.1rem;
 }
 
-// Access Denied
+
 .access-denied {
   display: flex;
   flex-direction: column;
@@ -160,7 +160,7 @@
   }
 }
 
-// Filters Section
+
 .analytics-filters {
   display: flex;
   align-items: center;
@@ -235,7 +235,7 @@
   }
 }
 
-// Analytics Sections
+
 .analytics-sections {
   display: flex;
   flex-direction: column;
@@ -265,7 +265,7 @@
   }
 }
 
-// Role Analytics
+
 .role-analytics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -345,7 +345,7 @@
   }
 }
 
-// Top Performers
+
 .top-performers {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -433,7 +433,7 @@
   }
 }
 
-// Status Distribution
+
 .status-distribution {
   display: flex;
   flex-direction: column;
@@ -509,7 +509,7 @@
   }
 }
 
-// Responsive Design
+
 @media (max-width: 768px) {
   .analytics-filters {
     flex-direction: column;

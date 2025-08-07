@@ -14,7 +14,6 @@ export const TaskProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const { currentUser } = useAuth();
 
-  // Real-time listeners for projects and tasks
   useEffect(() => {
     if (!currentUser) {
       setProjects([]);
