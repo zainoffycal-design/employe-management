@@ -307,6 +307,8 @@
               }
             }
           }
+
+
         }
 
         &:hover .task-actions {
@@ -478,6 +480,26 @@
                 font-size: 0.6rem;
               }
             }
+          }
+        }
+        .task-comments-indicator {
+          position: absolute;
+          bottom: 0.8rem;
+          right: 0.5rem;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.25rem 0.5rem;
+          background-color: rgba(21, 169, 112, 0.9);
+          border-radius: 0.5rem;
+          font-size: 0.75rem;
+          color: white;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          z-index: 10;
+    
+          &:hover {
+            background-color: rgba(21, 169, 112, 1);
           }
         }
       }
@@ -784,7 +806,9 @@
   }
   
   .task-card {
+    position: relative;
     cursor: grab;
+    
     
     &:active {
       cursor: grabbing;
@@ -804,6 +828,8 @@
       opacity: 0.5;
       transform: rotate(5deg);
     }
+
+  
   }
   
   // Add spacing to the draggable wrapper divs

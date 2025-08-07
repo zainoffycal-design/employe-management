@@ -12,13 +12,16 @@ import {
   FiEdit3,
   FiTrash2,
   FiVolume2,
-  FiVolumeX
+  FiVolumeX,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
 import Modal from '../../components/Modal';
+import SlideModal from '../../components/SlideModal';
+import TaskDetails from '../../components/TaskDetails';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
@@ -34,6 +37,8 @@ const ProjectBoard = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showTaskDetails, setShowTaskDetails] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
   const [users, setUsers] = useState([]);
@@ -394,6 +399,11 @@ const ProjectBoard = () => {
     }
   };
 
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetails(true);
+  };
+
   const handleEditTask = (task) => {
     setEditingTask({
       ...task,
@@ -401,6 +411,7 @@ const ProjectBoard = () => {
     });
     setShowEditTask(true);
     setError('');
+    setShowTaskDetails(false);
   };
 
   const handleUpdateTask = async (e) => {
@@ -440,6 +451,7 @@ const ProjectBoard = () => {
   const handleDeleteTask = (task) => {
     setDeletingTask(task);
     setShowDeleteConfirm(true);
+    setShowTaskDetails(false);
   };
 
   const confirmDeleteTask = async () => {
@@ -820,13 +832,15 @@ const ProjectBoard = () => {
                     onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id, task.id) : undefined}
                     onDrop={hasEditAccess ? (e) => handleDrop(e, column.id, task.id) : undefined}
                     onDragEnd={hasEditAccess ? handleDragEnd : undefined}
+                    onClick={() => handleTaskClick(task)}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.1 }}
                     style={{ 
                       opacity: draggedTask?.id === task.id ? 0.5 : 1,
-                      transform: draggedTask?.id === task.id ? 'scale(0.95)' : 'scale(1)'
+                      transform: draggedTask?.id === task.id ? 'scale(0.95)' : 'scale(1)',
+                      cursor: 'pointer'
                     }}
                   >
                     <div className="task-header">
@@ -939,6 +953,13 @@ const ProjectBoard = () => {
                         )}
                       </div>
                     </div>
+                    
+                    {task.comments && task.comments.length > 0 && (
+                      <div className="task-comments-indicator">
+                        <FiMessageSquare size={12} />
+                        <span>{task.comments.length}</span>
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -1298,6 +1319,31 @@ const ProjectBoard = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Task Details Slide Modal */}
+      <SlideModal
+        isOpen={showTaskDetails}
+        onClose={() => {
+          setShowTaskDetails(false);
+          setSelectedTask(null);
+        }}
+        title="Task Details"
+        width="600px"
+      >
+        {selectedTask && (
+          <TaskDetails
+            task={selectedTask}
+            onClose={() => {
+              setShowTaskDetails(false);
+              setSelectedTask(null);
+            }}
+            onEdit={handleEditTask}
+            onDelete={handleDeleteTask}
+            users={users}
+            project={currentProject}
+          />
+        )}
+      </SlideModal>
     </div>
   );
 };

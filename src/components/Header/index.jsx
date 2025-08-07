@@ -139,7 +139,7 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
   };
 
   return (
-    <header className="header navbar navbar-expand-lg navbar-light bg-white border-bottom">
+    <header className="header navbar navbar-expand navbar-light bg-white border-bottom">
       <div className="container-fluid">
         <button className="menu-btn" onClick={onMenuClick} aria-label="Toggle sidebar">
           <AnimatedMenuIcon open={sidebarOpen} />
