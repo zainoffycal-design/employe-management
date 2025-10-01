@@ -25,6 +25,7 @@ import TaskDetails from '../../components/TaskDetails';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Select from 'react-select';
 import soundManager from '../../utils/soundUtils';
 import './ProjectBoard.scss';
@@ -33,7 +34,7 @@ const ProjectBoard = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, tasks, createTask, updateTask, deleteTask } = useTask();
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -57,12 +58,12 @@ const ProjectBoard = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => {
     const saved = localStorage.getItem('taskManagerSoundEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  const [isRealTimeConnected, setIsRealTimeConnected] = useState(true);
 
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState(null);
@@ -260,6 +261,12 @@ const ProjectBoard = () => {
     setNotifiedTasks(new Set());
   }, [tasks]);
 
+  useEffect(() => {
+    if (currentUser && projects.length >= 0) {
+      setProjectsLoaded(true);
+    }
+  }, [currentUser, projects]);
+
   const assigneeOptions = users.map(user => ({
     value: user.id,
     label: user.name,
@@ -274,23 +281,30 @@ const ProjectBoard = () => {
     avatar: user.avatar
   }));
 
+  const isLoading = authLoading || !projectsLoaded || !currentUser;
+  const isProjectNotFound = !isLoading && !currentProject;
+
   useEffect(() => {
-    if (!currentProject) {
-      navigate('/');
-      return;
+    if (isProjectNotFound) {
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [currentProject, navigate]);
+  }, [isProjectNotFound, navigate]);
 
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
     currentProject?.managerId === currentUser.uid ||
     currentProject?.teamMembers?.includes(currentUser.uid);
 
-  if (!currentProject) return null;
+  const canMarkComplete = 
+    currentUser.role === 'super_manager' || 
+    currentProject?.managerId === currentUser.uid;
 
-  const projectTasks = tasks.filter(task => task.projectId === projectId);
+  const projectTasks = currentProject ? tasks.filter(task => task.projectId === projectId) : [];
 
-  const filteredTasks = projectTasks.filter(task => {
+  const filteredTasks = currentProject ? projectTasks.filter(task => {
     const matchesSearch = !searchTerm.trim() || 
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -312,11 +326,12 @@ const ProjectBoard = () => {
       );
 
     return matchesSearch && matchesAssignee;
-  });
+  }) : [];
 
   const tasksByStatus = {
-    'Not Started': filteredTasks.filter(task => task.status === 'todo'),
+    'Todo': filteredTasks.filter(task => task.status === 'todo'),
     'Progress': filteredTasks.filter(task => task.status === 'in-progress'),
+    'In Review': filteredTasks.filter(task => task.status === 'in-review'),
     'Complete': filteredTasks.filter(task => task.status === 'done')
   };
 
@@ -454,22 +469,35 @@ const ProjectBoard = () => {
   };
 
   const handleDragStart = useCallback((e, task) => {
+    if (task.status === 'done' && !canMarkComplete) {
+      e.preventDefault();
+      return;
+    }
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  }, [canMarkComplete]);
 
   const handleDragOver = useCallback((e, columnId, taskId = null) => {
     e.preventDefault();
+    
+    if (columnId === 'done' && !canMarkComplete) {
+      return;
+    }
+    
     setDraggedOverColumn(columnId);
     if (taskId) {
       setDraggedOverTask(taskId);
     }
-  }, []);
+  }, [canMarkComplete]);
 
   const handleDrop = useCallback((e, columnId, targetTaskId = null) => {
     e.preventDefault();
     
     if (!draggedTask) return;
+
+    if (columnId === 'done' && !canMarkComplete) {
+      return;
+    }
 
     const currentTasksInColumn = getOptimisticTasksForColumn(columnId);
     const draggedIndex = currentTasksInColumn.findIndex(t => t.id === draggedTask.id);
@@ -590,23 +618,26 @@ const ProjectBoard = () => {
 
   const getStatusFromColumnId = (columnId) => {
     switch (columnId) {
-      case 'todo': return 'Not Started';
+      case 'todo': return 'Todo';
       case 'in-progress': return 'Progress';
+      case 'in-review': return 'In Review';
       case 'done': return 'Complete';
-      default: return 'Not Started';
+      default: return 'Todo';
     }
   };
 
   const columns = [
-    { id: 'todo', title: 'Not Started', color: '#8B5CF6', status: 'Not Started' },
-    { id: 'in-progress', title: 'Progress', color: '#15A970', status: 'Progress' },
+    { id: 'todo', title: 'Todo', color: '#8B5CF6', status: 'Todo' },
+    { id: 'in-progress', title: 'Progress', color: '#3B82F6', status: 'Progress' },
+    { id: 'in-review', title: 'In Review', color: '#F59E0B', status: 'In Review' },
     { id: 'done', title: 'Complete', color: '#059669', status: 'Complete' }
   ];
 
   const getTaskStatusColor = (status) => {
     switch (status) {
-      case 'Not Started': return '#8B5CF6';
-      case 'Progress': return '#15A970';
+      case 'Todo': return '#8B5CF6';
+      case 'Progress': return '#3B82F6';
+      case 'In Review': return '#F59E0B';
       case 'Complete': return '#059669';
       default: return '#6B7280';
     }
@@ -615,7 +646,8 @@ const ProjectBoard = () => {
   const getColumnColorByStatus = (status) => {
     switch (status) {
       case 'todo': return '#8B5CF6';
-      case 'in-progress': return '#15A970';
+      case 'in-progress': return '#3B82F6';
+      case 'in-review': return '#F59E0B';
       case 'done': return '#059669';
       default: return '#6B7280';
     }
@@ -623,8 +655,9 @@ const ProjectBoard = () => {
 
   const getStatusDisplayName = (status) => {
     switch (status) {
-      case 'todo': return 'Not Started';
+      case 'todo': return 'Todo';
       case 'in-progress': return 'Progress';
+      case 'in-review': return 'In Review';
       case 'done': return 'Complete';
       default: return status;
     }
@@ -685,6 +718,41 @@ const ProjectBoard = () => {
     soundManager.setEnabled(newState);
   };
 
+  if (isLoading) {
+    return (
+      <div className="project-board">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '50vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <LoadingSpinner size="large" />
+          <span>Loading project...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isProjectNotFound) {
+    return (
+      <div className="project-board">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '50vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <span>Project not found. Redirecting...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="project-board">
       <PageTitle 
@@ -735,13 +803,6 @@ const ProjectBoard = () => {
             </div>
             
             <div className="header-actions">
-              <div className="real-time-indicator">
-                <div className={`connection-dot ${isRealTimeConnected ? 'connected' : 'disconnected'}`}></div>
-                <span className="connection-text">
-                  {isRealTimeConnected ? 'Live' : 'Offline'}
-                </span>
-              </div>
-              
               <button
                 onClick={toggleSound}
                 className="sound-toggle-btn"
@@ -768,7 +829,7 @@ const ProjectBoard = () => {
         {columns.map(column => (
           <div 
             key={column.id}
-            className={`board-column ${column.id} ${draggedOverColumn === column.id ? 'drag-over' : ''} ${!hasEditAccess ? 'read-only' : ''}`}
+            className={`board-column ${column.id} ${draggedOverColumn === column.id ? 'drag-over' : ''} ${!hasEditAccess ? 'read-only' : ''} ${column.id === 'done' && !canMarkComplete ? 'restricted' : ''}`}
             onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id) : undefined}
             onDrop={hasEditAccess ? (e) => handleDrop(e, column.id) : undefined}
           >
@@ -792,9 +853,9 @@ const ProjectBoard = () => {
                 {getOptimisticTasksForColumn(column.id).map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`task-card ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''}`}
-                    draggable={hasEditAccess}
-                    onDragStart={hasEditAccess ? (e) => handleDragStart(e, task) : undefined}
+                    className={`task-card ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''} ${task.status === 'done' && !canMarkComplete ? 'restricted-task' : ''}`}
+                    draggable={hasEditAccess && !(task.status === 'done' && !canMarkComplete)}
+                    onDragStart={hasEditAccess && !(task.status === 'done' && !canMarkComplete) ? (e) => handleDragStart(e, task) : undefined}
                     onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id, task.id) : undefined}
                     onDrop={hasEditAccess ? (e) => handleDrop(e, column.id, task.id) : undefined}
                     onDragEnd={hasEditAccess ? handleDragEnd : undefined}
@@ -1212,9 +1273,10 @@ const ProjectBoard = () => {
                 value={editingTask?.status || 'todo'}
                 onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
               >
-                <option value="todo">Not Started</option>
+                <option value="todo">Todo</option>
                 <option value="in-progress">In Progress</option>
-                <option value="done">Complete</option>
+                <option value="in-review">In Review</option>
+                {canMarkComplete && <option value="done">Complete</option>}
               </select>
             </div>
           </div>

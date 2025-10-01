@@ -21,19 +21,27 @@ export const TaskProvider = ({ children }) => {
       return;
     }
 
-    let projectsQueryConstraints = [];
-    if (currentUser.role === 'super_manager') {
-      projectsQueryConstraints = [];
-    } else if (currentUser.role === 'manager') {
-      projectsQueryConstraints = queryBuilders.byManager(currentUser.uid);
-    } else {
-      projectsQueryConstraints = queryBuilders.byTeamMember(currentUser.uid);
-    }
-
     const unsubscribeProjects = firebaseUtils.subscribeToCollection('projects', (projectsData) => {
-      setProjects(projectsData);
+      let filteredProjects = projectsData;
+      if (currentUser.role !== 'super_manager') {
+        filteredProjects = projectsData.filter(project => {
+          if (project.managerId === currentUser.uid) {
+            return true;
+          }
+          
+          if (project.teamMembers && Array.isArray(project.teamMembers)) {
+            return project.teamMembers.some(memberId => 
+              memberId === currentUser.uid || memberId === currentUser.email
+            );
+          }
+          
+          return false;
+        });
+      }
+      
+      setProjects(filteredProjects);
 
-      const taskUnsubscribers = projectsData.map(project => {
+      const taskUnsubscribers = filteredProjects.map(project => {
         return firebaseUtils.subscribeToCollection(`projects/${project.id}/tasks`, (projectTasks) => {
           const tasksWithProjectId = projectTasks.map(task => ({
             ...task,
@@ -50,7 +58,7 @@ export const TaskProvider = ({ children }) => {
       return () => {
         taskUnsubscribers.forEach(unsubscribe => unsubscribe());
       };
-    }, projectsQueryConstraints);
+    });
 
     return () => {
       unsubscribeProjects();
@@ -220,10 +228,19 @@ export const TaskProvider = ({ children }) => {
       const project = projects.find(p => p.id === task.projectId);
       if (!project) return false;
 
-      return (
-        project.managerId === currentUser.uid ||
-        project.teamMembers.includes(currentUser.uid)
-      );
+      // Check if user is manager
+      if (project.managerId === currentUser.uid) {
+        return true;
+      }
+      
+      // Check if user is in team members (handle both UID and email)
+      if (project.teamMembers && Array.isArray(project.teamMembers)) {
+        return project.teamMembers.some(memberId => 
+          memberId === currentUser.uid || memberId === currentUser.email
+        );
+      }
+      
+      return false;
     });
   };
 

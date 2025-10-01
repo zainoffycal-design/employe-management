@@ -32,8 +32,22 @@ const ScrollToTop = () => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return null;
+  const { isAuthenticated, loading, isFormSubmitting } = useAuth();
+  if (loading && !isFormSubmitting) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '50vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <LoadingSpinner size="large" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

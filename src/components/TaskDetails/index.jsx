@@ -78,6 +78,7 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
     switch (status) {
       case 'todo': return '#8B5CF6';
       case 'in-progress': return '#15A970';
+      case 'in-review': return '#F59E0B';
       case 'done': return '#059669';
       default: return '#6B7280';
     }
@@ -85,8 +86,9 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
 
   const getStatusDisplayName = (status) => {
     switch (status) {
-      case 'todo': return 'Not Started';
+      case 'todo': return 'Todo';
       case 'in-progress': return 'In Progress';
+      case 'in-review': return 'In Review';
       case 'done': return 'Complete';
       default: return status;
     }

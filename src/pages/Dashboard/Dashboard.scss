@@ -214,7 +214,7 @@
           color: #92400e;
         }
 
-        &[data-status="review"] {
+        &[data-status="in-review"] {
           background: #e0f2fe;
           color: #0369a1;
         }
@@ -508,6 +508,10 @@
                 background: #f59e0b;
               }
 
+              &.in-review .dot {
+                background: #3b82f6;
+              }
+
               &.done .dot {
                 background: #10b981;
               }
@@ -518,6 +522,10 @@
 
               &.in-progress {
                 color: var(--text-secondary);
+              }
+
+              &.in-review {
+                color: #1d4ed8;
               }
 
               &.done {

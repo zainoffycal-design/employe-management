@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { firebaseUtils } from '../utils/firebaseUtils';
 import { userManagementService } from '../services/firebaseService';
 import { permissionUtils, PERMISSIONS } from '../utils/permissionUtils';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AuthContext = createContext();
 
@@ -9,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = firebaseUtils.onAuthStateChanged(async (user) => {
@@ -43,22 +45,24 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
+      setIsFormSubmitting(true);
       const { email, password, ...profile } = userData;
       
       const user = await firebaseUtils.createUser({ email, password, ...profile });
-      
-      await firebaseUtils.createDocument('users', { uid: user.uid, ...profile });
       
       setCurrentUser({ uid: user.uid, email: user.email, ...profile });
       setIsAuthenticated(true);
       return { success: true, user: { uid: user.uid, email: user.email, ...profile } };
     } catch (error) {
       return { success: false, error: error.message };
+    } finally {
+      setIsFormSubmitting(false);
     }
   };
 
   const login = async (email, password) => {
     try {
+      setIsFormSubmitting(true);
       const user = await firebaseUtils.signIn(email, password);
       
       let userData = await firebaseUtils.getDocument('users', user.uid);
@@ -81,6 +85,8 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: { uid: user.uid, email: user.email, ...userData } };
     } catch (error) {
       return { success: false, error: error.message };
+    } finally {
+      setIsFormSubmitting(false);
     }
   };
 
@@ -112,6 +118,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     currentUser,
     loading,
+    isFormSubmitting,
     login,
     logout,
     register,
@@ -130,7 +137,35 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
+      {loading && !isFormSubmitting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '2rem',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <LoadingSpinner size="large" />
+            <span>Loading...</span>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

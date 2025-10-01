@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { userManagementService } from '../../services/firebaseService';
+import { firebaseUtils } from '../../utils/firebaseUtils';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import ProjectCard from '../../components/ProjectCard';
@@ -28,6 +29,8 @@ const Dashboard = () => {
   const { currentUser } = useAuth();
   const { tasks, projects } = useTask();
   const [users, setUsers] = useState([]);
+  const [allTasks, setAllTasks] = useState([]);
+
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -38,8 +41,27 @@ const Dashboard = () => {
         console.error('Error loading users:', error);
       }
     };
+    
+    const loadAllTasks = async () => {
+      try {
+        if (currentUser?.role === 'super_manager' || currentUser?.role === 'manager') {
+          const allProjects = await firebaseUtils.getDocuments('projects');
+          const allTasksData = await Promise.all(
+            allProjects.map(async project => {
+              const projectTasks = await firebaseUtils.getDocuments(`projects/${project.id}/tasks`);
+              return projectTasks.map(task => ({ ...task, projectId: project.id }));
+            })
+          );
+          setAllTasks(allTasksData.flat());
+        }
+      } catch (error) {
+        console.error('Error loading all tasks:', error);
+      }
+    };
+    
     loadUsers();
-  }, []);
+    loadAllTasks();
+  }, [currentUser]);
 
   const overdueTasks = tasks.filter(task => 
     task.deadline && new Date(task.deadline) < new Date() && task.status !== 'done'
@@ -60,21 +82,23 @@ const Dashboard = () => {
       const roleMembers = users.filter(user => user.role === role && user.isActive);
       const totalRoleMembers = users.filter(user => user.role === role);
       
-      const roleTasks = tasks.filter(task => {
-        if (Array.isArray(task.assignee)) {
-          return task.assignee.some(assigneeId => {
-            const assignee = users.find(user => user.id === assigneeId);
-            return assignee && assignee.role === role;
-          });
-        } else {
-          const assignee = users.find(user => user.id === task.assignee);
+      const roleTasks = allTasks.filter(task => {
+        const assigneeIds = Array.isArray(task.assignee) ? task.assignee : [task.assignee];
+        return assigneeIds.some(assigneeId => {
+          const assignee = users.find(user => user.id === assigneeId || user.uid === assigneeId);
           return assignee && assignee.role === role;
-        }
+        });
       });
       
-      const todoTasks = roleTasks.filter(task => task.status === 'todo').length;
-      const inProgressTasks = roleTasks.filter(task => task.status === 'in-progress').length;
-      const completedTasks = roleTasks.filter(task => task.status === 'done').length;
+      const statusCounts = roleTasks.reduce((acc, task) => {
+        acc[task.status] = (acc[task.status] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const todoTasks = statusCounts.todo || 0;
+      const inProgressTasks = statusCounts['in-progress'] || 0;
+      const inReviewTasks = statusCounts['in-review'] || 0;
+      const completedTasks = statusCounts.done || 0;
       
       return {
         role,
@@ -83,6 +107,7 @@ const Dashboard = () => {
         tasks: roleTasks.length,
         todo: todoTasks,
         inProgress: inProgressTasks,
+        inReview: inReviewTasks,
         completed: completedTasks,
         status: roleMembers.length > 0 ? 'active' : 'inactive'
       };
@@ -104,10 +129,11 @@ const Dashboard = () => {
         const projectTasks = tasks.filter(task => task.projectId === project.id);
         const completedTasks = projectTasks.filter(task => task.status === 'done').length;
         const totalTasks = projectTasks.length;
-        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        const isCompleted = totalTasks > 0 && progressPercentage === 100;
         
-        return isCompleted;
+        if (totalTasks === 0) return false;
+        
+        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+        return progressPercentage === 100;
       }).length,
       icon: FiUserCheck,
       color: '#10B981',
@@ -115,16 +141,31 @@ const Dashboard = () => {
         const projectTasks = tasks.filter(task => task.projectId === project.id);
         const completedTasks = projectTasks.filter(task => task.status === 'done').length;
         const totalTasks = projectTasks.length;
-        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        return totalTasks > 0 && progressPercentage === 100;
+        
+        if (totalTasks === 0) return false;
+        
+        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+        return progressPercentage === 100;
       }).length > 0,
       trend: projects.filter(project => {
         const projectTasks = tasks.filter(task => task.projectId === project.id);
         const completedTasks = projectTasks.filter(task => task.status === 'done').length;
         const totalTasks = projectTasks.length;
-        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        return totalTasks > 0 && progressPercentage === 100;
-      }).length > 0 ? '100% progress' : 'None completed'
+        
+        if (totalTasks === 0) return false;
+        
+        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+        return progressPercentage === 100;
+      }).length > 0 ? `${Math.round((projects.filter(project => {
+        const projectTasks = tasks.filter(task => task.projectId === project.id);
+        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+        const totalTasks = projectTasks.length;
+        
+        if (totalTasks === 0) return false;
+        
+        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+        return progressPercentage === 100;
+      }).length / projects.length) * 100)}% of projects` : 'None completed'
     },
     {
       title: 'Total Tasks',
@@ -221,6 +262,34 @@ const Dashboard = () => {
       {}
       <div className="section-header">
         <div className="section-title">
+          <FiLayout className="section-icon" />
+          <h2>Quick Actions</h2>
+        </div>
+      </div>
+      <div className="quick-actions">
+        {getQuickActions().map((action, index) => (
+          <motion.div
+            key={action.title}
+            className="action-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            onClick={() => navigate(action.link)}
+          >
+            <div className="action-icon" style={{ color: action.color }}>
+              <action.icon size={24} />
+            </div>
+            <div className="action-content">
+              <h3>{action.title}</h3>
+              <p>{action.description}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {}
+      <div className="section-header">
+        <div className="section-title">
           <FiBarChart className="section-icon" />
           <h2>Overview</h2>
         </div>
@@ -278,10 +347,6 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <div className="role-badges">
-                    <span className="badge bg-secondary">
-                      <span className="badge-label">Tasks:</span>
-                      {roleStat.todo + roleStat.inProgress + roleStat.completed}
-                    </span>
                     <span className="badge bg-primary">
                       <span className="badge-label">Active:</span>
                       {roleStat.activeMembers}
@@ -305,6 +370,12 @@ const Dashboard = () => {
                       <span className="dot"></span>In Progress
                     </span>
                     <span className="stat-value">{roleStat.inProgress}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label in-review">
+                      <span className="dot"></span>In Review
+                    </span>
+                    <span className="stat-value">{roleStat.inReview}</span>
                   </div>
                   <div className="stat-item">
                     <span className="stat-label done">
@@ -335,7 +406,13 @@ const Dashboard = () => {
               {projects.length > 0 ? (
                 <>
                   <div className="projects-grid mb-3">
-                    {projects.slice(0, 4).map((project, index) => (
+                    {projects
+                      .sort((a, b) => {
+                        const dateA = new Date(a.createdAt || 0);
+                        const dateB = new Date(b.createdAt || 0);
+                        return dateB - dateA;
+                      })
+                      .slice(0, 4).map((project, index) => (
                       <ProjectCard
                         key={project.id}
                         project={project}
@@ -403,7 +480,10 @@ const Dashboard = () => {
                         animate={{ opacity: 1, x: 0 }}
                       >
                         <div className="task-status" data-status={task.status}>
-                          {task.status}
+                          {task.status === 'todo' ? 'Todo' : 
+                           task.status === 'in-progress' ? 'In Progress' :
+                           task.status === 'in-review' ? 'In Review' :
+                           task.status === 'done' ? 'Complete' : task.status}
                         </div>
                         <div className="task-content">
                           <h4>{task.title}</h4>
@@ -454,33 +534,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {}
-      <div className="section-header">
-        <div className="section-title">
-          <FiLayout className="section-icon" />
-          <h2>Quick Actions</h2>
-        </div>
-      </div>
-      <div className="quick-actions">
-        {getQuickActions().map((action, index) => (
-          <motion.div
-            key={action.title}
-            className="action-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            onClick={() => navigate(action.link)}
-          >
-            <div className="action-icon" style={{ color: action.color }}>
-              <action.icon size={24} />
-            </div>
-            <div className="action-content">
-              <h3>{action.title}</h3>
-              <p>{action.description}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
     </div>
   );
 };

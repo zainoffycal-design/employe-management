@@ -281,7 +281,7 @@ const ProjectManagement = () => {
     ?.sort((a, b) => {
       const dateA = new Date(a.createdAt || 0);
       const dateB = new Date(b.createdAt || 0);
-      return dateA - dateB;
+      return dateB - dateA;
     });
 
   const renderTeamMemberSelect = () => (

@@ -97,6 +97,7 @@ const Analytics = () => {
     const completedTasks = taskStatusCounts.done || 0;
     const todoTasks = taskStatusCounts.todo || 0;
     const inProgressTasks = taskStatusCounts['in-progress'] || 0;
+    const inReviewTasks = taskStatusCounts['in-review'] || 0;
     
     const activeUsers = users.filter(user => user.isActive).length;
     const totalUsers = users.length;
@@ -416,6 +417,18 @@ const Analytics = () => {
                 <div 
                   className="status-progress" 
                   style={{ width: `${analytics.totalTasks > 0 ? (analytics.inProgressTasks / analytics.totalTasks) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <div className="status-item in-review">
+              <div className="status-info">
+                <span className="status-name">In Review</span>
+                <span className="status-count">{analytics.inReviewTasks}</span>
+              </div>
+              <div className="status-bar">
+                <div 
+                  className="status-progress" 
+                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.inReviewTasks / analytics.totalTasks) * 100 : 0}%` }}
                 />
               </div>
             </div>
