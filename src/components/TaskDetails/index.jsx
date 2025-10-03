@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import Avatar from '../Avatar';
 import Button from '../Button';
+import RichTextViewer from '../RichTextViewer';
 import './TaskDetails.scss';
 
 const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
@@ -165,7 +166,7 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
 
       <div className="task-description">
         <h4>Description</h4>
-        <p>{currentTask.description || 'No description provided.'}</p>
+        <RichTextViewer content={currentTask.description} />
       </div>
 
       <div className="task-info-grid">

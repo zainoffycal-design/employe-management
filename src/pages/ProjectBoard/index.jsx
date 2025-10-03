@@ -26,6 +26,8 @@ import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import RichTextViewer from '../../components/RichTextViewer';
+import RichTextEditor from '../../components/RichTextEditor';
 import Select from 'react-select';
 import soundManager from '../../utils/soundUtils';
 import './ProjectBoard.scss';
@@ -837,7 +839,7 @@ const ProjectBoard = () => {
                       )}
                     </div>
                     <h3>{task.title}</h3>
-                    <p>{task.description}</p>
+                    <RichTextViewer content={task.description} className="compact" />
                     <div className="task-meta">
                       <div className="task-assignees">
                         {task.assignee && (
@@ -977,12 +979,11 @@ const ProjectBoard = () => {
 
           <div className="form-group">
             <label>Description</label>
-            <textarea
-              className="form-control"
+            <RichTextEditor
               value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              onChange={(value) => setNewTask({ ...newTask, description: value })}
               placeholder="Enter task description"
-              rows="3"
+              height="120px"
             />
           </div>
 
@@ -1121,12 +1122,11 @@ const ProjectBoard = () => {
 
           <div className="form-group">
             <label>Description</label>
-            <textarea
-              className="form-control"
+            <RichTextEditor
               value={editingTask?.description || ''}
-              onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+              onChange={(value) => setEditingTask({ ...editingTask, description: value })}
               placeholder="Enter task description"
-              rows="3"
+              height="120px"
             />
           </div>
 
