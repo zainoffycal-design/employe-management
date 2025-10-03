@@ -488,6 +488,7 @@ const ProjectManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Creating Project..."
             >
               Create Project
             </Button>
@@ -545,6 +546,7 @@ const ProjectManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Updating Project..."
             >
               Update Project
             </Button>
@@ -587,6 +589,7 @@ const ProjectManagement = () => {
               variant="danger"
               onClick={confirmDeleteProject}
               loading={loading}
+              loadingText="Deleting Project..."
             >
               Delete Project
             </Button>

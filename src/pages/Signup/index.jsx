@@ -163,6 +163,7 @@ const Signup = () => {
           type="submit" 
           variant="primary" 
           loading={isLoading}
+          loadingText="Creating Account..."
           className="w-100"
         >
           Create Account

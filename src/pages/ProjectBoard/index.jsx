@@ -1083,6 +1083,7 @@ const ProjectBoard = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Creating Task..."
             >
               Create Task
             </Button>
@@ -1233,6 +1234,7 @@ const ProjectBoard = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Updating Task..."
             >
               Update Task
             </Button>
@@ -1275,6 +1277,7 @@ const ProjectBoard = () => {
               variant="danger"
               onClick={confirmDeleteTask}
               loading={loading}
+              loadingText="Deleting Task..."
             >
               Delete Task
             </Button>

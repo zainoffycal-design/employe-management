@@ -198,9 +198,10 @@ const SetupPassword = () => {
           variant="primary"
           type="submit" 
           loading={loading}
+          loadingText="Activating Account..."
           className="submit-btn"
         >
-          {loading ? 'Activating Account...' : 'Activate Account'}
+          Activate Account
         </Button>
       </form>
     </AuthLayout>

@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-const Button = ({ 
+const Button = memo(({ 
   children, 
   variant = 'primary',
   size = 'md',
   type = 'button',
   disabled = false,
   loading = false,
+  loadingText = 'Loading...',
   onClick,
   className = '',
   ...props 
@@ -14,26 +15,31 @@ const Button = ({
   const baseClass = 'btn';
   const variantClass = `btn--${variant}`;
   const sizeClass = size !== 'md' ? `btn--${size}` : '';
-  const classes = [baseClass, variantClass, sizeClass, className].filter(Boolean).join(' ');
+  const loadingClass = loading ? 'btn--loading' : '';
+  const classes = [baseClass, variantClass, sizeClass, loadingClass, className].filter(Boolean).join(' ');
 
   return (
     <button
       type={type}
       className={classes}
-      disabled={disabled || loading}
-      onClick={onClick}
+      disabled={disabled}
+      onClick={loading ? undefined : onClick}
       {...props}
     >
       {loading ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div className="loading-spinner"></div>
-          Loading...
+        <span className="btn-loading">
+          <div className="btn-spinner"></div>
+          <span className="btn-loading-text">{loadingText}</span>
         </span>
       ) : (
-        children
+        <span className="btn-content">
+          {children}
+        </span>
       )}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';
 
 export default Button; 

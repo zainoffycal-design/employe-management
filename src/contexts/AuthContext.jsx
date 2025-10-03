@@ -161,8 +161,7 @@ export const AuthProvider = ({ children }) => {
             borderRadius: '8px',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
           }}>
-            <LoadingSpinner size="large" />
-            <span>Loading...</span>
+            <LoadingSpinner size="large" text="Loading..." />
           </div>
         </div>
       )}

@@ -497,6 +497,7 @@ const UserManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Sending Invitation..."
             >
               Send Invitation
             </Button>
@@ -570,6 +571,7 @@ const UserManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
+              loadingText="Updating User..."
             >
               Update User
             </Button>

@@ -43,8 +43,7 @@ const ProtectedRoute = ({ children }) => {
         flexDirection: 'column',
         gap: '1rem'
       }}>
-        <LoadingSpinner size="large" />
-        <span>Loading...</span>
+        <LoadingSpinner size="large" text="Loading..." />
       </div>
     );
   }
@@ -157,11 +156,11 @@ function App() {
   }, [navigate]);
 
   if (checkingUsers) {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner size="large" text="Loading..." />;
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner size="large" />}>
+    <Suspense fallback={<LoadingSpinner size="large" text="Loading..." />}>
       <Routes>
         <Route path="/signup" element={noUsers ? <Signup /> : <Navigate to="/login" replace />} />
         <Route path="/login" element={noUsers ? <Navigate to="/signup" replace /> : <Login />} />

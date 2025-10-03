@@ -102,6 +102,7 @@ const Login = () => {
           type="submit" 
           variant="primary" 
           loading={isLoading}
+          loadingText="Signing In..."
           className="w-100"
         >
           Sign In

@@ -372,6 +372,7 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
               variant="primary" 
               type="submit"
               loading={passwordLoading}
+              loadingText="Updating Password..."
             >
               Update Password
             </Button>
