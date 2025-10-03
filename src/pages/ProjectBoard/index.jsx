@@ -75,112 +75,61 @@ const ProjectBoard = () => {
   const currentProject = projects.find(p => p.id === projectId);
 
   const customStyles = {
-    control: (base, state) => ({
+    control: (base) => ({
       ...base,
-      minHeight: '47px',
-      height: '47px',
+      minHeight: '38px',
       backgroundColor: 'white',
-      borderColor: state.isFocused ? '#15a970' : '#dee2e6',
-      borderWidth: '1px',
-      borderRadius: '0.375rem',
-      boxShadow: state.isFocused ? '0 0 0 0.2rem rgba(21, 169, 112, 0.25)' : 'none',
-      fontSize: '1rem',
-      lineHeight: '1.5',
-      padding: '0',
+      borderColor: '#e2e8f0',
+      boxShadow: 'none',
       '&:hover': {
-        borderColor: state.isFocused ? '#15a970' : '#adb5bd'
-      }
-    }),
-    valueContainer: (base) => ({
-      ...base,
-      padding: '0.375rem 0.75rem',
-      margin: '0'
-    }),
-    input: (base) => ({
-      ...base,
-      margin: '0',
-      padding: '0'
-    }),
-    placeholder: (base) => ({
-      ...base,
-      color: '#6c757d',
-      margin: '0'
-    }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: '#e9ecef',
-      borderRadius: '0.25rem',
-      margin: '2px 4px 2px 0',
-      padding: '0'
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: '#495057',
-      fontSize: '0.875rem',
-      padding: '2px 6px'
-    }),
-    multiValueRemove: (base) => ({
-      ...base,
-      color: '#6c757d',
-      padding: '2px 6px',
-      ':hover': {
-        backgroundColor: '#dc3545',
-        color: 'white'
+        borderColor: '#cbd5e1'
       }
     }),
     option: (base, state) => ({
       ...base,
       padding: '8px 12px',
       backgroundColor: state.isSelected 
-        ? '#15a970'
+        ? '#f1f5f9'
         : state.isFocused 
-        ? '#f8f9fa'
+        ? '#f8fafc'
         : 'white',
-      color: state.isSelected ? 'white' : '#495057',
+      color: '#334155',
       '&:active': {
-        backgroundColor: '#15a970'
+        backgroundColor: '#f1f5f9'
       }
     }),
-    singleValue: (base) => ({
+    multiValue: (base) => ({
       ...base,
-      color: '#495057'
+      backgroundColor: '#f1f5f9',
+      borderRadius: '4px'
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: '#334155',
+      padding: '2px 6px'
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: '#64748b',
+      '&:hover': {
+        backgroundColor: '#e2e8f0',
+        color: '#334155'
+      }
     }),
     menu: (base) => ({
       ...base,
-      boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
-      borderRadius: '0.375rem',
-      border: '1px solid #dee2e6',
-      zIndex: 1050
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      borderRadius: '6px'
     }),
-    menuList: (base) => ({
+    groupHeading: (base) => ({
       ...base,
-      padding: '0.5rem 0'
-    }),
-    indicatorsContainer: (base) => ({
-      ...base,
-      height: '45px',
-      paddingRight: '0.75rem'
-    }),
-    indicatorSeparator: (base) => ({
-      ...base,
-      backgroundColor: '#dee2e6',
-      marginLeft: '0.5rem'
-    }),
-    dropdownIndicator: (base) => ({
-      ...base,
-      color: '#6c757d',
-      padding: '0',
-      ':hover': {
-        color: '#495057'
-      }
-    }),
-    clearIndicator: (base) => ({
-      ...base,
-      color: '#6c757d',
-      padding: '0',
-      ':hover': {
-        color: '#dc3545'
-      }
+      fontSize: '0.875rem',
+      color: '#64748b',
+      fontWeight: 600,
+      textTransform: 'none',
+      padding: '8px 12px',
+      marginBottom: 0,
+      backgroundColor: '#f8fafc'
     })
   };
 
@@ -192,39 +141,20 @@ const ProjectBoard = () => {
         style={{
           padding: '8px 12px',
           cursor: 'pointer',
-          backgroundColor: props.isSelected ? '#15a970' : props.isFocused ? '#f8f9fa' : 'white',
-          color: props.isSelected ? 'white' : '#495057',
+          backgroundColor: props.isFocused ? '#f8fafc' : 'white',
           display: 'flex',
-          alignItems: 'center',
-          borderRadius: '0.25rem',
-          margin: '2px 8px',
-          transition: 'all 0.15s ease-in-out'
+          alignItems: 'center'
         }}
       >
         <Avatar 
           src={data.avatar} 
           name={data.label}
           size="small"
-          style={{ 
-            marginRight: '8px',
-            border: props.isSelected ? '2px solid white' : '2px solid #e9ecef'
-          }}
+          style={{ marginRight: '8px' }}
         />
         <div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            color: props.isSelected ? 'white' : '#495057',
-            fontWeight: '500'
-          }}>
-            {data.label}
-          </div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: props.isSelected ? 'rgba(255, 255, 255, 0.8)' : '#6c757d',
-            textTransform: 'capitalize'
-          }}>
-            {data.role}
-          </div>
+          <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
         </div>
       </div>
     );
@@ -300,6 +230,11 @@ const ProjectBoard = () => {
 
   const canMarkComplete = 
     currentUser.role === 'super_manager' || 
+    currentProject?.managerId === currentUser.uid;
+
+  const canDeleteTask = 
+    currentUser.role === 'super_manager' || 
+    currentUser.role === 'manager' ||
     currentProject?.managerId === currentUser.uid;
 
   const projectTasks = currentProject ? tasks.filter(task => task.projectId === projectId) : [];
@@ -886,16 +821,18 @@ const ProjectBoard = () => {
                           >
                             <FiEdit3 size={14} />
                           </button>
-                          <button
-                            className="task-action-btn delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTask(task);
-                            }}
-                            title="Delete task"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
+                          {canDeleteTask && (
+                            <button
+                              className="task-action-btn delete"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(task);
+                              }}
+                              title="Delete task"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1363,7 +1300,7 @@ const ProjectBoard = () => {
               setSelectedTask(null);
             }}
             onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
+            onDelete={canDeleteTask ? handleDeleteTask : null}
             users={users}
             project={currentProject}
           />

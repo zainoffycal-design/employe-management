@@ -22,8 +22,8 @@ rm -rf dist
 echo "📦 Installing dependencies..."
 npm install
 
-# Build the application
-echo "🔨 Building application..."
+# Build the application with production mode
+echo "🔨 Building application for production..."
 npm run build
 
 # Check if build was successful

@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-   
+    margin-right: 1rem;
 
     .search-box {
       width: 240px;
@@ -959,87 +959,6 @@
 }
 
 
-.project-board {
-  .react-select__control {
-    border: 1px solid var(--gray-300);
-    border-radius: var(--border-radius);
-    min-height: 38px;
-    box-shadow: none;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      border-color: var(--gray-400);
-    }
-    
-    &.react-select__control--is-focused {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(21, 169, 112, 0.1);
-    }
-  }
-  
-  .react-select__option {
-    padding: 8px 12px;
-    cursor: pointer;
-    
-    &.react-select__option--is-focused {
-      background-color: var(--gray-100);
-    }
-    
-    &.react-select__option--is-selected {
-      background-color: var(--primary-color);
-      color: white;
-    }
-  }
-  
-  .react-select__menu {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border-radius: 6px;
-    border: 1px solid var(--gray-200);
-  }
-  
-  .react-select__placeholder {
-    color: var(--gray-400);
-  }
-  
-  .react-select__single-value {
-    color: var(--gray-800);
-  }
-  
-  .react-select__multi-value {
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 4px;
-    margin: 2px;
-    
-    .react-select__multi-value__label {
-      color: white;
-      font-size: 0.75rem;
-      padding: 2px 6px;
-    }
-    
-    .react-select__multi-value__remove {
-      color: white;
-      padding: 2px 4px;
-      
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-      }
-    }
-  }
-  
-  .react-select__indicator-separator {
-    background-color: var(--gray-300);
-  }
-  
-  .react-select__indicator {
-    color: var(--gray-500);
-    
-    &:hover {
-      color: var(--gray-700);
-    }
-  }
-}
 
 
 .delete-confirmation {

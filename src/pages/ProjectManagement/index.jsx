@@ -60,11 +60,13 @@ const ProjectManagement = () => {
 
   const groupedOptions = Object.entries(
     users.reduce((acc, user) => {
-      if (user.role === 'manager' || user.role === 'super_manager') {
+      if (user.role === 'super_manager') {
         return acc;
       }
       
-      const role = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+      const role = user.role === 'manager' ? 'Manager' :
+                   user.role.charAt(0).toUpperCase() + user.role.slice(1);
+      
       if (!acc[role]) {
         acc[role] = [];
       }

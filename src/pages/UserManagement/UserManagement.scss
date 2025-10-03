@@ -171,7 +171,7 @@
     .user-info {
       flex: 1;
       min-width: 0;
-      padding-right: 80px;
+    
 
       h3 {
         font-size: 1rem;
@@ -433,10 +433,6 @@
     .user-card {
       padding: 1.25rem;
       gap: 1rem;
-
-      .user-info {
-        padding-right: 70px;
-      }
     }
   }
 } 
