@@ -1,8 +1,17 @@
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+@use '../../styles/_shared.scss' as *;
+
+@mixin avatar-size($size) {
+  width: $size;
+  height: $size;
+}
+
+@mixin avatar-circle {
   border-radius: 50%;
+}
+
+.avatar {
+  @include flex-center;
+  @include avatar-circle;
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
@@ -12,48 +21,39 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 50%;
+    @include avatar-circle;
   }
 
   .avatar-fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
+    @include avatar-circle;
     background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
     font-weight: 600;
-    border-radius: 50%;
     text-align: center;
     line-height: 1;
   }
 
-
   &--small {
-    width: 24px;
-    height: 24px;
+    @include avatar-size(24px);
   }
 
   &--medium {
-    width: 32px;
-    height: 32px;
+    @include avatar-size(32px);
   }
 
   &--large {
-    width: 48px;
-    height: 48px;
+    @include avatar-size(48px);
   }
 
   &--xlarge {
-    width: 64px;
-    height: 64px;
+    @include avatar-size(64px);
   }
-
 
   &:hover {
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
-
 
   &:active {
     transform: scale(0.95);

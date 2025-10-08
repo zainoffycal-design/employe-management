@@ -200,7 +200,6 @@ export const TaskProvider = ({ children }) => {
           console.error('Error sending notifications:', notificationError);
         }
       } else {
-        console.log('No assignees found in updated task data:', taskData);
       }
     } catch (error) {
       console.error('Error updating task:', error);

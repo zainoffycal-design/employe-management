@@ -1,8 +1,8 @@
+@use '../../styles/_shared.scss' as *;
+
 .auth-page {
+  @include flex-center;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 2rem;
 }
 
@@ -40,26 +40,9 @@
   }
 }
 
-
-
 .error-message {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  
-  span {
-    flex: 1;
-  }
+  @include error-message;
 }
-
 
 .user-info-card {
   background: var(--gray-50);
@@ -102,38 +85,14 @@
   }
 }
 
-
 .loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2rem;
-  text-align: center;
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--gray-200);
-    border-top: 3px solid var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  p {
-    color: var(--gray-600);
-    margin: 0;
-    font-size: 0.9rem;
-  }
+  @include loading-container;
 }
 
-
 .error-container {
-  display: flex;
+  @include flex-center;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
 
   .error-icon {
     color: var(--error-color);
@@ -148,18 +107,10 @@
   }
 }
 
-
 .submit-btn {
   width: 100%;
   margin-top: 1rem;
 }
-
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 
 @media (max-width: 768px) {
   .auth-page {

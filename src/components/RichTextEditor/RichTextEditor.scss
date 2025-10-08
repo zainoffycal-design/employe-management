@@ -1,3 +1,5 @@
+@use '../../styles/_shared.scss' as *;
+
 .rich-text-editor {
   position: relative;
   z-index: 1;
@@ -20,7 +22,7 @@
       color: var(--gray-600);
     }
     
-    button:hover {
+    button:hover {  
       .ql-stroke {
         stroke: var(--primary-color);
       }
@@ -131,29 +133,10 @@
     }
   }
   
-  &.read-only {
-    .ql-toolbar {
-      display: none;
-    }
-    
-    .ql-container {
-      border-radius: var(--border-radius);
-    }
-  }
-  
   .ql-tooltip {
     left: 8px !important;
-  top: 100% !important;
+    top: 100% !important;
   }
-}
-
-.rich-text-viewer{
-  margin-bottom: 12px;
-  max-height: unset !important;
-}
-
-.rich-text-viewer.compact ul, .rich-text-viewer.compact ol{
-  padding-left: 15px;
 }
 
 .ql-editor li {

@@ -544,12 +544,12 @@ const Dashboard = () => {
                           <p>{project?.name}</p>
                         </div>
                         <div className="task-meta">
-                          {task.totalHours && task.totalHours > 0 && (
+                          {task.totalHours > 0 ? (
                             <span className="task-hours">
                               <FiClock size={12} />
                               {task.totalHours.toFixed(1)}h
                             </span>
-                          )}
+                          ) : null}
                           {task.deadline && (
                             <span className="task-deadline">
                               <FiCalendar size={12} />

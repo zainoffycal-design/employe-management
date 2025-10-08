@@ -1,3 +1,5 @@
+@use '../../styles/_shared.scss' as *;
+
 .slide-modal-overlay {
   position: fixed;
   top: 0;
@@ -17,14 +19,13 @@
   background: white;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
   z-index: 1050;
-  display: flex;
+  @include flex-center;
   flex-direction: column;
+  align-items: stretch;
   overflow: hidden;
 
   .slide-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
     padding: 1.5rem 1.5rem 1rem;
     border-bottom: 1px solid #e9ecef;
     background: #f8f9fa;
@@ -44,9 +45,7 @@
       padding: 0.5rem;
       border-radius: 0.375rem;
       transition: all 0.15s ease-in-out;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      @include flex-center;
 
       &:hover {
         background-color: #e9ecef;

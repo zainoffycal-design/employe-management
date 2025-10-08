@@ -149,7 +149,7 @@ export const groupAndSortUsers = (users) => {
 };
 
 export const formatHours = (hours) => {
-  if (!hours || hours === 0) return '0h';
+  if (!hours || hours === 0) return '-';
   if (hours < 1) return `${(hours * 60).toFixed(0)}m`;
   return `${hours.toFixed(1)}h`;
 };

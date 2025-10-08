@@ -1,3 +1,20 @@
+@use '../../styles/_shared.scss' as *;
+
+@mixin clean-button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+@mixin avatar-border($size, $border-width: 2px) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  object-fit: cover;
+  border: $border-width solid var(--gray-200);
+}
+
 .header {
   position: fixed;
   top: 0;
@@ -7,15 +24,13 @@
   background: white;
   border-bottom: 1px solid var(--gray-200);
   z-index: var(--z-header);
+  
   .container-fluid{
     padding: 0 50px;
   }
 
   .logo-btn {
-    padding: 0;
-    border: none;
-    background: none;
-    cursor: pointer;
+    @include clean-button;
     transition: opacity 0.2s ease;
     
     &:hover {
@@ -31,8 +46,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
+    @include flex-center;
     gap: 0.5rem;
     
     &:hover {
@@ -48,15 +62,6 @@
   .logo-img {
     height: 40px;
     width: auto;
-  }
-
-  .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--gray-200);
-    transition: border-color 0.2s ease;
   }
 
   .user-name {
@@ -81,11 +86,7 @@
   }
 
   .dropdown-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--gray-200);
+    @include avatar-border(48px);
   }
 
   .dropdown-user-info {
@@ -104,10 +105,7 @@
     }
 
     .badge {
-      font-size: 0.7rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-weight: 500;
+      @include badge-base;
     }
   }
 
@@ -208,8 +206,8 @@
       }
 
       .dropdown-item {
-        display: flex;
-        align-items: center;
+        @include flex-center;
+        justify-content: flex-start;
         width: 100%;
         padding: 1rem 1.5rem;
         border: none;
@@ -298,15 +296,6 @@
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 .app-content {
   padding-top: 72px;
 }
@@ -323,11 +312,9 @@
   border-radius: 0 12px 12px 0;
   color: white;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
   box-shadow: 4px 0 16px rgba(21, 169, 112, 0.3);
-  z-index: 9997;
+  z-index: 9;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   svg {
@@ -355,6 +342,4 @@
       transform: rotate(0deg);
     }
   }
-  
- 
 }

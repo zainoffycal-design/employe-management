@@ -97,14 +97,6 @@ const ProjectCard = memo(({
             const managerId = project.managerId || currentUser.uid;
             const creator = users.find(user => user.id === managerId);
             
-            console.log('Debug creator lookup:', {
-              projectName: project.name,
-              managerId,
-              currentUserId: currentUser.uid,
-              usersCount: users.length,
-              foundCreator: creator,
-              allUsers: users.map(u => ({ id: u.id, name: u.name, role: u.role }))
-            });
             
             if (!creator) {
               if (managerId === currentUser.uid) {

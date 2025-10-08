@@ -196,37 +196,39 @@ const ProjectManagement = () => {
     }
   };
 
-  const filteredProjects = projects
-    ?.filter(project => {
-      const matchesSearch = !searchTerm.trim() || (() => {
-      const searchLower = searchTerm.toLowerCase();
-      
-      if (project.name.toLowerCase().includes(searchLower)) return true;
-      
-      if (project.description.toLowerCase().includes(searchLower)) return true;
-      
-      if (project.teamMembers && project.teamMembers.length > 0) {
-        const hasMatchingMember = project.teamMembers.some(memberId => {
-          const user = allUsers.find(u => u.id === memberId);
-          return user?.name.toLowerCase().includes(searchLower);
-        });
-        if (hasMatchingMember) return true;
-      }
-      
-      return false;
-      })();
+  const filteredProjects = useMemo(() => {
+    return projects
+      ?.filter(project => {
+        const matchesSearch = !searchTerm.trim() || (() => {
+        const searchLower = searchTerm.toLowerCase();
+        
+        if (project.name.toLowerCase().includes(searchLower)) return true;
+        
+        if (project.description.toLowerCase().includes(searchLower)) return true;
+        
+        if (project.teamMembers && project.teamMembers.length > 0) {
+          const hasMatchingMember = project.teamMembers.some(memberId => {
+            const user = allUsers.find(u => u.id === memberId);
+            return user?.name.toLowerCase().includes(searchLower);
+          });
+          if (hasMatchingMember) return true;
+        }
+        
+        return false;
+        })();
 
-      const matchesManager = !selectedManager || 
-        project.managerId === selectedManager.value || 
-        project.createdBy === selectedManager.value;
+        const matchesManager = !selectedManager || 
+          project.managerId === selectedManager.value || 
+          project.createdBy === selectedManager.value;
 
-      return matchesSearch && matchesManager;
-    })
-    ?.sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0);
-      const dateB = new Date(b.createdAt || 0);
-      return dateB - dateA;
-    });
+        return matchesSearch && matchesManager;
+      })
+      ?.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+  }, [projects, searchTerm, selectedManager, allUsers]);
 
   const renderTeamMemberSelect = () => (
     <div className="form-group">

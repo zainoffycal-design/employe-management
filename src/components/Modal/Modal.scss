@@ -1,5 +1,17 @@
-
 @use '../../styles/_shared.scss' as *;
+
+@mixin modal-size($max-width) {
+  max-width: $max-width !important;
+}
+
+@mixin modal-actions {
+  @include flex-between;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gray-200);
+}
 
 .modal-overlay {
   @include modal-overlay;
@@ -17,26 +29,24 @@
   --bs-modal-box-shadow: var(--shadow-xl) !important;
 
   &--small {
-    max-width: 400px !important;
+    @include modal-size(400px);
   }
   
   &--medium {
-    max-width: 500px !important;
+    @include modal-size(500px);
   }
   
   &--large {
-    max-width: 700px !important;
+    @include modal-size(700px);
   }
   
   &--xlarge {
-    max-width: 900px !important;
+    @include modal-size(900px);
   }
 }
 
 .modal-overlay .modal .modal-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
+  @include flex-between;
   padding: 0 !important;
   border-bottom: none !important;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
@@ -66,9 +76,7 @@
 }
 
 .modal-overlay .modal .modal-header-content {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
+  @include flex-between;
   width: 100% !important;
   padding: 1.5rem !important;
   position: relative !important;
@@ -76,10 +84,10 @@
 }
 
 .modal-overlay .modal .modal-title-container {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 0.5rem !important;
+  @include flex-center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .modal-overlay .modal .modal-title {
@@ -100,6 +108,7 @@
 }
 
 .modal-overlay .modal .modal-close {
+  @include flex-center;
   width: 36px !important;
   height: 36px !important;
   border: none !important;
@@ -108,9 +117,6 @@
   border-radius: 50% !important;
   cursor: pointer !important;
   color: var(--white) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
   padding: 0 !important;
   margin: 0 !important;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
@@ -132,73 +138,21 @@
 
   form {
     .modal-actions {
+      @include modal-actions;
       display: flex !important;
-      gap: 1rem !important;
-      justify-content: flex-end !important;
-      margin-top: 2rem !important;
-      padding-top: 1.5rem !important;
-      border-top: 1px solid var(--gray-200) !important;
     }
   }
 }
 
-.modal-overlay .modal .avatar-upload-container {
-  position: relative !important;
-  width: 100% !important;
-  height: 120px !important;
-  border: 2px dashed var(--gray-300) !important;
-  border-radius: var(--border-radius) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  
-  &:hover {
-    border-color: var(--primary-color) !important;
-    background-color: var(--gray-50) !important;
-  }
-}
-
-.modal-overlay .modal .avatar-preview {
-  width: 100% !important;
-  height: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  
-  .avatar-image {
-    max-width: 100% !important;
-    max-height: 100% !important;
-    border-radius: var(--border-radius) !important;
-    object-fit: cover !important;
-  }
-}
-
-.modal-overlay .modal .avatar-placeholder {
-  text-align: center !important;
-  color: var(--gray-500) !important;
-  
-  .avatar-icon {
-    margin-bottom: 0.5rem !important;
-    color: var(--gray-400) !important;
-  }
-  
-  p {
-    margin: 0.25rem 0 !important;
-    font-size: 0.875rem !important;
-  }
-}
-
 .modal-overlay .modal .input-wrapper {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-
+  @include input-wrapper;
+  
+  * {
+    position: relative !important;
+  }
+  
   .input-icon {
     position: absolute !important;
-    left: 1rem !important;
-    color: var(--gray-400) !important;
-    z-index: 1 !important;
   }
 
   input {
@@ -207,33 +161,17 @@
 
   .password-toggle {
     position: absolute !important;
-    right: 1rem !important;
-    background: none !important;
-    border: none !important;
-    color: var(--gray-400) !important;
-    cursor: pointer !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-
-    &:hover {
-      color: var(--gray-600) !important;
-    }
   }
 }
 
 .modal-overlay .modal .error-message {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  background: #fef2f2 !important;
-  color: #dc2626 !important;
-  border: 1px solid #fecaca !important;
-  padding: 0.75rem 1rem !important;
-  border-radius: var(--border-radius) !important;
-  margin-bottom: 1.5rem !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
+  @include error-message;
+  
+  * {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
   
   svg {
     flex-shrink: 0 !important;

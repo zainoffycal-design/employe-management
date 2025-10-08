@@ -1,11 +1,10 @@
-@use '../../styles/shared' as *;
+@use '../../styles/_shared.scss' as *;
 
 .project-management {
   padding: 2rem;
 
   .filters-container {
-    display: flex;
-    align-items: center;
+    @include flex-center;
     gap: 1rem;
     margin-right: 1rem;
 
@@ -16,37 +15,14 @@
     .manager-filter {
       width: 200px;
       
-      .react-select__control {
-        min-height: 38px;
-        border-radius: var(--border-radius);
-        border-color: var(--gray-200);
-        
-        &:hover {
-          border-color: var(--gray-300);
-        }
-        
-        &.react-select__control--is-focused {
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 2px rgba(21, 169, 112, 0.1);
-        }
-      }
-      
-      .react-select__placeholder {
-        color: var(--gray-400);
-        font-size: 0.9rem;
-      }
-      
-      .react-select__single-value {
-        color: var(--gray-700);
-        font-size: 0.9rem;
+      div{
+        min-height: unset;
       }
     }
   }
 
   .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    @include flex-between;
     margin-bottom: 2rem;
 
     .header-content {
@@ -54,8 +30,8 @@
         font-size: 1.5rem;
         font-weight: 600;
         color: var(--text-primary);
-        display: flex;
-        align-items: center;
+        @include flex-center;
+        justify-content: flex-start;
         gap: 0.75rem;
         margin-bottom: 0.5rem;
 
@@ -86,8 +62,7 @@
       margin: 2rem 0;
       
       .empty-state-icon {
-        display: flex;
-        justify-content: center;
+        @include flex-center;
         margin-bottom: 1.5rem;
       }
       
@@ -103,8 +78,7 @@
       }
       
       .create-first-project-btn {
-        display: inline-flex;
-        align-items: center;
+        @include flex-center;
         gap: 0.5rem;
         padding: 0.75rem 1.5rem;
         font-weight: 500;
@@ -119,16 +93,14 @@
       position: absolute;
       top: 1rem;
       right: 1rem;
-      display: flex;
+      @include flex-center;
       gap: 0.5rem;
       opacity: 0;
       transition: var(--transition);
       z-index: 10;
 
       .action-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        @include flex-center;
         width: 32px;
         height: 32px;
         border: none;
@@ -160,7 +132,7 @@
   }
 
   .project-card {
-    display: flex;
+    @include flex-center;
     align-items: flex-start;
     gap: 1rem;
     padding: 1rem;
@@ -183,9 +155,7 @@
       border-radius: 6px;
       background: var(--primary-color);
       color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      @include flex-center;
       font-size: 1.1rem;
       font-weight: 600;
       flex-shrink: 0;
@@ -195,8 +165,9 @@
       flex: 1;
       min-width: 0;
       padding-right: 60px;
-      display: flex;
+      @include flex-center;
       flex-direction: column;
+      align-items: flex-start;
 
       h3 {
         font-size: 0.95rem;
@@ -221,13 +192,13 @@
       }
 
       .project-meta {
-        display: flex;
+        @include flex-center;
+        justify-content: flex-start;
         gap: 0.5rem;
         margin-bottom: 1rem;
 
         .badge {
-          display: inline-flex;
-          align-items: center;
+          @include flex-center;
           padding: 0.35rem 0.75rem;
           border-radius: 6px;
           font-size: 0.75rem;
@@ -254,8 +225,7 @@
         align-self: flex-start;
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
-        display: flex;
-        align-items: center;
+        @include flex-center;
         gap: 0.5rem;
         background-color: var(--primary-color);
         color: white;
@@ -280,15 +250,13 @@
       position: absolute;
       top: 1rem;
       right: 1rem;
-      display: flex;
+      @include flex-center;
       gap: 0.5rem;
 
       .action-btn {
         width: 28px;
         height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        @include flex-center;
         border: none;
         border-radius: 4px;
         background: var(--gray-100);
@@ -318,7 +286,7 @@
 
 
   .modal-actions {
-    display: flex;
+    @include flex-between;
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 2rem;

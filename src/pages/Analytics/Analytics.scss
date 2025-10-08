@@ -1,7 +1,8 @@
-@use '../../styles/_shared.scss'as *;
+@use '../../styles/_shared.scss' as *;
 
 .analytics-filters {
-  display: flex;
+  @include flex-center;
+  justify-content: flex-start;
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
@@ -10,8 +11,9 @@
   border: 1px solid var(--gray-200);
 
   .filter-group {
-    display: flex;
+    @include flex-center;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.5rem;
 
     label {
@@ -39,6 +41,11 @@
   }
 }
 
+.filter-group{
+  div{
+    min-height: unset !important;
+  }
+}
 .top-performers-section {
   margin-bottom: 3rem;
 
@@ -79,18 +86,15 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     font-weight: 700;
     font-size: 1.1rem;
     box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
   }
 
   .performer-info {
-    display: flex;
+    @include flex-center;
     flex-direction: column;
-    align-items: center;
     gap: 1rem;
     margin-bottom: 1.5rem;
 
@@ -112,7 +116,7 @@
   }
 
   .performer-stats {
-    display: flex;
+    @include flex-center;
     justify-content: space-around;
     gap: 1rem;
 
@@ -166,202 +170,10 @@
   }
 }
 
-.analytics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-}
-
-.analytics-card {
-  @include card-base;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-
-    h3 {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--gray-800);
-    }
-
-    .card-icon {
-      color: var(--primary-color);
-      opacity: 0.8;
-    }
-  }
-
-  .analytics-metric {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-
-    .metric-value {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: var(--gray-800);
-      line-height: 1;
-    }
-
-    .metric-total,
-    .metric-unit {
-      font-size: 1.2rem;
-      color: var(--gray-500);
-      font-weight: 500;
-    }
-  }
-
-  .metric-progress {
-    width: 100%;
-    height: 8px;
-    background: var(--gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 0.75rem;
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
-      border-radius: 4px;
-      transition: width 0.3s ease;
-    }
-  }
-
-  .metric-label {
-    font-size: 0.85rem;
-    color: var(--gray-600);
-    margin: 0;
-  }
-
-  &.employee-of-month {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-
-    &::before {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .card-header h3 {
-      color: white;
-    }
-
-    .card-icon {
-      color: white;
-    }
-
-    .employee-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-
-      .employee-details {
-        h4 {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: white;
-        }
-
-        .employee-role {
-          font-size: 0.85rem;
-          color: rgba(255, 255, 255, 0.8);
-          text-transform: capitalize;
-        }
-      }
-    }
-
-    .analytics-metric {
-      .metric-value {
-        color: white;
-        font-size: 2rem;
-      }
-
-      .metric-unit {
-        color: rgba(255, 255, 255, 0.8);
-      }
-    }
-
-    .metric-label {
-      color: rgba(255, 255, 255, 0.9);
-    }
-  }
-
-  &.employee-of-year {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-
-    &::before {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .card-header h3 {
-      color: white;
-    }
-
-    .card-icon {
-      color: white;
-    }
-
-    .employee-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-
-      .employee-details {
-        h4 {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: white;
-        }
-
-        .employee-role {
-          font-size: 0.85rem;
-          color: rgba(255, 255, 255, 0.8);
-          text-transform: capitalize;
-        }
-      }
-    }
-
-    .analytics-metric {
-      .metric-value {
-        color: white;
-        font-size: 2rem;
-      }
-
-      .metric-unit {
-        color: rgba(255, 255, 255, 0.8);
-      }
-    }
-
-    .metric-label {
-      color: rgba(255, 255, 255, 0.9);
-    }
-  }
-}
-
 .analytics-sections {
-  display: flex;
+  @include flex-center;
   flex-direction: column;
+  align-items: stretch;
   gap: 2rem;
 }
 
@@ -374,15 +186,16 @@
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--gray-800);
-    display: flex;
-    align-items: center;
+    @include flex-center;
+    justify-content: flex-start;
     gap: 0.5rem;
   }
 }
 
 .employee-performance {
-  display: flex;
+  @include flex-center;
   flex-direction: column;
+  align-items: stretch;
   gap: 2rem;
   margin-top: 1.5rem;
 }
@@ -417,14 +230,13 @@
   }
 
   .employee-header {
-    display: flex;
-    justify-content: space-between;
+    @include flex-between;
     align-items: flex-start;
     margin-bottom: 1rem;
 
     .employee-info {
-      display: flex;
-      align-items: center;
+      @include flex-center;
+      justify-content: flex-start;
       gap: 0.75rem;
 
       .employee-details {
@@ -472,13 +284,13 @@
     margin-bottom: 1rem;
 
     .metric-row {
-      display: flex;
-      justify-content: space-between;
+      @include flex-between;
       margin-bottom: 0.5rem;
 
       .metric {
-        display: flex;
+        @include flex-center;
         flex-direction: column;
+        align-items: flex-start;
         gap: 0.25rem;
 
         .label {
@@ -523,14 +335,13 @@
     }
 
     .project-list {
-      display: flex;
+      @include flex-center;
       flex-direction: column;
+      align-items: stretch;
       gap: 0.5rem;
 
       .project-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        @include flex-between;
         padding: 0.5rem;
         background: var(--gray-50);
         border-radius: 6px;
@@ -558,249 +369,9 @@
   }
 }
 
-.employee-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.detail-card {
-  @include card-base;
-  padding: 1.5rem;
-
-  h4 {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .project-details,
-  .task-details {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .project-detail,
-  .task-detail {
-    padding: 1rem;
-    background: var(--gray-50);
-    border-radius: 8px;
-    border: 1px solid var(--gray-200);
-
-    .project-header,
-    .task-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-
-      .project-name,
-      .task-title {
-        font-weight: 600;
-        color: var(--text-primary);
-      }
-
-      .task-status {
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: capitalize;
-
-        &.todo {
-          background: #ddd6fe;
-          color: #5b21b6;
-        }
-
-        &.in-progress {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        &.in-review {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        &.done {
-          background: #d1fae5;
-          color: #065f46;
-        }
-      }
-    }
-
-    .project-stats,
-    .task-info {
-      display: flex;
-      gap: 1rem;
-
-      .stat {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-
-        .label {
-          font-size: 0.75rem;
-          color: var(--gray-600);
-          font-weight: 500;
-        }
-
-        .value {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-      }
-
-      .task-project {
-        font-size: 0.8rem;
-        color: var(--gray-600);
-        flex: 1;
-      }
-
-      .task-hours {
-        font-size: 0.8rem;
-        color: var(--gray-600);
-        font-weight: 600;
-      }
-    }
-  }
-
-  .task-more {
-    text-align: center;
-    padding: 0.75rem;
-    color: var(--gray-500);
-    font-size: 0.85rem;
-    background: var(--gray-100);
-    border-radius: 6px;
-  }
-}
-
-.calendar-view {
-  .calendar-container {
-    margin-top: 1.5rem;
-  }
-
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-
-    h4 {
-      margin: 0;
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .calendar-legend {
-      display: flex;
-      gap: 1rem;
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: var(--gray-600);
-
-        .legend-color {
-          width: 12px;
-          height: 12px;
-          border-radius: 2px;
-
-          &.high {
-            background: #10b981;
-          }
-
-          &.medium {
-            background: #f59e0b;
-          }
-
-          &.low {
-            background: #ef4444;
-          }
-        }
-      }
-    }
-  }
-
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.5rem;
-    background: var(--gray-50);
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--gray-200);
-
-    .calendar-day {
-      aspect-ratio: 1;
-      background: white;
-      border: 1px solid var(--gray-200);
-      border-radius: 6px;
-      padding: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-
-      .day-number {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--text-primary);
-        margin-bottom: 0.25rem;
-      }
-
-      .day-utilization {
-        width: 100%;
-        height: 4px;
-        border-radius: 2px;
-        position: relative;
-
-        &.high {
-          background: #10b981;
-        }
-
-        &.medium {
-          background: #f59e0b;
-        }
-
-        &.low {
-          background: #ef4444;
-        }
-
-        .utilization-text {
-          position: absolute;
-          top: -20px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 0.7rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          background: white;
-          padding: 0.1rem 0.3rem;
-          border-radius: 3px;
-          white-space: nowrap;
-        }
-      }
-    }
-  }
-}
-
 .access-denied {
-  display: flex;
+  @include flex-center;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   min-height: 400px;
   text-align: center;
   color: var(--gray-600);
@@ -834,7 +405,6 @@
     gap: 1rem;
 
     .filter-group {
-
       select,
       input {
         min-width: 100%;
@@ -842,52 +412,11 @@
     }
   }
 
-  .analytics-grid {
-    grid-template-columns: 1fr;
-  }
-
   .employee-grid {
     grid-template-columns: 1fr;
   }
 
-  .employee-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .calendar-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-
-    .calendar-legend {
-      flex-wrap: wrap;
-    }
-  }
-
-  .calendar-grid {
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.25rem;
-    padding: 0.5rem;
-
-    .calendar-day {
-      padding: 0.25rem;
-
-      .day-number {
-        font-size: 0.75rem;
-      }
-
-      .day-utilization .utilization-text {
-        font-size: 0.6rem;
-        top: -15px;
-      }
-    }
-  }
-
   .analytics-section {
     padding: 1.5rem;
-  }
-
-  .analytics-metric .metric-value {
-    font-size: 2rem;
   }
 }

@@ -1,11 +1,12 @@
-@use '../../styles/shared' as *;
+@use '../../styles/_shared.scss' as *;
 
 .page-container {
   padding: 2rem;
 
   .deadline-alerts {
     margin-bottom: 2rem;
-    display: flex;
+    @include flex-center;
+    justify-content: flex-start;
     gap: 1rem;
   }
 
@@ -19,19 +20,17 @@
       background: white;
       border-radius: var(--border-radius);
       padding: 1.5rem;
-      display: flex;
+      @include flex-center;
       align-items: flex-start;
       gap: 1rem;
       box-shadow: var(--shadow-sm);
 
       .stat-icon {
+        @include flex-center;
         width: 48px;
         height: 48px;
         border-radius: 12px;
         background: var(--gray-50);
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
 
       .stat-content {
@@ -73,14 +72,12 @@
   }
 
   .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    @include flex-between;
     margin-bottom: 1rem;
 
     .section-title {
-      display: flex;
-      align-items: center;
+      @include flex-center;
+      justify-content: flex-start;
       gap: 0.75rem;
 
       .section-icon {
@@ -97,11 +94,10 @@
     }
 
     .header-actions {
-      display: flex;
+      @include flex-center;
       gap: 0.75rem;
     }
   }
-
 
   .side-by-side-sections {
     display: grid;
@@ -116,16 +112,17 @@
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--gray-200);
-    display: flex;
+    @include flex-center;
     flex-direction: column;
+    align-items: stretch;
   }
-
 
   .projects-card,
   .tasks-card {
     flex: 1;
-    display: flex;
+    @include flex-center;
     flex-direction: column;
+    align-items: stretch;
     overflow: hidden;
   }
 
@@ -146,8 +143,9 @@
   }
 
   .tasks-list {
-    display: flex;
+    @include flex-center;
     flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
     flex: 1;
     overflow: auto;
@@ -156,8 +154,8 @@
       background: white;
       border-radius: var(--border-radius);
       padding: 0.75rem;
-      display: flex;
-      align-items: center;
+      @include flex-center;
+      justify-content: flex-start;
       gap: 1rem;
       border: 1px solid var(--gray-200);
       transition: var(--transition);
@@ -213,13 +211,11 @@
       }
 
       .task-meta {
-        display: flex;
-        align-items: center;
+        @include flex-center;
         gap: 1rem;
 
         .task-hours {
-          display: flex;
-          align-items: center;
+          @include flex-center;
           gap: 0.25rem;
           background: var(--info-color);
           color: white;
@@ -230,8 +226,7 @@
         }
 
         .task-deadline {
-          display: flex;
-          align-items: center;
+          @include flex-center;
           gap: 0.35rem;
           color: var(--gray-600);
           font-size: 0.85rem;
@@ -244,8 +239,7 @@
     margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid var(--gray-200);
-    display: flex;
-    justify-content: center;
+    @include flex-center;
     flex-shrink: 0;
     
     .btn {
@@ -265,7 +259,7 @@
       background: white;
       border-radius: var(--border-radius);
       padding: 1.25rem;
-      display: flex;
+      @include flex-center;
       align-items: flex-start;
       gap: 1rem;
       box-shadow: var(--shadow-sm);
@@ -286,9 +280,7 @@
         height: 48px;
         border-radius: 12px;
         background: var(--gray-50);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        @include flex-center;
         transition: transform 0.2s ease;
       }
 
@@ -318,8 +310,7 @@
     padding: 3rem 2rem;
 
     .empty-state-icon {
-      display: flex;
-      justify-content: center;
+      @include flex-center;
       margin-bottom: 1.5rem;
     }
 
@@ -356,8 +347,7 @@
         }
 
         .role-header {
-          display: flex;
-          justify-content: space-between;
+          @include flex-between;
           align-items: flex-start;
           margin-bottom: 1rem;
           padding-bottom: 0.75rem;
@@ -365,8 +355,8 @@
           gap: 0.75rem;
 
           .role-info {
-            display: flex;
-            align-items: center;
+            @include flex-center;
+            justify-content: flex-start;
             gap: 0.75rem;
 
             .role-color {
@@ -420,15 +410,15 @@
           }
 
           .role-badges {
-            display: flex;
+            @include flex-center;
+            justify-content: flex-start;
             gap: 0.5rem;
             flex-wrap: wrap;
 
             .badge {
               font-size: 0.75rem;
               padding: 0.25rem 0.5rem;
-              display: flex;
-              align-items: center;
+              @include flex-center;
               gap: 0.25rem;
               white-space: nowrap;
 
@@ -442,19 +432,18 @@
         }
 
         .role-stats {
-          display: flex;
+          @include flex-center;
           flex-direction: column;
+          align-items: stretch;
           gap: 0.75rem;
 
           .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            @include flex-between;
             padding: 0.5rem 0;
 
             .stat-label {
-              display: flex;
-              align-items: center;
+              @include flex-center;
+              justify-content: flex-start;
               gap: 0.5rem;
               font-size: 0.85rem;
               color: var(--text-secondary);
@@ -604,9 +593,7 @@
         }
 
         .hours-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          @include flex-between;
           margin-bottom: 1rem;
 
           h4 {

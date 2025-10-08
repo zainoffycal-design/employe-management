@@ -157,13 +157,13 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
             <span className="info-value">{formatDate(currentTask.createdAt)}</span>
           </div>
           
-          {currentTask.totalHours && (
+          {currentTask.totalHours > 0 ? (
             <div className="info-group">
               <FiClock size={12} />
               <span className="info-label">Hours:</span>
               <span className="info-value">{currentTask.totalHours.toFixed(1)}h</span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 

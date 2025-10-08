@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
-import { getPriorityColor, getStatusDisplayName, getColumnColorByStatus, getRemainingTime, formatCreatedTime, reactSelectStyles } from '../../utils/uiUtils';
+import { getPriorityColor, getStatusDisplayName, getColumnColorByStatus, getRemainingTime, formatCreatedTime, reactSelectStyles, formatHours } from '../../utils/uiUtils';
 import Modal from '../../components/Modal';
 import SlideModal from '../../components/SlideModal';
 import TaskDetails from '../../components/TaskDetails';
@@ -180,38 +180,44 @@ const ProjectBoard = () => {
     currentUser.role === 'manager' ||
     currentProject?.managerId === currentUser.uid;
 
-  const projectTasks = currentProject ? tasks.filter(task => task.projectId === projectId) : [];
+  const projectTasks = useMemo(() => {
+    return currentProject ? tasks.filter(task => task.projectId === projectId) : [];
+  }, [currentProject, tasks, projectId]);
 
-  const filteredTasks = currentProject ? projectTasks.filter(task => {
-    const matchesSearch = !searchTerm.trim() || 
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredTasks = useMemo(() => {
+    if (!currentProject) return [];
+    
+    return projectTasks.filter(task => {
+      const matchesSearch = !searchTerm.trim() || 
+          task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (task.assignee && Array.isArray(task.assignee) 
+            ? task.assignee.some(assigneeId => {
+                const user = users.find(u => u.id === assigneeId);
+                return user?.name.toLowerCase().includes(searchTerm.toLowerCase());
+              })
+            : (() => {
+                const user = users.find(u => u.id === task.assignee);
+                return user?.name.toLowerCase().includes(searchTerm.toLowerCase());
+              })()
+        );
+
+      const matchesAssignee = !selectedAssignee || 
         (task.assignee && Array.isArray(task.assignee) 
-          ? task.assignee.some(assigneeId => {
-              const user = users.find(u => u.id === assigneeId);
-              return user?.name.toLowerCase().includes(searchTerm.toLowerCase());
-            })
-          : (() => {
-              const user = users.find(u => u.id === task.assignee);
-              return user?.name.toLowerCase().includes(searchTerm.toLowerCase());
-            })()
-      );
+          ? task.assignee.includes(selectedAssignee.value)
+          : task.assignee === selectedAssignee.value
+        );
 
-    const matchesAssignee = !selectedAssignee || 
-      (task.assignee && Array.isArray(task.assignee) 
-        ? task.assignee.includes(selectedAssignee.value)
-        : task.assignee === selectedAssignee.value
-      );
+      return matchesSearch && matchesAssignee;
+    });
+  }, [currentProject, projectTasks, searchTerm, selectedAssignee, users]);
 
-    return matchesSearch && matchesAssignee;
-  }) : [];
-
-  const tasksByStatus = {
+  const tasksByStatus = useMemo(() => ({
     'Todo': filteredTasks.filter(task => task.status === 'todo'),
     'Progress': filteredTasks.filter(task => task.status === 'in-progress'),
     'In Review': filteredTasks.filter(task => task.status === 'in-review'),
     'Complete': filteredTasks.filter(task => task.status === 'done')
-  };
+  }), [filteredTasks]);
 
   const getOptimisticTasksForColumn = useCallback((columnId) => {
     const status = getStatusFromColumnId(columnId);
@@ -274,6 +280,10 @@ const ProjectBoard = () => {
   };
 
   const handleTaskClick = (task) => {
+    if (task.status === 'done' && !canMarkComplete) {
+      return; 
+    }
+    
     setSelectedTask(task);
     setShowTaskDetails(true);
   };
@@ -718,7 +728,7 @@ const ProjectBoard = () => {
                     style={{ 
                       opacity: draggedTask?.id === task.id ? 0.5 : 1,
                       transform: draggedTask?.id === task.id ? 'scale(0.95)' : 'scale(1)',
-                      cursor: 'pointer'
+                      cursor: (task.status === 'done' && !canMarkComplete) ? 'default' : 'pointer'
                     }}
                   >
                     <div className="task-header">
@@ -791,12 +801,12 @@ const ProjectBoard = () => {
                         <span className="priority" style={{ backgroundColor: getPriorityColor(task.priority) }}>
                           {task.priority}
                         </span>
-                        {task.totalHours && task.totalHours > 0 && (
+                        {task.totalHours > 0 ? (
                           <span className="hours-indicator">
                             <FiClock size={12} />
-                            {task.totalHours.toFixed(1)}h
+                            {formatHours(task.totalHours)}
                           </span>
-                        )}
+                        ) : null}
                         {(!task.timeEntries || task.timeEntries.length === 0) && (!task.totalHours || task.totalHours === 0) && (
                           <span className="time-required-indicator" title="Time entry required before moving to In Review or Complete">
                             <FiClock size={12} />
