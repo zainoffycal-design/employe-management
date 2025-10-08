@@ -19,6 +19,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { formatTimestamp } from '../../utils/dateUtils';
+import { getRoleDisplayName } from '../../utils/permissionUtils';
+import { getRoleBadgeColor } from '../../utils/uiUtils';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
@@ -78,6 +80,16 @@ const TeamManagement = () => {
       return;
     }
     
+    const emailExists = users.some(user => 
+      user.email.toLowerCase() === newUser.email.toLowerCase()
+    );
+    
+    if (emailExists) {
+      setError('A user with this email already exists. Please use a different email.');
+      setLoading(false);
+      return;
+    }
+
     if (newUser.role === 'super_manager') {
       const existingSuperManager = users.find(user => user.role === 'super_manager');
       if (existingSuperManager) {
@@ -211,27 +223,7 @@ const TeamManagement = () => {
     }
   };
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'super_manager': return 'danger';
-      case 'manager': return 'warning';
-      case 'designer': return 'info';
-      case 'developer': return 'primary';
-      case 'bd': return 'success';
-      default: return 'secondary';
-    }
-  };
 
-  const getRoleDisplayName = (role) => {
-    switch (role) {
-      case 'super_manager': return 'Super Manager';
-      case 'manager': return 'Manager';
-      case 'designer': return 'Designer';
-      case 'developer': return 'Developer';
-      case 'bd': return 'Business Developer';
-      default: return role;
-    }
-  };
 
   const roles = [
     { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },

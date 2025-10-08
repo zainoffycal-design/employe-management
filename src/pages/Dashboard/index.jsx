@@ -19,6 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { userManagementService } from '../../services/firebaseService';
 import { firebaseUtils } from '../../utils/firebaseUtils';
+import { getRoleDisplayName } from '../../utils/permissionUtils';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import ProjectCard from '../../components/ProjectCard';
@@ -352,7 +353,7 @@ const Dashboard = () => {
                 <div className="role-header">
                   <div className="role-info">
                     <div className={`role-color ${roleStat.role}`} />
-                    <span className="role-name text-capitalize">{roleStat.role.replace('_', ' ')}</span>
+                    <span className="role-name">{getRoleDisplayName(roleStat.role)}</span>
                     <span className={`role-status ${roleStat.status}`}>
                       {roleStat.status === 'active' ? 'Active' : 'Inactive'}
                     </span>

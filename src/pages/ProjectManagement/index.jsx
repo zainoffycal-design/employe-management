@@ -12,6 +12,7 @@ import {
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
+import { reactSelectStyles } from '../../utils/uiUtils';
 import Select from 'react-select';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
@@ -91,65 +92,6 @@ const ProjectManagement = () => {
       role: user.role === 'super_manager' ? 'Super Manager' : 'Manager',
       avatar: user.avatar
     }));
-
-  const customStyles = {
-    control: (base) => ({
-      ...base,
-      minHeight: '38px',
-      backgroundColor: 'white',
-      borderColor: '#e2e8f0',
-      boxShadow: 'none',
-      '&:hover': {
-        borderColor: '#cbd5e1'
-      }
-    }),
-    option: (base, state) => ({
-      ...base,
-      padding: '8px 12px',
-      backgroundColor: state.isSelected 
-        ? '#f1f5f9'
-        : state.isFocused 
-        ? '#f8fafc'
-        : 'white',
-      color: '#334155',
-      '&:active': {
-        backgroundColor: '#f1f5f9'
-      }
-    }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: '#f1f5f9',
-      borderRadius: '4px'
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: '#334155',
-      padding: '2px 6px'
-    }),
-    multiValueRemove: (base) => ({
-      ...base,
-      color: '#64748b',
-      '&:hover': {
-        backgroundColor: '#e2e8f0',
-        color: '#334155'
-      }
-    }),
-    menu: (base) => ({
-      ...base,
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      borderRadius: '6px'
-    }),
-    groupHeading: (base) => ({
-      ...base,
-      fontSize: '0.875rem',
-      color: '#64748b',
-      fontWeight: 600,
-      textTransform: 'none',
-      padding: '8px 12px',
-      marginBottom: 0,
-      backgroundColor: '#f8fafc'
-    })
-  };
 
   const CustomOption = ({ children, ...props }) => {
     const { data } = props;
@@ -297,7 +239,7 @@ const ProjectManagement = () => {
           ...formData,
           teamMembers: selected || []
         })}
-        styles={customStyles}
+        styles={reactSelectStyles}
         components={{ Option: CustomOption }}
         placeholder="Select team members..."
         closeMenuOnSelect={false}
@@ -354,7 +296,7 @@ const ProjectManagement = () => {
                     onChange={setSelectedManager}
                     placeholder="Filter by manager"
                     isClearable
-                    styles={customStyles}
+                    styles={reactSelectStyles}
                     components={{ Option: CustomOption }}
                   />
                 </div>

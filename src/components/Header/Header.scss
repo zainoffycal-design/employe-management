@@ -348,7 +348,7 @@
   }
   
   &.open {
-    left: 280px;
+    left: 265px;
     border-radius: 12px 0 0 12px;
     
     svg {
@@ -356,12 +356,5 @@
     }
   }
   
-  @media (max-width: 768px) {
-    bottom: 80px;
-    transform: translateY(0);
-    
-    &.open {
-      left: calc(100vw - 48px);
-    }
-  }
+ 
 }

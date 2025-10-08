@@ -14,9 +14,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import Avatar from '../Avatar';
-import Button from '../Button';
 import RichTextViewer from '../RichTextViewer';
 import TimeTracker from '../TimeTracker';
+import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate } from '../../utils/uiUtils';
 import './TaskDetails.scss';
 
 const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) => {
@@ -76,59 +76,6 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     }
   };
 
-  const getPriorityColor = (priority) => {
-    const colors = { low: '#15A970', medium: '#F59E0B', high: '#EF4444' };
-    return colors[priority] || '#6B7280';
-  };
-
-  const getStatusColor = (status) => {
-    const colors = { 
-      'todo': '#8B5CF6', 
-      'in-progress': '#15A970', 
-      'in-review': '#F59E0B', 
-      'done': '#059669' 
-    };
-    return colors[status] || '#6B7280';
-  };
-
-  const getStatusDisplayName = (status) => {
-    const names = { 
-      'todo': 'Todo', 
-      'in-progress': 'In Progress', 
-      'in-review': 'In Review', 
-      'done': 'Complete' 
-    };
-    return names[status] || status;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatRelativeTime = (dateString) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = now - date;
-    const diffMinutes = Math.floor(diffTime / (1000 * 60));
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return formatDate(dateString);
-  };
 
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 

@@ -19,6 +19,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { emailService } from '../../services/emailService';
+import { getRoleDisplayName } from '../../utils/permissionUtils';
+import { getRoleBadgeColor, groupAndSortUsers } from '../../utils/uiUtils';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -28,54 +30,7 @@ import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
 import './UserManagement.scss';
 
-const groupAndSortUsers = (users) => {
-  const roleOrder = {
-    'super_manager': 0,
-    'manager': 1,
-    'designer': 2,
-    'developer': 3,
-    'bd': 4
-  };
 
-  const groupedUsers = users.reduce((acc, user) => {
-    const normalizedRole = user.role?.toLowerCase().replace(/[^a-z]/g, '') || 'user';
-    const role = normalizedRole === 'supermanager' ? 'super_manager' : normalizedRole;
-    
-    if (!acc[role]) {
-      acc[role] = [];
-    }
-    acc[role].push(user);
-    return acc;
-  }, {});
-
-  Object.keys(groupedUsers).forEach(role => {
-    groupedUsers[role].sort((a, b) => a.name.localeCompare(b.name));
-  });
-
-  return groupedUsers;
-};
-
-const getRoleBadgeColor = (role) => {
-  switch (role) {
-    case 'super_manager': return 'danger';
-    case 'manager': return 'warning';
-    case 'designer': return 'info';
-    case 'developer': return 'primary';
-    case 'bd': return 'success';
-    default: return 'secondary';
-  }
-};
-
-const getRoleDisplayName = (role) => {
-  switch (role) {
-    case 'super_manager': return 'Super Manager';
-    case 'manager': return 'Manager';
-    case 'designer': return 'Designer';
-    case 'developer': return 'Developer';
-    case 'bd': return 'Business Developer';
-    default: return role;
-  }
-};
 
 const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null }) => {
   return (
@@ -235,6 +190,16 @@ const UserManagement = () => {
     setError('');
 
     try {
+      const emailExists = users.some(user => 
+        user.email.toLowerCase() === newUser.email.toLowerCase()
+      );
+      
+      if (emailExists) {
+        setError('A user with this email already exists. Please use a different email.');
+        setLoading(false);
+        return;
+      }
+
       let permissions = [];
       switch (newUser.role) {
         case 'super_manager':

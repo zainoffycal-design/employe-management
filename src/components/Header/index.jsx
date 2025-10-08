@@ -6,6 +6,7 @@ import { useTask } from '../../contexts/TaskContext';
 import { useNavigate } from 'react-router-dom';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { getRoleDisplayName } from '../../utils/permissionUtils';
 import logo from '../../assets/logo.png';
 import Modal from '../Modal';
 import Button from '../Button';
@@ -107,22 +108,6 @@ const Header = memo(({ onMenuClick, sidebarOpen }) => {
     navigate('/login');
   };
 
-  const getRoleDisplayName = (role) => {
-    switch (role) {
-      case 'super_manager':
-        return 'Super Manager';
-      case 'manager':
-        return 'Manager';
-      case 'designer':
-        return 'Designer';
-      case 'developer':
-        return 'Developer';
-      case 'bd':
-        return 'Business Developer';
-      default:
-        return role;
-    }
-  };
 
   return (
     <>

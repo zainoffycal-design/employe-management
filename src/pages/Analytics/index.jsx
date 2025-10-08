@@ -5,6 +5,8 @@ import { startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, sta
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
+import { getRoleDisplayName } from '../../utils/permissionUtils';
+import { reactSelectStyles } from '../../utils/uiUtils';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
 import Select from 'react-select';
@@ -84,41 +86,11 @@ const Analytics = () => {
   const roleFilterOptions = [
     { value: 'all', label: 'All Roles' },
     { value: 'manager', label: 'Managers' },
-    { value: 'bd', label: 'Business Development' },
+    { value: 'bd', label: 'Business Developer' },
     { value: 'designer', label: 'Designers' },
     { value: 'developer', label: 'Developers' }
   ];
 
-  const customStyles = {
-    control: (base) => ({
-      ...base,
-      minHeight: '38px',
-      backgroundColor: 'white',
-      borderColor: '#e2e8f0',
-      boxShadow: 'none',
-      '&:hover': {
-        borderColor: '#cbd5e1'
-      }
-    }),
-    option: (base, state) => ({
-      ...base,
-      padding: '8px 12px',
-      backgroundColor: state.isSelected 
-        ? '#f1f5f9'
-        : state.isFocused 
-        ? '#f8fafc'
-        : 'white',
-      color: '#334155',
-      '&:active': {
-        backgroundColor: '#f1f5f9'
-      }
-    }),
-    menu: (base) => ({
-      ...base,
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      borderRadius: '6px'
-    })
-  };
 
   const expectedHours = useMemo(() => {
     const workingDaysPerWeek = 5;
@@ -341,7 +313,7 @@ const Analytics = () => {
             onChange={setSelectedRole}
             placeholder="Filter by role"
             isClearable
-            styles={customStyles}
+            styles={reactSelectStyles}
           />
         </div>
         
@@ -448,7 +420,7 @@ const Analytics = () => {
                 const roleEmployees = employeeAnalytics.groupedEmployees[role] || [];
                 if (roleEmployees.length === 0) return null;
                 
-                const roleDisplayName = role === 'bd' ? 'Business Development' : role.charAt(0).toUpperCase() + role.slice(1);
+                const roleDisplayName = getRoleDisplayName(role);
                 
                 return (
                   <div key={role} className="role-group">

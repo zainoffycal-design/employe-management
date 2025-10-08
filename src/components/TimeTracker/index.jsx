@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { FiClock, FiEdit3, FiTrash2, FiPlus } from 'react-icons/fi';
+import { formatHours } from '../../utils/uiUtils';
 import './TimeTracker.scss';
 
 const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users = [] }) => {
@@ -88,10 +89,6 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
     }
   };
 
-  const formatHours = (hours) => {
-    if (!hours || isNaN(hours) || hours === 0) return '0h';
-    return hours < 1 ? `${Math.round(hours * 60)}m` : `${hours.toFixed(1)}h`;
-  };
 
   return (
     <div className="time-tracker">

@@ -81,6 +81,23 @@ export const permissionUtils = {
   }
 };
 
+export const getRoleDisplayName = (role) => {
+  switch (role) {
+    case 'super_manager':
+      return 'Super Manager';
+    case 'manager':
+      return 'Manager';
+    case 'designer':
+      return 'Designer';
+    case 'developer':
+      return 'Developer';
+    case 'bd':
+      return 'Business Developer';
+    default:
+      return role;
+  }
+};
+
 export const canEditTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.EDIT_TASKS);
 export const canDeleteTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.DELETE_TASKS);
 export const canMoveTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.MOVE_TASKS);
