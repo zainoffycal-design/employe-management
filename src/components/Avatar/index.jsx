@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import './Avatar.scss';
 
-const Avatar = ({ 
+const Avatar = memo(({ 
   src, 
   alt, 
   name, 
@@ -83,6 +83,8 @@ const Avatar = ({
       )}
     </div>
   );
-};
+});
+
+Avatar.displayName = 'Avatar';
 
 export default Avatar; 

@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import './RichTextViewer.scss';
 
-const RichTextViewer = ({ content, className = "" }) => {
+const RichTextViewer = memo(({ content, className = "" }) => {
   if (!content) {
     return <div className={`rich-text-viewer ${className}`}>No description provided.</div>;
   }
 
-  const handleLinkClick = (e) => {
+  const handleLinkClick = useCallback((e) => {
     if (e.target.tagName === 'A') {
       e.preventDefault();
       e.stopPropagation();
@@ -15,7 +15,7 @@ const RichTextViewer = ({ content, className = "" }) => {
         window.open(url, '_blank', 'noopener,noreferrer');
       }
     }
-  };
+  }, []);
 
   return (
     <div 
@@ -24,6 +24,8 @@ const RichTextViewer = ({ content, className = "" }) => {
       onClick={handleLinkClick}
     />
   );
-};
+});
+
+RichTextViewer.displayName = 'RichTextViewer';
 
 export default RichTextViewer;

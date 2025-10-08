@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -11,14 +11,14 @@ import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.scss';
 
-const Sidebar = ({ sidebarOpen }) => {
+const Sidebar = memo(({ sidebarOpen }) => {
   const { 
     tasks,
     projects
   } = useTask();
   const { currentUser } = useAuth();
 
-  const navigation = [
+  const navigation = useMemo(() => [
     { path: '/', icon: FiHome, label: 'Dashboard' },
     ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
       { path: '/projects', icon: FiFolder, label: 'Project Management' }
@@ -29,7 +29,7 @@ const Sidebar = ({ sidebarOpen }) => {
     ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
       { path: '/analytics', icon: FiBarChart2, label: 'Analytics' }
     ] : [])
-  ];
+  ], [currentUser]);
 
   return (
     <motion.aside 
@@ -61,6 +61,8 @@ const Sidebar = ({ sidebarOpen }) => {
       </nav>
     </motion.aside>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar; 

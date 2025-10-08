@@ -149,9 +149,7 @@ export const emailService = {
       const invitationsQuery = query(invitationsRef, where('email', '==', email));
       const invitationsSnapshot = await getDocs(invitationsQuery);
       
-      for (const doc of invitationsSnapshot.docs) {
-        await deleteDoc(doc.ref);
-      }
+      await Promise.all(invitationsSnapshot.docs.map(doc => deleteDoc(doc.ref)));
       
       await signOut(auth);
       
@@ -211,13 +209,13 @@ export const emailService = {
       const invitationsQuery = query(invitationsRef, where('email', '==', email));
       const invitationsSnapshot = await getDocs(invitationsQuery);
       
-      for (const doc of invitationsSnapshot.docs) {
-        await updateDoc(doc.ref, {
+      await Promise.all(invitationsSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, {
           invitationToken: newToken,
           expiresAt: expiresAt.toISOString(),
           invitedAt: serverTimestamp()
-        });
-      }
+        })
+      ));
       
       await emailService.sendInvitationEmail(email, userData.role, userData.name, newToken);
       

@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FiHome,
   FiFolder,
-  FiUsers,
   FiClock,
   FiAlertCircle,
   FiTrendingUp,
@@ -13,7 +12,8 @@ import {
   FiPlus,
   FiBarChart,
   FiUserPlus,
-  FiUserCheck
+  FiUserCheck,
+  FiCalendar
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
@@ -33,10 +33,12 @@ const Dashboard = () => {
 
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadUsers = async () => {
       try {
         const allUsers = await userManagementService.getAllUsers();
-        setUsers(allUsers);
+        if (isMounted) setUsers(allUsers);
       } catch (error) {
         console.error('Error loading users:', error);
       }
@@ -52,7 +54,7 @@ const Dashboard = () => {
               return projectTasks.map(task => ({ ...task, projectId: project.id }));
             })
           );
-          setAllTasks(allTasksData.flat());
+          if (isMounted) setAllTasks(allTasksData.flat());
         }
       } catch (error) {
         console.error('Error loading all tasks:', error);
@@ -61,22 +63,30 @@ const Dashboard = () => {
     
     loadUsers();
     loadAllTasks();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser]);
 
-  const overdueTasks = tasks.filter(task => 
-    task.deadline && new Date(task.deadline) < new Date() && task.status !== 'done'
+  const overdueTasks = useMemo(() => 
+    tasks.filter(task => 
+      task.deadline && new Date(task.deadline) < new Date() && task.status !== 'done'
+    ), [tasks]
   );
 
-  const dueSoonTasks = tasks.filter(task => {
-    if (!task.deadline || task.status === 'done') return false;
-    const deadline = new Date(task.deadline);
-    const today = new Date();
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(today.getDate() + 3);
-    return deadline > today && deadline <= threeDaysFromNow;
-  });
+  const dueSoonTasks = useMemo(() => 
+    tasks.filter(task => {
+      if (!task.deadline || task.status === 'done') return false;
+      const deadline = new Date(task.deadline);
+      const today = new Date();
+      const threeDaysFromNow = new Date();
+      threeDaysFromNow.setDate(today.getDate() + 3);
+      return deadline > today && deadline <= threeDaysFromNow;
+    }), [tasks]
+  );
 
-  const getRoleStats = () => {
+  const getRoleStats = useCallback(() => {
     const roles = ['designer', 'developer', 'bd'];
     return roles.map(role => {
       const roleMembers = users.filter(user => user.role === role && user.isActive);
@@ -112,9 +122,40 @@ const Dashboard = () => {
         status: roleMembers.length > 0 ? 'active' : 'inactive'
       };
     });
-  };
+  }, [users, allTasks]);
 
-  const stats = [
+  const getProjectHours = useCallback(() => {
+    const projectHours = projects.map(project => {
+      const projectTasks = tasks.filter(task => task.projectId === project.id);
+      const totalHours = projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
+      return {
+        projectId: project.id,
+        projectName: project.name,
+        totalHours,
+        taskCount: projectTasks.length
+      };
+    });
+    
+    const totalHours = projectHours.reduce((sum, p) => sum + p.totalHours, 0);
+    return { projectHours, totalHours };
+  }, [projects, tasks]);
+
+  const { projectHours, totalHours } = useMemo(() => getProjectHours(), [getProjectHours]);
+
+  const completedProjects = useMemo(() => 
+    projects.filter(project => {
+      const projectTasks = tasks.filter(task => task.projectId === project.id);
+      const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+      const totalTasks = projectTasks.length;
+      
+      if (totalTasks === 0) return false;
+      
+      const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+      return progressPercentage === 100;
+    }), [projects, tasks]
+  );
+
+  const stats = useMemo(() => [
     {
       title: 'Total Projects',
       value: projects.length,
@@ -124,48 +165,22 @@ const Dashboard = () => {
       trend: projects.length > 0 ? `${projects.length} active` : 'No projects'
     },
     {
+      title: 'Total Hours',
+      value: totalHours.toFixed(1),
+      icon: FiClock,
+      color: '#F59E0B',
+      trendUp: totalHours > 0,
+      trend: totalHours > 0 ? `${totalHours.toFixed(1)}h logged` : 'No time tracked'
+    },
+    {
       title: 'Completed Projects',
-      value: projects.filter(project => {
-        const projectTasks = tasks.filter(task => task.projectId === project.id);
-        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-        const totalTasks = projectTasks.length;
-        
-        if (totalTasks === 0) return false;
-        
-        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-        return progressPercentage === 100;
-      }).length,
+      value: completedProjects.length,
       icon: FiUserCheck,
       color: '#10B981',
-      trendUp: projects.filter(project => {
-        const projectTasks = tasks.filter(task => task.projectId === project.id);
-        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-        const totalTasks = projectTasks.length;
-        
-        if (totalTasks === 0) return false;
-        
-        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-        return progressPercentage === 100;
-      }).length > 0,
-      trend: projects.filter(project => {
-        const projectTasks = tasks.filter(task => task.projectId === project.id);
-        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-        const totalTasks = projectTasks.length;
-        
-        if (totalTasks === 0) return false;
-        
-        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-        return progressPercentage === 100;
-      }).length > 0 ? `${Math.round((projects.filter(project => {
-        const projectTasks = tasks.filter(task => task.projectId === project.id);
-        const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-        const totalTasks = projectTasks.length;
-        
-        if (totalTasks === 0) return false;
-        
-        const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-        return progressPercentage === 100;
-      }).length / projects.length) * 100)}% of projects` : 'None completed'
+      trendUp: completedProjects.length > 0,
+      trend: completedProjects.length > 0 ? 
+        `${Math.round((completedProjects.length / projects.length) * 100)}% of projects` : 
+        'None completed'
     },
     {
       title: 'Total Tasks',
@@ -175,9 +190,9 @@ const Dashboard = () => {
       trendUp: tasks.length > 0,
       trend: tasks.length > 0 ? `${tasks.length} tasks` : 'No tasks'
     }
-  ];
+  ], [projects, totalHours, completedProjects, tasks]);
 
-  const getQuickActions = () => {
+  const getQuickActions = useCallback(() => {
     const baseActions = [
       {
         icon: FiFolder,
@@ -231,7 +246,7 @@ const Dashboard = () => {
     return [
       ...baseActions
     ];
-  };
+  }, [currentUser]);
 
   return (
     <div className="page-container">
@@ -241,7 +256,6 @@ const Dashboard = () => {
         icon={FiHome}
       />
 
-      {}
       {(overdueTasks.length > 0 || dueSoonTasks.length > 0) && (
         <div className="deadline-alerts">
           {overdueTasks.length > 0 && (
@@ -259,7 +273,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {}
       <div className="section-header">
         <div className="section-title">
           <FiLayout className="section-icon" />
@@ -287,7 +300,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {}
       <div className="section-header">
         <div className="section-title">
           <FiBarChart className="section-icon" />
@@ -318,7 +330,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {}
       {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
         <div className="section-header">
           <div className="section-title">
@@ -390,9 +401,52 @@ const Dashboard = () => {
         </div>
       )}
 
-      {}
+      {projectHours.length > 0 && totalHours > 0 && (
+        <div className="section-header">
+          <div className="section-title">
+            <FiClock className="section-icon" />
+            <h2>Project Hours</h2>
+          </div>
+        </div>
+      )}
+      {projectHours.length > 0 && totalHours > 0 && (
+        <div className="project-hours-section">
+          <div className="hours-grid">
+            {projectHours
+              .filter(p => p.totalHours > 0)
+              .sort((a, b) => b.totalHours - a.totalHours)
+              .slice(0, 4)
+              .map((project, index) => (
+              <motion.div
+                key={project.projectId}
+                className="hours-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div className="hours-header">
+                  <h4>{project.projectName}</h4>
+                  <span className="hours-badge">{project.totalHours.toFixed(1)}h</span>
+                </div>
+                <div className="hours-details">
+                  <span className="task-count">{project.taskCount} tasks</span>
+                  <div className="hours-bar">
+                    <div 
+                      className="hours-progress" 
+                      style={{ 
+                        width: `${Math.min((project.totalHours / Math.max(...projectHours.map(p => p.totalHours))) * 100, 100)}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+        
+      )}
+
       <div className="side-by-side-sections">
-        {}
         <div className="section-half">
           <div className="section-header">
             <div className="section-title">
@@ -457,7 +511,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {}
         <div className="section-half">
           <div className="section-header">
             <div className="section-title">
@@ -490,9 +543,15 @@ const Dashboard = () => {
                           <p>{project?.name}</p>
                         </div>
                         <div className="task-meta">
+                          {task.totalHours && task.totalHours > 0 && (
+                            <span className="task-hours">
+                              <FiClock size={12} />
+                              {task.totalHours.toFixed(1)}h
+                            </span>
+                          )}
                           {task.deadline && (
                             <span className="task-deadline">
-                              <FiClock size={12} />
+                              <FiCalendar size={12} />
                               {new Date(task.deadline).toLocaleDateString()}
                             </span>
                           )}

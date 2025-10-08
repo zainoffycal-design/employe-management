@@ -1,3 +1,5 @@
+@use '../../styles/shared' as *;
+
 .project-management {
   padding: 2rem;
 
@@ -79,31 +81,22 @@
     
     .empty-state {
       grid-column: 1 / -1;
-      text-align: center;
-      padding: 4rem 2rem;
-      background: white;
-      border-radius: var(--border-radius-lg);
+      @include empty-state(300px, white);
       border: 2px dashed var(--gray-200);
       margin: 2rem 0;
       
       .empty-state-icon {
-        color: var(--gray-400);
-        margin-bottom: 1.5rem;
         display: flex;
         justify-content: center;
+        margin-bottom: 1.5rem;
       }
       
       h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--text-primary);
         margin-bottom: 0.75rem;
       }
       
       p {
-        color: var(--text-secondary);
         margin-bottom: 2rem;
-        line-height: 1.6;
         max-width: 500px;
         margin-left: auto;
         margin-right: auto;
@@ -221,6 +214,7 @@
        
         display: -webkit-box;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         flex-grow: 1;

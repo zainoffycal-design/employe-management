@@ -28,12 +28,22 @@ export const taskService = {
   async createTask(projectId, taskData) {
     return firebaseUtils.createDocument(`projects/${projectId}/tasks`, {
       ...taskData,
-      status: taskData.status || 'todo'
+      status: taskData.status || 'todo',
+      totalHours: taskData.totalHours || 0,
+      timeEntries: taskData.timeEntries || []
     });
   },
 
   async updateTask(projectId, taskId, taskData) {
     return firebaseUtils.updateDocument(`projects/${projectId}/tasks`, taskId, taskData);
+  },
+
+  async updateTaskTime(projectId, taskId, timeData) {
+    return firebaseUtils.updateDocument(`projects/${projectId}/tasks`, taskId, {
+      totalHours: timeData.totalHours,
+      timeEntries: timeData.timeEntries,
+      updatedAt: new Date().toISOString()
+    });
   },
 
   async deleteTask(projectId, taskId) {
@@ -42,6 +52,26 @@ export const taskService = {
 
   async getProjectTasks(projectId) {
     return firebaseUtils.getDocuments(`projects/${projectId}/tasks`, [queryBuilders.orderBy('createdAt')]);
+  },
+
+  async getProjectHours(projectId) {
+    const tasks = await this.getProjectTasks(projectId);
+    return tasks.reduce((total, task) => total + (task.totalHours || 0), 0);
+  },
+
+  async getAllProjectHours() {
+    const projects = await firebaseUtils.getDocuments('projects');
+    const projectHours = await Promise.all(
+      projects.map(async (project) => {
+        const hours = await this.getProjectHours(project.id);
+        return {
+          projectId: project.id,
+          projectName: project.name,
+          totalHours: hours
+        };
+      })
+    );
+    return projectHours;
   }
 };
 
@@ -84,15 +114,6 @@ export const userManagementService = {
   },
 
   createUserWithoutSignIn: async (userData) => {
-    const userProfile = {
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      permissions: userData.permissions,
-      avatar: generateAvatarUrl(userData.name),
-      isActive: true
-    };
-    
     const user = await firebaseUtils.createUser({ ...userData, avatar: generateAvatarUrl(userData.name) });
     await firebaseUtils.signOut();
     toast.success('User created successfully! You have been signed out. Please sign back in.');

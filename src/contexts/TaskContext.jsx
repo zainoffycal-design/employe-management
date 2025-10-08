@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
 import { notificationService } from '../services/notificationService';
@@ -217,7 +217,7 @@ export const TaskProvider = ({ children }) => {
     }
   };
 
-  const getAccessibleTasks = () => {
+  const accessibleTasks = useMemo(() => {
     if (!currentUser) return [];
     
     if (currentUser.role === 'super_manager') {
@@ -228,12 +228,10 @@ export const TaskProvider = ({ children }) => {
       const project = projects.find(p => p.id === task.projectId);
       if (!project) return false;
 
-      // Check if user is manager
       if (project.managerId === currentUser.uid) {
         return true;
       }
       
-      // Check if user is in team members (handle both UID and email)
       if (project.teamMembers && Array.isArray(project.teamMembers)) {
         return project.teamMembers.some(memberId => 
           memberId === currentUser.uid || memberId === currentUser.email
@@ -242,10 +240,10 @@ export const TaskProvider = ({ children }) => {
       
       return false;
     });
-  };
+  }, [tasks, projects, currentUser]);
 
-  const value = {
-    tasks: getAccessibleTasks(),
+  const value = useMemo(() => ({
+    tasks: accessibleTasks,
     projects,
     createProject,
     updateProject,
@@ -253,7 +251,7 @@ export const TaskProvider = ({ children }) => {
     createTask,
     updateTask,
     deleteTask
-  };
+  }), [accessibleTasks, projects]);
 
   return (
     <TaskContext.Provider value={value}>

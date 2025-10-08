@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiMessageSquare, 
@@ -16,9 +16,10 @@ import { useTask } from '../../contexts/TaskContext';
 import Avatar from '../Avatar';
 import Button from '../Button';
 import RichTextViewer from '../RichTextViewer';
+import TimeTracker from '../TimeTracker';
 import './TaskDetails.scss';
 
-const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
+const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) => {
   const { currentUser } = useAuth();
   const { updateTask, tasks } = useTask();
   const [newComment, setNewComment] = useState('');
@@ -66,33 +67,38 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'low': return '#15A970';
-      case 'medium': return '#F59E0B';
-      case 'high': return '#EF4444';
-      default: return '#6B7280';
+  const handleTimeUpdate = async (timeData) => {
+    try {
+      await updateTask(currentTask.projectId, currentTask.id, timeData);
+    } catch (error) {
+      console.error('Error updating task time:', error);
+      setError('Failed to update time tracking');
     }
+  };
+
+  const getPriorityColor = (priority) => {
+    const colors = { low: '#15A970', medium: '#F59E0B', high: '#EF4444' };
+    return colors[priority] || '#6B7280';
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'todo': return '#8B5CF6';
-      case 'in-progress': return '#15A970';
-      case 'in-review': return '#F59E0B';
-      case 'done': return '#059669';
-      default: return '#6B7280';
-    }
+    const colors = { 
+      'todo': '#8B5CF6', 
+      'in-progress': '#15A970', 
+      'in-review': '#F59E0B', 
+      'done': '#059669' 
+    };
+    return colors[status] || '#6B7280';
   };
 
   const getStatusDisplayName = (status) => {
-    switch (status) {
-      case 'todo': return 'Todo';
-      case 'in-progress': return 'In Progress';
-      case 'in-review': return 'In Review';
-      case 'done': return 'Complete';
-      default: return status;
-    }
+    const names = { 
+      'todo': 'Todo', 
+      'in-progress': 'In Progress', 
+      'in-review': 'In Review', 
+      'done': 'Complete' 
+    };
+    return names[status] || status;
   };
 
   const formatDate = (dateString) => {
@@ -169,57 +175,58 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
         <RichTextViewer content={currentTask.description} />
       </div>
 
-      <div className="task-info-grid">
-        <div className="info-item">
-          <FiUsers size={14} />
-          <div>
-            <label>Assigned:</label>
-            <div className="assignees">
+      <div className="task-info-compact">
+        <div className="info-row">
+          <div className="info-group">
+            <FiUsers size={12} />
+            <span className="info-label">Assigned:</span>
+            <span className="info-value">
               {currentTask.assignee && Array.isArray(currentTask.assignee) ? (
                 currentTask.assignee.map(assigneeId => {
                   const user = users.find(u => u.id === assigneeId);
-                  return user ? (
-                    <Avatar
-                      key={assigneeId}
-                      src={user.avatar}
-                      name={user.name}
-                      size="small"
-                      title={user.name}
-                    />
-                  ) : null;
-                })
+                  return user ? user.name : null;
+                }).filter(Boolean).join(', ')
               ) : currentTask.assignee ? (
-                <Avatar
-                  src={users.find(u => u.id === currentTask.assignee)?.avatar}
-                  name={users.find(u => u.id === currentTask.assignee)?.name}
-                  size="small"
-                  title={users.find(u => u.id === currentTask.assignee)?.name}
-                />
+                users.find(u => u.id === currentTask.assignee)?.name || 'Unknown'
               ) : (
-                <span className="no-assignee">Unassigned</span>
+                'Unassigned'
               )}
-            </div>
+            </span>
           </div>
+          
+          {currentTask.deadline && (
+            <div className="info-group">
+              <FiCalendar size={12} />
+              <span className="info-label">Due:</span>
+              <span className="info-value">{formatDate(currentTask.deadline)}</span>
+            </div>
+          )}
         </div>
 
-        {currentTask.deadline && (
-          <div className="info-item">
-            <FiCalendar size={14} />
-            <div>
-              <label>Due:</label>
-              <span>{formatDate(currentTask.deadline)}</span>
+        <div className="info-row">
+          <div className="info-group">
+            <FiClock size={12} />
+            <span className="info-label">Created:</span>
+            <span className="info-value">{formatDate(currentTask.createdAt)}</span>
+          </div>
+          
+          {currentTask.totalHours && (
+            <div className="info-group">
+              <FiClock size={12} />
+              <span className="info-label">Hours:</span>
+              <span className="info-value">{currentTask.totalHours.toFixed(1)}h</span>
             </div>
-          </div>
-        )}
-
-        <div className="info-item">
-          <FiClock size={14} />
-          <div>
-            <label>Created:</label>
-            <span>{formatDate(currentTask.createdAt)}</span>
-          </div>
+          )}
         </div>
       </div>
+
+      <TimeTracker 
+        task={currentTask}
+        onUpdate={handleTimeUpdate}
+        disabled={!hasEditAccess}
+        currentUser={currentUser}
+        users={users}
+      />
 
       <div className="comments-section">
         <div className="comments-header">
@@ -286,6 +293,8 @@ const TaskDetails = ({ task, onClose, onEdit, onDelete, users, project }) => {
       </div>
     </div>
   );
-};
+});
+
+TaskDetails.displayName = 'TaskDetails';
 
 export default TaskDetails; 

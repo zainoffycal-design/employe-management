@@ -303,4 +303,44 @@
   @media (min-width: 1025px) {
     @content;
   }
+}
+
+@mixin empty-state($min-height: 200px, $background: var(--gray-50)) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: $min-height;
+  text-align: center;
+  color: var(--gray-600);
+  background: $background;
+  border-radius: 12px;
+  padding: 2rem;
+
+  .empty-state-icon,
+  .no-data-icon {
+    color: var(--gray-400);
+    margin-bottom: 1rem;
+  }
+
+  h3, h4 {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--gray-700);
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  h4 {
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--gray-500);
+    line-height: 1.6;
+  }
 } 

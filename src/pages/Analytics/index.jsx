@@ -1,45 +1,39 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
-  FiBarChart2, 
-  FiTrendingUp, 
-  FiUsers, 
-  FiCheckCircle, 
-  FiClock, 
-  FiAlertCircle,
-  FiCalendar,
-  FiDownload
-} from 'react-icons/fi';
-import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { FiUsers, FiAlertCircle, FiFolder } from 'react-icons/fi';
+import { startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
-import { dateUtils } from '../../utils/dateUtils';
 import PageTitle from '../../components/PageTitle';
-import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
+import Select from 'react-select';
 import './Analytics.scss';
 
 const Analytics = () => {
-  const navigate = useNavigate();
-  const { tasks, currentUser } = useTask();
+  const { tasks, projects } = useTask();
   const { canViewAnalytics } = useAuth();
   const [users, setUsers] = useState([]);
-  const [timeRange, setTimeRange] = useState('month');
-  const [selectedRole, setSelectedRole] = useState('all');
+  const [timeRange, setTimeRange] = useState('day');
   const [selectedUser, setSelectedUser] = useState('all');
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [customMonth, setCustomMonth] = useState(new Date().getMonth());
+  const [customYear, setCustomYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
+    let isMounted = true;
     const loadUsers = async () => {
       try {
         const allUsers = await userManagementService.getAllUsers();
-        setUsers(allUsers);
+        if (isMounted) {
+          setUsers(allUsers);
+        }
       } catch (error) {
         console.error('Error loading users:', error);
       }
     };
     loadUsers();
+    return () => { isMounted = false; };
   }, []);
 
   if (!canViewAnalytics()) {
@@ -54,259 +48,374 @@ const Analytics = () => {
     );
   }
 
-  const getDateRange = () => {
+  const dateRange = useMemo(() => {
     const now = new Date();
     switch (timeRange) {
+      case 'day':
+        return { start: startOfDay(now), end: endOfDay(now) };
       case 'week':
-        return { start: subDays(now, 7), end: now };
+        return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'month':
-        return { start: startOfMonth(now), end: now };
-      case 'quarter':
-        return { start: subDays(now, 90), end: now };
-      case 'year':
-        return { start: subDays(now, 365), end: now };
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'custom-month':
+        const customDate = new Date(customYear, customMonth, 1);
+        return { start: startOfMonth(customDate), end: endOfMonth(customDate) };
       default:
-        return { start: startOfMonth(now), end: now };
+        return { start: startOfMonth(now), end: endOfMonth(now) };
     }
+  }, [timeRange, customMonth, customYear]);
+
+  const getPeriodTitle = useCallback(() => {
+    switch (timeRange) {
+      case 'day':
+        return 'Today';
+      case 'week':
+        return 'This Week';
+      case 'month':
+        return 'This Month';
+      case 'custom-month':
+        const customDate = new Date(customYear, customMonth, 1);
+        return customDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      default:
+        return 'Period';
+    }
+  }, [timeRange, customMonth, customYear]);
+
+  const roleFilterOptions = [
+    { value: 'all', label: 'All Roles' },
+    { value: 'manager', label: 'Managers' },
+    { value: 'bd', label: 'Business Development' },
+    { value: 'designer', label: 'Designers' },
+    { value: 'developer', label: 'Developers' }
+  ];
+
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      minHeight: '38px',
+      backgroundColor: 'white',
+      borderColor: '#e2e8f0',
+      boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#cbd5e1'
+      }
+    }),
+    option: (base, state) => ({
+      ...base,
+      padding: '8px 12px',
+      backgroundColor: state.isSelected 
+        ? '#f1f5f9'
+        : state.isFocused 
+        ? '#f8fafc'
+        : 'white',
+      color: '#334155',
+      '&:active': {
+        backgroundColor: '#f1f5f9'
+      }
+    }),
+    menu: (base) => ({
+      ...base,
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      borderRadius: '6px'
+    })
   };
 
-  const dateRange = getDateRange();
+  const expectedHours = useMemo(() => {
+    const workingDaysPerWeek = 5;
+    const hoursPerDay = 8;
+    
+    switch (timeRange) {
+      case 'day':
+        return hoursPerDay;
+      case 'week':
+        return workingDaysPerWeek * hoursPerDay;
+      case 'month':
+        const daysInMonth = endOfMonth(dateRange.start).getDate();
+        const workingDaysInMonth = Math.floor(daysInMonth * (workingDaysPerWeek / 7));
+        return workingDaysInMonth * hoursPerDay;
+      case 'custom-month':
+        const customDaysInMonth = endOfMonth(dateRange.start).getDate();
+        const customWorkingDaysInMonth = Math.floor(customDaysInMonth * (workingDaysPerWeek / 7));
+        return customWorkingDaysInMonth * hoursPerDay;
+      default:
+        return workingDaysPerWeek * hoursPerDay;
+    }
+  }, [timeRange, dateRange]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      const taskDate = task.createdAt?.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
-      const isInDateRange = isWithinInterval(taskDate, { start: dateRange.start, end: dateRange.end });
-      
       const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
-      const assigneeUsers = taskAssignees.map(assigneeId => users.find(user => user.id === assigneeId)).filter(Boolean);
-      
-      const isRoleMatch = selectedRole === 'all' || assigneeUsers.some(user => user.role === selectedRole);
       const isUserMatch = selectedUser === 'all' || taskAssignees.includes(selectedUser);
-      
-      return isInDateRange && isRoleMatch && isUserMatch;
+      return isUserMatch && taskAssignees.length > 0;
     });
-  }, [tasks, dateRange, selectedRole, selectedUser, users]);
+  }, [tasks, selectedUser]);
 
-  const analytics = useMemo(() => {
-    const totalTasks = filteredTasks.length;
-    const taskStatusCounts = filteredTasks.reduce((acc, task) => {
-      acc[task.status] = (acc[task.status] || 0) + 1;
-      return acc;
-    }, {});
-    
-    const completedTasks = taskStatusCounts.done || 0;
-    const todoTasks = taskStatusCounts.todo || 0;
-    const inProgressTasks = taskStatusCounts['in-progress'] || 0;
-    const inReviewTasks = taskStatusCounts['in-review'] || 0;
-    
-    const activeUsers = users.filter(user => user.isActive).length;
-    const totalUsers = users.length;
-
-    const roles = ['designer', 'developer', 'bd'];
-    const roleStats = roles.map(role => {
-      const roleUsers = users.filter(user => user.role === role && user.isActive);
-      const roleTasks = filteredTasks.filter(task => {
-        const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
-        return taskAssignees.some(assigneeId => {
-          const assignee = users.find(user => user.id === assigneeId);
-          return assignee && assignee.role === role;
-        });
-      });
-      const completedTasks = roleTasks.filter(t => t.status === 'done').length;
-      return {
-        role,
-        users: roleUsers.length,
-        tasks: roleTasks.length,
-        completed: completedTasks,
-        completionRate: roleTasks.length > 0 ? Math.round((completedTasks / roleTasks.length) * 100) : 0
-      };
-    }).filter(stat => stat.users > 0);
-
-    const userStats = users
-      .filter(user => user.isActive)
+  const employeeAnalytics = useMemo(() => {
+    const employeeStats = users
+      .filter(user => {
+        const isActive = user.isActive && user.role !== 'super_manager';
+        const matchesRole = !selectedRole || selectedRole.value === 'all' || user.role === selectedRole.value;
+        const matchesUser = selectedUser === 'all' || user.id === selectedUser;
+        return isActive && matchesRole && matchesUser;
+      })
       .map(user => {
-        const userTasks = filteredTasks.filter(task => {
+        const allTasksForUser = filteredTasks.filter(task => {
           const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
           return taskAssignees.includes(user.id);
         });
-        const completedUserTasks = userTasks.filter(t => t.status === 'done').length;
+
+        const userTasks = allTasksForUser.filter(task => {
+          const hasTimeData = (task.timeEntries && task.timeEntries.length > 0) || (task.totalHours && task.totalHours > 0);
+          const isNotCompleted = task.status !== 'done';
+          return hasTimeData && isNotCompleted;
+        });
+        
+        const userHours = allTasksForUser.reduce((sum, task) => {
+          const userTimeEntries = task.timeEntries?.filter(entry => {
+            const isUserMatch = entry.userId === user.id || entry.userId === user.uid;
+            if (!isUserMatch) return false;
+            const entryDate = new Date(entry.date);
+            return isWithinInterval(entryDate, { start: dateRange.start, end: dateRange.end });
+          }) || [];
+          const userTaskHours = userTimeEntries.reduce((entrySum, entry) => entrySum + (entry.hours || 0), 0);
+          return sum + userTaskHours;
+        }, 0);
+
+        const allUserTasks = tasks.filter(task => {
+          const taskAssignees = Array.isArray(task.assignee) ? task.assignee : (task.assignee ? [task.assignee] : []);
+          return taskAssignees.includes(user.id);
+        });
+
+        const totalUserHours = allUserTasks.reduce((sum, task) => {
+          const userTimeEntries = task.timeEntries?.filter(entry => 
+            entry.userId === user.id || entry.userId === user.uid
+          ) || [];
+          const userTaskHours = userTimeEntries.reduce((entrySum, entry) => entrySum + (entry.hours || 0), 0);
+          return sum + userTaskHours;
+        }, 0);
+
+        const totalUserTasks = allUserTasks.filter(task => {
+          const hasTimeData = (task.timeEntries && task.timeEntries.length > 0) || (task.totalHours && task.totalHours > 0);
+          return hasTimeData;
+        }).length;
+        
+        const projectBreakdown = projects.map(project => {
+          const projectTasks = allTasksForUser.filter(task => task.projectId === project.id);
+          const projectHours = projectTasks.reduce((sum, task) => {
+            const userTimeEntries = task.timeEntries?.filter(entry => {
+              const isUserMatch = entry.userId === user.id || entry.userId === user.uid;
+              if (!isUserMatch) return false;
+              const entryDate = new Date(entry.date);
+              return isWithinInterval(entryDate, { start: dateRange.start, end: dateRange.end });
+            }) || [];
+            const userTaskHours = userTimeEntries.reduce((entrySum, entry) => entrySum + (entry.hours || 0), 0);
+            return sum + userTaskHours;
+          }, 0);
+          
+          return {
+            projectId: project.id,
+            projectName: project.name,
+            tasks: projectTasks.length,
+            hours: projectHours
+          };
+        }).filter(p => p.tasks > 0);
+        
+        const taskBreakdown = userTasks.map(task => {
+          const project = projects.find(p => p.id === task.projectId);
+          return {
+            taskId: task.id,
+            taskTitle: task.title,
+            projectName: project?.name || 'Unknown Project',
+            hours: task.totalHours || 0,
+            status: task.status,
+            completed: task.status === 'done'
+          };
+        }).filter(t => t.hours > 0);
+        
+        const utilizationRate = expectedHours > 0 ? Math.round((userHours / expectedHours) * 100) : 0;
+        
         return {
           id: user.id,
           name: user.name,
           role: user.role,
           avatar: user.avatar,
+          expectedHours,
+          actualHours: userHours,
+          totalHours: totalUserHours,
+          utilizationRate,
           totalTasks: userTasks.length,
-          completedTasks: completedUserTasks,
-          completionRate: userTasks.length > 0 ? Math.round((completedUserTasks / userTasks.length) * 100) : 0
+          totalUserTasks: totalUserTasks,
+          projectBreakdown,
+          taskBreakdown
         };
       })
-      .filter(stat => stat.totalTasks > 0)
-      .sort((a, b) => b.completionRate - a.completionRate);
+      .sort((a, b) => b.actualHours - a.actualHours);
 
+    const totalExpectedHours = employeeStats.reduce((sum, emp) => sum + emp.expectedHours, 0);
+    const totalActualHours = employeeStats.reduce((sum, emp) => sum + emp.actualHours, 0);
+    const overallUtilization = totalExpectedHours > 0 ? Math.round((totalActualHours / totalExpectedHours) * 100) : 0;
 
+    const roleOrder = ['manager', 'bd', 'designer', 'developer'];
+    const groupedEmployees = roleOrder.reduce((acc, role) => {
+      acc[role] = employeeStats.filter(emp => emp.role === role && emp.actualHours > 0);
+      return acc;
+    }, {});
+
+    const topPerformers = employeeStats
+      .filter(emp => emp.actualHours > 0)
+      .sort((a, b) => b.actualHours - a.actualHours)
+      .slice(0, 4);
 
     return {
-      totalTasks,
-      completedTasks,
-      todoTasks,
-      inProgressTasks,
-      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
-      activeUsers,
-      totalUsers,
-      roleStats,
-      userStats
+      employeeStats,
+      groupedEmployees,
+      topPerformers,
+      totalExpectedHours,
+      totalActualHours,
+      overallUtilization,
+      totalEmployees: employeeStats.length,
+      expectedHours
     };
-  }, [filteredTasks, users]);
-
-  const exportAnalytics = () => {
-    const data = {
-      timeRange,
-      dateRange: {
-        start: format(dateRange.start, 'yyyy-MM-dd'),
-        end: format(dateRange.end, 'yyyy-MM-dd')
-      },
-      filters: {
-        role: selectedRole,
-        user: selectedUser
-      },
-      analytics
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `analytics-${dateUtils.getCurrentDate().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  }, [filteredTasks, users, projects, dateRange, expectedHours, selectedRole, selectedUser]);
 
   return (
     <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle 
-        title="Analytics"
-        subtitle="Track your team's performance and project metrics"
-        icon={FiBarChart2}
+        title="Employee Time Analytics"
+        subtitle="Track employee performance, time utilization, and project progress"
+        icon={FiUsers}
         showBackButton={true}
         backTo="/dashboard"
-        actions={
-          <Button 
-            variant="secondary"
-            onClick={exportAnalytics}
-          >
-            <FiDownload size={16} />
-            Export Data
-          </Button>
-        }
       />
       
-      {}
       <div className="analytics-filters">
         <div className="filter-group">
           <label>Time Range:</label>
           <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
-            <option value="week">Last 7 Days</option>
+            <option value="day">Today</option>
+            <option value="week">This Week</option>
             <option value="month">This Month</option>
-            <option value="quarter">Last 3 Months</option>
-            <option value="year">Last Year</option>
+            <option value="custom-month">Custom Month</option>
           </select>
         </div>
+        
+        {timeRange === 'custom-month' && (
+          <>
+            <div className="filter-group">
+              <label>Month:</label>
+              <select value={customMonth} onChange={(e) => setCustomMonth(parseInt(e.target.value))}>
+                <option value={0}>January</option>
+                <option value={1}>February</option>
+                <option value={2}>March</option>
+                <option value={3}>April</option>
+                <option value={4}>May</option>
+                <option value={5}>June</option>
+                <option value={6}>July</option>
+                <option value={7}>August</option>
+                <option value={8}>September</option>
+                <option value={9}>October</option>
+                <option value={10}>November</option>
+                <option value={11}>December</option>
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Year:</label>
+              <select value={customYear} onChange={(e) => setCustomYear(parseInt(e.target.value))}>
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return (
+                    <option key={year} value={year}>{year}</option>
+                  );
+                })}
+              </select>
+            </div>
+          </>
+        )}
         
         <div className="filter-group">
           <label>Role:</label>
-          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-            <option value="all">All Roles</option>
-            <option value="designer">Designer</option>
-            <option value="developer">Developer</option>
-            <option value="bd">Business Development</option>
-          </select>
+          <Select
+            options={roleFilterOptions}
+            value={selectedRole}
+            onChange={setSelectedRole}
+            placeholder="Filter by role"
+            isClearable
+            styles={customStyles}
+          />
         </div>
         
         <div className="filter-group">
-          <label>User:</label>
+          <label>Employee:</label>
           <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
-            <option value="all">All Users</option>
+            <option value="all">All Employees</option>
             {users
-              .filter(user => user.isActive)
-              .filter(user => selectedRole === 'all' || user.role === selectedRole)
+              .filter(user => {
+                const isActive = user.isActive && user.role !== 'super_manager';
+                const matchesRole = !selectedRole || selectedRole.value === 'all' || user.role === selectedRole.value;
+                return isActive && matchesRole;
+              })
               .map(user => (
                 <option key={user.id} value={user.id}>{user.name}</option>
               ))
             }
           </select>
         </div>
+        
       </div>
 
-      {}
-      <div className="analytics-grid">
-        <motion.div 
-          className="analytics-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="card-header">
-            <h3>Tasks Completed</h3>
-            <FiCheckCircle size={24} className="card-icon" />
+      <div className="top-performers-section">
+        <h3>Top 4 Performers ({getPeriodTitle()})</h3>
+        {employeeAnalytics.topPerformers.length > 0 ? (
+          <div className="top-performers-grid">
+            {employeeAnalytics.topPerformers.map((performer, index) => (
+              <motion.div 
+                key={performer.id}
+                className="top-performer-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div className="performer-rank">#{index + 1}</div>
+                <div className="performer-info">
+                  <Avatar 
+                    src={performer.avatar}
+                    name={performer.name}
+                    size="medium"
+                  />
+                  <div className="performer-details">
+                    <h4>{performer.name}</h4>
+                    <span className="performer-role">{performer.role}</span>
+                  </div>
+                </div>
+                <div className="performer-stats">
+                  <div className="stat">
+                    <span className="stat-value">{performer.totalUserTasks}</span>
+                    <span className="stat-label">Tasks</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-value">{performer.totalHours.toFixed(1)}h</span>
+                    <span className="stat-label">Hours</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-          <div className="analytics-metric">
-            <span className="metric-value">{analytics.completedTasks}</span>
-            <span className="metric-total">/ {analytics.totalTasks}</span>
-          </div>
-          <div className="metric-progress">
-            <div 
-              className="progress-bar" 
-              style={{ width: `${analytics.completionRate}%` }}
-            />
-          </div>
-          <p className="metric-label">{analytics.completionRate}% completion rate</p>
-        </motion.div>
-
-        <motion.div 
-          className="analytics-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="card-header">
-            <h3>Active Team</h3>
-            <FiUsers size={24} className="card-icon" />
-          </div>
-          <div className="analytics-metric">
-            <span className="metric-value">{analytics.activeUsers}</span>
-            <span className="metric-total">/ {analytics.totalUsers}</span>
-          </div>
-          <div className="metric-progress">
-            <div 
-              className="progress-bar" 
-              style={{ width: `${Math.round((analytics.activeUsers / analytics.totalUsers) * 100)}%` }}
-            />
-          </div>
-          <p className="metric-label">Active team members</p>
-        </motion.div>
-
-
-
-        <motion.div 
-          className="analytics-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="card-header">
-            <h3>Avg. Completion Time</h3>
-            <FiClock size={24} className="card-icon" />
-          </div>
-          <div className="analytics-metric">
-            <span className="metric-value">
-              {analytics.totalTasks > 0 ? Math.round(analytics.totalTasks / analytics.completedTasks) : 0}
-            </span>
-          </div>
-          <p className="metric-label">days per task</p>
-        </motion.div>
+        ) : (
+          <motion.div 
+            className="no-data-state"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="no-data-icon">
+              <FiUsers size={48} />
+            </div>
+            <h4>No Data Available</h4>
+            <p>No time entries found for {getPeriodTitle().toLowerCase()}.</p>
+          </motion.div>
+        )}
       </div>
 
-      {}
       <div className="analytics-sections">
         <motion.div 
           className="analytics-section"
@@ -314,136 +423,111 @@ const Analytics = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3>Performance by Role</h3>
-          <div className="role-analytics">
-            {analytics.roleStats.map((roleStat, index) => (
-              <div key={roleStat.role} className="role-stat-card">
-                <div className="role-header">
-                  <span className="role-name">{roleStat.role.replace('_', ' ')}</span>
-                  <span className="role-count">{roleStat.users} members</span>
-                </div>
-                <div className="role-metrics">
-                  <div className="metric">
-                    <span className="label">Tasks:</span>
-                    <span className="value">{roleStat.tasks}</span>
+          <h3>Employee Performance Overview</h3>
+          <div className="employee-performance">
+            {(() => {
+              const hasAnyEmployees = Object.values(employeeAnalytics.groupedEmployees).some(employees => employees.length > 0);
+              
+              if (!hasAnyEmployees) {
+                return (
+                  <motion.div 
+                    className="no-data-state"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div className="no-data-icon">
+                      <FiUsers size={48} />
+                    </div>
+                    <h4>No Employees Found</h4>
+                    <p>No employees found for the selected filters and time period.</p>
+                  </motion.div>
+                );
+              }
+              
+              return ['manager', 'bd', 'designer', 'developer'].map(role => {
+                const roleEmployees = employeeAnalytics.groupedEmployees[role] || [];
+                if (roleEmployees.length === 0) return null;
+                
+                const roleDisplayName = role === 'bd' ? 'Business Development' : role.charAt(0).toUpperCase() + role.slice(1);
+                
+                return (
+                  <div key={role} className="role-group">
+                    <h4 className="role-title">{roleDisplayName}s ({roleEmployees.length})</h4>
+                    <div className="employee-grid">
+                      {roleEmployees.map((employee) => (
+                        <div key={employee.id} className="employee-card">
+                          <div className="employee-header">
+                            <div className="employee-info">
+                              <Avatar 
+                                src={employee.avatar}
+                                name={employee.name}
+                                size="medium"
+                              />
+                              <div className="employee-details">
+                                <h4>{employee.name}</h4>
+                                <span className="employee-role">{employee.role}</span>
+                              </div>
+                            </div>
+                            <div className="utilization-badge">
+                              <span className={`utilization-rate ${employee.utilizationRate >= 80 ? 'high' : employee.utilizationRate >= 60 ? 'medium' : 'low'}`}>
+                                {employee.utilizationRate}%
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="employee-metrics">
+                            <div className="metric-row">
+                              <div className="metric">
+                                <span className="label">Hours Logged:</span>
+                                <span className="value">{employee.actualHours.toFixed(1)}h</span>
+                              </div>
+                              <div className="metric">
+                                <span className="label">Expected:</span>
+                                <span className="value">{employee.expectedHours.toFixed(1)}h</span>
+                              </div>
+                            </div>
+                            <div className="metric-row">
+                              <div className="metric">
+                                <span className="label">Active Tasks:</span>
+                                <span className="value">{employee.totalTasks}</span>
+                              </div>
+                              <div className="metric">
+                                <span className="label">Total Hours:</span>
+                                <span className="value">{employee.totalHours.toFixed(1)}h</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="utilization-bar">
+                            <div 
+                              className="utilization-fill" 
+                              style={{ width: `${Math.min(employee.utilizationRate, 100)}%` }}
+                            />
+                          </div>
+                          
+                          {employee.projectBreakdown.length > 0 && (
+                            <div className="project-breakdown">
+                              <h5>Project Breakdown:</h5>
+                              <div className="project-list">
+                                {employee.projectBreakdown.slice(0, 3).map(project => (
+                                  <div key={project.projectId} className="project-item">
+                                    <span className="project-name">{project.projectName}</span>
+                                    <span className="project-hours">{project.hours.toFixed(1)}h</span>
+                                  </div>
+                                ))}
+                                {employee.projectBreakdown.length > 3 && (
+                                  <div className="project-more">+{employee.projectBreakdown.length - 3} more</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="metric">
-                    <span className="label">Completed:</span>
-                    <span className="value">{roleStat.completed}</span>
-                  </div>
-                  <div className="metric">
-                    <span className="label">Rate:</span>
-                    <span className="value">{roleStat.completionRate}%</span>
-                  </div>
-                </div>
-                <div className="role-progress">
-                  <div 
-                    className="progress-bar" 
-                    style={{ width: `${roleStat.completionRate}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {}
-        <motion.div 
-          className="analytics-section"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h3>Top Performers</h3>
-          <div className="top-performers">
-            {analytics.userStats.map((userStat, index) => (
-              <div key={userStat.id} className="performer-card">
-                <div className="performer-rank">#{index + 1}</div>
-                <div className="performer-info">
-                  <div className="performer-avatar">
-                    <Avatar 
-                      src={userStat.avatar}
-                      name={userStat.name}
-                      size="medium"
-                    />
-                  </div>
-                  <div className="performer-details">
-                    <h4>{userStat.name}</h4>
-                    <span className="performer-role">{userStat.role}</span>
-                  </div>
-                </div>
-                <div className="performer-stats">
-                  <div className="stat">
-                    <span className="stat-value">{userStat.completionRate}%</span>
-                    <span className="stat-label">Success Rate</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-value">{userStat.completedTasks}</span>
-                    <span className="stat-label">Completed</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {}
-        <motion.div 
-          className="analytics-section"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <h3>Task Status Distribution</h3>
-          <div className="status-distribution">
-            <div className="status-item todo">
-              <div className="status-info">
-                <span className="status-name">To Do</span>
-                <span className="status-count">{analytics.todoTasks}</span>
-              </div>
-              <div className="status-bar">
-                <div 
-                  className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.todoTasks / analytics.totalTasks) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="status-item in-progress">
-              <div className="status-info">
-                <span className="status-name">In Progress</span>
-                <span className="status-count">{analytics.inProgressTasks}</span>
-              </div>
-              <div className="status-bar">
-                <div 
-                  className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.inProgressTasks / analytics.totalTasks) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="status-item in-review">
-              <div className="status-info">
-                <span className="status-name">In Review</span>
-                <span className="status-count">{analytics.inReviewTasks}</span>
-              </div>
-              <div className="status-bar">
-                <div 
-                  className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.inReviewTasks / analytics.totalTasks) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="status-item done">
-              <div className="status-info">
-                <span className="status-name">Completed</span>
-                <span className="status-count">{analytics.completedTasks}</span>
-              </div>
-              <div className="status-bar">
-                <div 
-                  className="status-progress" 
-                  style={{ width: `${analytics.totalTasks > 0 ? (analytics.completedTasks / analytics.totalTasks) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
+                );
+              });
+            })()}
           </div>
         </motion.div>
       </div>

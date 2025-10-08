@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { FiFolder, FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './ProjectCard.scss';
 
-const ProjectCard = ({ 
+const ProjectCard = memo(({ 
   project, 
   taskCount = 0, 
   index = 0,
@@ -123,6 +123,8 @@ const ProjectCard = ({
       )}
     </motion.div>
   );
-};
+});
+
+ProjectCard.displayName = 'ProjectCard';
 
 export default ProjectCard; 

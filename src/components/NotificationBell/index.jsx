@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { 
   FiBell, 
   FiCheck, 
@@ -17,7 +17,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import './NotificationBell.scss';
 
-const NotificationBell = () => {
+const NotificationBell = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
@@ -190,6 +190,8 @@ const NotificationBell = () => {
       )}
     </div>
   );
-};
+});
+
+NotificationBell.displayName = 'NotificationBell';
 
 export default NotificationBell; 

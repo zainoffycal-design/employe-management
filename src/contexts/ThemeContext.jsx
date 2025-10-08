@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 
 const ThemeContext = createContext();
 
@@ -24,16 +24,16 @@ export const ThemeProvider = ({ children }) => {
     return 'light';
   });
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-  };
+  }, [theme]);
 
-  const setThemeMode = (newTheme) => {
+  const setThemeMode = useCallback((newTheme) => {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-  };
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -66,13 +66,13 @@ export const ThemeProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     theme,
     toggleTheme,
     setTheme: setThemeMode,
     isDark: theme === 'dark',
     isLight: theme === 'light'
-  };
+  }), [theme, toggleTheme, setThemeMode]);
 
   return (
     <ThemeContext.Provider value={value}>

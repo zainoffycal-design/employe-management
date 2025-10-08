@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { 
   FiUsers,
   FiPlus,
@@ -79,12 +80,18 @@ const ProjectBoard = () => {
   const customStyles = {
     control: (base) => ({
       ...base,
-      minHeight: '38px',
+      minHeight: '48px',
       backgroundColor: 'white',
-      borderColor: '#e2e8f0',
+      borderColor: '#d1d5db',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
       boxShadow: 'none',
       '&:hover': {
-        borderColor: '#cbd5e1'
+        borderColor: '#9ca3af'
+      },
+      '&:focus-within': {
+        borderColor: '#15a970',
+        boxShadow: '0 0 0 3px rgba(21, 169, 112, 0.1)'
       }
     }),
     option: (base, state) => ({
@@ -103,12 +110,15 @@ const ProjectBoard = () => {
     multiValue: (base) => ({
       ...base,
       backgroundColor: '#f1f5f9',
-      borderRadius: '4px'
+      borderRadius: '4px',
+      margin: '2px',
+      maxWidth: '200px'
     }),
     multiValueLabel: (base) => ({
       ...base,
       color: '#334155',
-      padding: '2px 6px'
+      padding: '2px 6px',
+      fontSize: '0.875rem'
     }),
     multiValueRemove: (base) => ({
       ...base,
@@ -117,6 +127,13 @@ const ProjectBoard = () => {
         backgroundColor: '#e2e8f0',
         color: '#334155'
       }
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      padding: '2px 8px',
+      flexWrap: 'wrap',
+      maxHeight: '120px',
+      overflowY: 'auto'
     }),
     menu: (base) => ({
       ...base,
@@ -175,7 +192,10 @@ const ProjectBoard = () => {
       try {
         const allUsers = await userManagementService.getAllUsers();
         const projectUsers = allUsers.filter(user => 
-          user.isActive && currentProject?.teamMembers.includes(user.id)
+          user.isActive && (
+            currentProject?.teamMembers.includes(user.id) || 
+            user.role === 'manager'
+          )
         );
         setUsers(projectUsers);
       } catch (error) {
@@ -200,13 +220,6 @@ const ProjectBoard = () => {
   }, [currentUser, projects]);
 
   const assigneeOptions = users.map(user => ({
-    value: user.id,
-    label: user.name,
-    role: user.role.charAt(0).toUpperCase() + user.role.slice(1),
-    avatar: user.avatar
-  }));
-
-  const assigneeFilterOptions = users.map(user => ({
     value: user.id,
     label: user.name,
     role: user.role.charAt(0).toUpperCase() + user.role.slice(1),
@@ -358,6 +371,11 @@ const ProjectBoard = () => {
         return;
       }
 
+      const validation = validateTaskStatusChange(editingTask, editingTask.status);
+      if (!validation.isValid) {
+        return;
+      }
+
       const taskData = {
         title: editingTask.title,
         description: editingTask.description,
@@ -427,12 +445,49 @@ const ProjectBoard = () => {
     }
   }, [canMarkComplete]);
 
+  const validateTaskStatusChange = (task, newStatus) => {
+    if (newStatus === 'in-review' || newStatus === 'done') {
+      const hasTimeEntries = task.timeEntries && task.timeEntries.length > 0;
+      const hasTotalHours = task.totalHours && task.totalHours > 0;
+      
+      if (!hasTimeEntries && !hasTotalHours) {
+        const message = newStatus === 'in-review' 
+          ? 'Task must have time entries before moving to In Review'
+          : 'Task must have time entries before marking as Complete';
+        
+        toast.error(message, {
+          duration: 4000,
+          icon: <FiClock size={16} />,
+          style: {
+            background: '#ef4444',
+            color: '#fff',
+          },
+        });
+        
+        return {
+          isValid: false,
+          message
+        };
+      }
+    }
+    return { isValid: true };
+  };
+
   const handleDrop = useCallback((e, columnId, targetTaskId = null) => {
     e.preventDefault();
     
     if (!draggedTask) return;
 
     if (columnId === 'done' && !canMarkComplete) {
+      return;
+    }
+
+    const validation = validateTaskStatusChange(draggedTask, columnId);
+    if (!validation.isValid) {
+      soundManager.playError();
+      setDraggedTask(null);
+      setDraggedOverColumn(null);
+      setDraggedOverTask(null);
       return;
     }
 
@@ -605,8 +660,12 @@ const ProjectBoard = () => {
     
     const now = new Date();
     const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const deadlineDateOnly = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate());
+    
+    const diffTime = deadlineDateOnly - nowDate;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
       return { text: 'Overdue', type: 'overdue' };
@@ -728,7 +787,7 @@ const ProjectBoard = () => {
               
               <div className="assignee-filter">
                 <Select
-                  options={assigneeFilterOptions}
+                  options={assigneeOptions}
                   value={selectedAssignee}
                   onChange={setSelectedAssignee}
                   placeholder="Filter by assignee"
@@ -877,6 +936,18 @@ const ProjectBoard = () => {
                         <span className="priority" style={{ backgroundColor: getPriorityColor(task.priority) }}>
                           {task.priority}
                         </span>
+                        {task.totalHours && task.totalHours > 0 && (
+                          <span className="hours-indicator">
+                            <FiClock size={12} />
+                            {task.totalHours.toFixed(1)}h
+                          </span>
+                        )}
+                        {(!task.timeEntries || task.timeEntries.length === 0) && (!task.totalHours || task.totalHours === 0) && (
+                          <span className="time-required-indicator" title="Time entry required before moving to In Review or Complete">
+                            <FiClock size={12} />
+                            <span>Time Required</span>
+                          </span>
+                        )}
                         {task.deadline && (
                           <span className="deadline">
                             <FiCalendar size={12} />
@@ -1009,21 +1080,19 @@ const ProjectBoard = () => {
                 <FiUsers className="me-2" />
                 Assignees
               </label>
-              <div className="form-control" style={{ padding: 0, border: 'none', boxShadow: 'none' }}>
-                <Select
-                  options={assigneeOptions}
-                  value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
-                  onChange={(selectedOptions) => setNewTask({ 
-                    ...newTask, 
-                    assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
-                  })}
-                  placeholder="Select Assignees"
-                  isMulti
-                  isClearable
-                  styles={customStyles}
-                  components={{ Option: CustomOption }}
-                />
-              </div>
+              <Select
+                options={assigneeOptions}
+                value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
+                onChange={(selectedOptions) => setNewTask({ 
+                  ...newTask, 
+                  assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
+                })}
+                placeholder="Select Assignees"
+                isMulti
+                isClearable
+                styles={customStyles}
+                components={{ Option: CustomOption }}
+              />
             </div>
           </div>
 
@@ -1039,7 +1108,7 @@ const ProjectBoard = () => {
                 value={newTask.deadline?.split('T')[0] || ''}
                 onChange={(e) => {
                   const date = e.target.value;
-                  const time = newTask.deadline?.split('T')[1] || '23:59';
+                  const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
                   setNewTask({ 
                     ...newTask, 
                     deadline: date ? `${date}T${time}` : ''
@@ -1049,7 +1118,7 @@ const ProjectBoard = () => {
               <input
                 type="time"
                 className="form-control"
-                value={newTask.deadline?.split('T')[1] || ''}
+                value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
                 onChange={(e) => {
                   const time = e.target.value;
                   const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
@@ -1181,7 +1250,7 @@ const ProjectBoard = () => {
                   value={editingTask?.deadline?.split('T')[0] || ''}
                   onChange={(e) => {
                     const date = e.target.value;
-                    const time = editingTask?.deadline?.split('T')[1] || '23:59';
+                    const time = editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
                     setEditingTask({ 
                       ...editingTask, 
                       deadline: date ? `${date}T${time}` : ''
@@ -1191,7 +1260,7 @@ const ProjectBoard = () => {
                 <input
                   type="time"
                   className="form-control"
-                  value={editingTask?.deadline?.split('T')[1] || ''}
+                  value={editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
                   onChange={(e) => {
                     const time = e.target.value;
                     const date = editingTask?.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];

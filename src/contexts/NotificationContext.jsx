@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { notificationService } from '../services/notificationService';
 import toast from 'react-hot-toast';
@@ -45,16 +45,16 @@ export const NotificationProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = useCallback(async (notificationId) => {
     try {
       await notificationService.markNotificationAsRead(notificationId);
     } catch (error) {
       console.error('Error marking notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
-  };
+  }, []);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     if (!currentUser) return;
     
     try {
@@ -64,9 +64,9 @@ export const NotificationProvider = ({ children }) => {
       console.error('Error marking all notifications as read:', error);
       toast.error('Failed to mark all notifications as read');
     }
-  };
+  }, [currentUser]);
 
-  const deleteNotification = async (notificationId) => {
+  const deleteNotification = useCallback(async (notificationId) => {
     try {
       await notificationService.deleteNotification(notificationId);
       toast.success('Notification deleted');
@@ -74,9 +74,9 @@ export const NotificationProvider = ({ children }) => {
       console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
     }
-  };
+  }, []);
 
-  const cleanupOldNotifications = async () => {
+  const cleanupOldNotifications = useCallback(async () => {
     if (!currentUser) return;
     
     try {
@@ -86,16 +86,16 @@ export const NotificationProvider = ({ children }) => {
       console.error('Error cleaning up notifications:', error);
       toast.error('Failed to clean up notifications');
     }
-  };
+  }, [currentUser]);
 
-  const value = {
+  const value = useMemo(() => ({
     notifications,
     unreadCount,
     markAsRead,
     markAllAsRead,
     deleteNotification,
     cleanupOldNotifications
-  };
+  }), [notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, cleanupOldNotifications]);
 
   return (
     <NotificationContext.Provider value={value}>

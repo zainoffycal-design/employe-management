@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { firebaseUtils } from '../utils/firebaseUtils';
 import { userManagementService } from '../services/firebaseService';
 import { permissionUtils, PERMISSIONS } from '../utils/permissionUtils';
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       setIsFormSubmitting(true);
       const { email, password, ...profile } = userData;
@@ -58,9 +58,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsFormSubmitting(false);
     }
-  };
+  }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       setIsFormSubmitting(true);
       const user = await firebaseUtils.signIn(email, password);
@@ -88,33 +88,30 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsFormSubmitting(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await firebaseUtils.signOut();
     setCurrentUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
-  const hasPermission = (permission) => {
+  const hasPermission = useCallback((permission) => {
     return permissionUtils.hasPermission(currentUser, permission);
-  };
+  }, [currentUser]);
   
-  const canEditTasks = () => hasPermission(PERMISSIONS.EDIT_TASKS);
-  const canDeleteTasks = () => hasPermission(PERMISSIONS.DELETE_TASKS);
-  const canMoveTasks = () => hasPermission(PERMISSIONS.MOVE_TASKS);
-  const canManageTasks = () => hasPermission(PERMISSIONS.MANAGE_TASKS);
-  const canManageEmployees = () => permissionUtils.canManageEmployees(currentUser);
-  const canManageUsers = () => permissionUtils.canManageUsers(currentUser);
-  const canViewAnalytics = () => hasPermission(PERMISSIONS.VIEW_ANALYTICS);
-  const canAssignTasks = () => hasPermission(PERMISSIONS.ASSIGN_TASKS);
-  const canViewOwnTasks = () => hasPermission(PERMISSIONS.VIEW_OWN_TASKS);
+  const canEditTasks = useCallback(() => hasPermission(PERMISSIONS.EDIT_TASKS), [hasPermission]);
+  const canDeleteTasks = useCallback(() => hasPermission(PERMISSIONS.DELETE_TASKS), [hasPermission]);
+  const canMoveTasks = useCallback(() => hasPermission(PERMISSIONS.MOVE_TASKS), [hasPermission]);
+  const canManageTasks = useCallback(() => hasPermission(PERMISSIONS.MANAGE_TASKS), [hasPermission]);
+  const canManageEmployees = useCallback(() => permissionUtils.canManageEmployees(currentUser), [currentUser]);
+  const canManageUsers = useCallback(() => permissionUtils.canManageUsers(currentUser), [currentUser]);
+  const canViewAnalytics = useCallback(() => hasPermission(PERMISSIONS.VIEW_ANALYTICS), [hasPermission]);
+  const canAssignTasks = useCallback(() => hasPermission(PERMISSIONS.ASSIGN_TASKS), [hasPermission]);
+  const canViewOwnTasks = useCallback(() => hasPermission(PERMISSIONS.VIEW_OWN_TASKS), [hasPermission]);
+  const canViewAllTasks = useCallback(() => permissionUtils.canViewAllTasks(currentUser), [currentUser]);
 
-  const canViewAllTasks = () => {
-    return permissionUtils.canViewAllTasks(currentUser);
-  };
-
-  const value = {
+  const value = useMemo(() => ({
     isAuthenticated,
     currentUser,
     loading,
@@ -133,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     canAssignTasks,
     canViewOwnTasks,
     canViewAllTasks
-  };
+  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks]);
 
   return (
     <AuthContext.Provider value={value}>

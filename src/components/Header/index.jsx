@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiLock, FiEye, FiEyeOff, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,15 +13,7 @@ import Avatar from '../Avatar';
 import NotificationBell from '../NotificationBell';
 import './Header.scss';
 
-const AnimatedMenuIcon = ({ open }) => (
-  <div className={`animated-menu-icon${open ? ' open' : ''}`}>
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
-);
-
-const Header = ({ onMenuClick, sidebarOpen }) => {
+const Header = memo(({ onMenuClick, sidebarOpen }) => {
   const { currentUser, logout } = useAuth();
   const { projects } = useTask();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -133,11 +125,9 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
   };
 
   return (
+    <>
     <header className="header navbar navbar-expand navbar-light bg-white border-bottom">
       <div className="container-fluid">
-        <button className="menu-btn" onClick={onMenuClick} aria-label="Toggle sidebar">
-          <AnimatedMenuIcon open={sidebarOpen} />
-        </button>
         <div className="navbar-brand">
           <button 
             className="logo-btn" 
@@ -380,7 +370,29 @@ const Header = ({ onMenuClick, sidebarOpen }) => {
         </form>
       </Modal>
     </header>
+    
+    <button 
+      className={`fixed-menu-toggle ${sidebarOpen ? 'open' : ''}`}
+      onClick={onMenuClick} 
+      aria-label="Toggle sidebar"
+    >
+      <svg 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      >
+        <polyline points={sidebarOpen ? "15 18 9 12 15 6" : "9 18 15 12 9 6"}></polyline>
+      </svg>
+    </button>
+    </>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header; 

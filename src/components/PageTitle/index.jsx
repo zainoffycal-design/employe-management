@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
-const PageTitle = ({ 
+const PageTitle = memo(({ 
   title, 
   subtitle, 
   icon: Icon, 
@@ -16,9 +16,9 @@ const PageTitle = ({
 }) => {
   const navigate = useNavigate();
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     navigate(backTo);
-  };
+  }, [navigate, backTo]);
 
   return (
     <motion.div 
@@ -64,6 +64,8 @@ const PageTitle = ({
       </div>
     </motion.div>
   );
-};
+});
+
+PageTitle.displayName = 'PageTitle';
 
 export default PageTitle; 

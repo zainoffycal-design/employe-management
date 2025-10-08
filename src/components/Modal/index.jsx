@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import './Modal.scss';
 
-const Modal = ({ 
+const Modal = memo(({ 
   isOpen, 
   onClose, 
   title, 
@@ -14,11 +14,11 @@ const Modal = ({
   className = '',
   ...props 
 }) => {
-  const handleOverlayClick = (e) => {
+  const handleOverlayClick = useCallback((e) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
       onClose();
     }
-  };
+  }, [closeOnOverlayClick, onClose]);
 
   const sizeClasses = {
     small: 'modal--small',
@@ -80,6 +80,8 @@ const Modal = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+Modal.displayName = 'Modal';
 
 export default Modal; 

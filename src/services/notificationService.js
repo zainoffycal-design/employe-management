@@ -9,7 +9,8 @@ import {
   doc,
   onSnapshot,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
@@ -17,10 +18,11 @@ import toast from 'react-hot-toast';
 export const notificationService = {
   async createTaskAssignmentNotification(taskData, assignedUsers, projectData, assignedBy) {
     try {
-
+      const batch = writeBatch(db);
       const notificationsRef = collection(db, 'notifications');
       
-      const notificationPromises = assignedUsers.map(async (userId) => {
+      assignedUsers.forEach((userId) => {
+        const notificationRef = doc(notificationsRef);
         const notificationData = {
           userId,
           type: 'task_assignment',
@@ -38,11 +40,11 @@ export const notificationService = {
           createdAt: serverTimestamp(),
           actionUrl: `/project/${projectData.id}/board`
         };
-
-        return addDoc(notificationsRef, notificationData);
+        
+        batch.set(notificationRef, notificationData);
       });
 
-      await Promise.all(notificationPromises);
+      await batch.commit();
       
       return true;
     } catch (error) {
@@ -176,14 +178,18 @@ export const notificationService = {
       );
       
       const snapshot = await getDocs(q);
-      const updatePromises = snapshot.docs.map(doc => 
-        updateDoc(doc.ref, {
+      
+      if (snapshot.empty) return;
+      
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnapshot => {
+        batch.update(docSnapshot.ref, {
           read: true,
           readAt: serverTimestamp()
-        })
-      );
+        });
+      });
       
-      await Promise.all(updatePromises);
+      await batch.commit();
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;
@@ -202,12 +208,14 @@ export const notificationService = {
 
   async cleanupOldNotifications(notificationsToDelete) {
     try {
-      const deletePromises = notificationsToDelete.map(notification => {
-        const notificationRef = doc(db, 'notifications', notification.id);
-        return deleteDoc(notificationRef);
-      });
+      if (notificationsToDelete.length === 0) return;
       
-      await Promise.all(deletePromises);
+      const batch = writeBatch(db);
+      notificationsToDelete.forEach(notification => {
+        const notificationRef = doc(db, 'notifications', notification.id);
+        batch.delete(notificationRef);
+      });
+      await batch.commit();
     } catch (error) {
       console.error('Error cleaning up old notifications:', error);
     }
