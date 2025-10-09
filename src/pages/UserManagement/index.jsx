@@ -32,9 +32,14 @@ import './UserManagement.scss';
 
 
 
-const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null }) => {
+const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null, index = 0 }) => {
   return (
-    <div className={`user-card ${isCurrentUser ? 'current-user' : ''}`}>
+    <motion.div 
+      className={`user-card ${isCurrentUser ? 'current-user' : ''}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+    >
       <Avatar 
         src={user.avatar}
         name={user.name}
@@ -95,7 +100,7 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -161,13 +166,18 @@ const UserManagement = () => {
 
   if (!canManageUsers()) {
     return (
-      <div className="page-container">
+      <motion.div 
+        className="page-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="access-denied">
           <FiShield size={48} />
           <h3>Access Denied</h3>
           <p>You don't have permission to access user management.</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -365,24 +375,31 @@ const UserManagement = () => {
           if (usersInRole.length === 0) return null;
 
           return (
-            <div key={role} className="role-section">
+            <motion.div 
+              key={role} 
+              className="role-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <h2 className="role-title">{getRoleDisplayName(role)}</h2>
               <div className="users-list">
-                {usersInRole.map(user => (
-                                      <UserCard
-                      key={user.id}
-                      user={user}
-                      onEdit={openEditUserModal}
-                      onDelete={handleDeleteUser}
-                      canManageUsers={canManageUsers}
-                      isCurrentUser={user.id === currentUser.uid}
-                      onResendInvitation={handleResendInvitation}
-                      isSuperManager={user.role === 'super_manager'}
-                      currentUserRole={currentUser.role}
-                    />
+                {usersInRole.map((user, index) => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    onEdit={openEditUserModal}
+                    onDelete={handleDeleteUser}
+                    canManageUsers={canManageUsers}
+                    isCurrentUser={user.id === currentUser.uid}
+                    onResendInvitation={handleResendInvitation}
+                    isSuperManager={user.role === 'super_manager'}
+                    currentUserRole={currentUser.role}
+                    index={index}
+                  />
                 ))}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
