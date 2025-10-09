@@ -120,7 +120,6 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
   margin: 0 !important;
   padding: 0 !important;
-  border: none !important;
   outline: none !important;
   border: 1px solid var(--gray-100) !important;
 }
@@ -278,39 +277,6 @@
   }
 }
 
-@keyframes fadeInText {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes dropdown-fade-in {
-  from { 
-    opacity: 0; 
-    transform: translateY(-6px); 
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -351,24 +317,6 @@
   scrollbar-width: thin;
   scrollbar-color: var(--gray-300) var(--gray-100);
 }
-    
-@mixin mobile {
-  @media (max-width: 768px) {
-    @content;
-  }
-}
-
-@mixin tablet {
-  @media (max-width: 1024px) {
-    @content;
-  }
-}
-
-@mixin desktop {
-  @media (min-width: 1025px) {
-    @content;
-  }
-}
 
 @mixin empty-state($min-height: 200px, $background: var(--gray-50)) {
   display: flex;
@@ -407,19 +355,6 @@
     font-size: 0.95rem;
     color: var(--gray-500);
     line-height: 1.6;
-  }
-}
-
-@mixin stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
   }
 }
 
