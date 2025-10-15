@@ -28,12 +28,15 @@ export const AuthProvider = ({ children }) => {
             ...userData 
           };
           setCurrentUser(userWithUid);
+          setIsAuthenticated(true);
           
           await userManagementService.ensureUserUid(user.uid, user.email);
         } else {
-          setCurrentUser({ uid: user.uid, email: user.email });
+          // User exists in Firebase Auth but not in Firestore - sign them out
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          await firebaseUtils.signOut();
         }
-        setIsAuthenticated(true);
       } else {
         setCurrentUser(null);
         setIsAuthenticated(false);
@@ -78,11 +81,15 @@ export const AuthProvider = ({ children }) => {
           ...userData 
         };
         setCurrentUser(userWithUid);
+        setIsAuthenticated(true);
+        return { success: true, user: userWithUid };
       } else {
-        setCurrentUser({ uid: user.uid, email: user.email });
+        // User exists in Firebase Auth but not in Firestore - sign them out
+        await firebaseUtils.signOut();
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+        return { success: false, error: 'User account has been deleted or deactivated.' };
       }
-      setIsAuthenticated(true);
-      return { success: true, user: { uid: user.uid, email: user.email, ...userData } };
     } catch (error) {
       return { success: false, error: error.message };
     } finally {

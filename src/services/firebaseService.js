@@ -1,4 +1,6 @@
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
+import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
 
@@ -121,7 +123,153 @@ export const userManagementService = {
   },
 
   deleteUser: async (userId) => {
-    return firebaseUtils.updateDocument('users', userId, { isActive: false });
+    try {
+      const userData = await firebaseUtils.getDocument('users', userId);
+      if (userData) {
+        await firebaseUtils.deleteDocument('users', userId);
+        
+        if (userData.email) {
+          const invitationsRef = collection(db, 'user_invitations');
+          const invitationsQuery = query(invitationsRef, where('email', '==', userData.email));
+          const invitationsSnapshot = await getDocs(invitationsQuery);
+          
+          await Promise.all(invitationsSnapshot.docs.map(doc => deleteDoc(doc.ref)));
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  },
+
+  deactivateUser: async (userId) => {
+    try {
+      await firebaseUtils.updateDocument('users', userId, { 
+        isActive: false,
+        status: 'inactive',
+        deactivatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      throw error;
+    }
+  },
+
+  subscribeToAllUsers(callback) {
+    return firebaseUtils.subscribeToCollection('users', callback, [
+      queryBuilders.orderBy('createdAt')
+    ]);
+  }
+
+};
+
+export const assetService = {
+  async createAsset(assetData) {
+    const asset = {
+      ...assetData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    if (!asset.status) {
+      asset.status = asset.assignedTo ? 'assigned' : 'available';
+    }
+    
+    if (!asset.assignedAt && asset.assignedTo) {
+      asset.assignedAt = new Date().toISOString();
+    }
+    
+    return firebaseUtils.createDocument('assets', asset);
+  },
+
+  async updateAsset(assetId, assetData) {
+    return firebaseUtils.updateDocument('assets', assetId, assetData);
+  },
+
+  async deleteAsset(assetId) {
+    return firebaseUtils.deleteDocument('assets', assetId);
+  },
+
+  async getAllAssets() {
+    return firebaseUtils.getDocuments('assets');
+  },
+
+  async getAssetsByUser(userId) {
+    return firebaseUtils.getDocuments('assets', [
+      queryBuilders.where('assignedTo', '==', userId)
+    ]);
+  },
+
+  async getAvailableAssets() {
+    return firebaseUtils.getDocuments('assets', [
+      queryBuilders.where('status', '==', 'available')
+    ]);
+  },
+
+  async assignAsset(assetId, userId, assignedBy) {
+    const assetData = {
+      assignedTo: userId,
+      assignedAt: new Date().toISOString(),
+      assignedBy: assignedBy,
+      status: 'assigned'
+    };
+    return firebaseUtils.updateDocument('assets', assetId, assetData);
+  },
+
+  async unassignAsset(assetId) {
+    const assetData = {
+      assignedTo: null,
+      assignedAt: null,
+      assignedBy: null,
+      status: 'available'
+    };
+    return firebaseUtils.updateDocument('assets', assetId, assetData);
+  },
+
+  async createAssetRequest(requestData) {
+    return firebaseUtils.createDocument('asset_requests', {
+      ...requestData,
+      status: 'pending',
+      requestedAt: new Date().toISOString()
+    });
+  },
+
+  async getAllAssetRequests() {
+    return firebaseUtils.getDocuments('asset_requests');
+  },
+
+  async getAssetRequestsByUser(userId) {
+    return firebaseUtils.getDocuments('asset_requests', [
+      queryBuilders.where('requestedBy', '==', userId)
+    ]);
+  },
+
+  async updateAssetRequest(requestId, requestData) {
+    return firebaseUtils.updateDocument('asset_requests', requestId, requestData);
+  },
+
+  async deleteAssetRequest(requestId) {
+    return firebaseUtils.deleteDocument('asset_requests', requestId);
+  },
+
+  subscribeToAllAssets(callback) {
+    return firebaseUtils.subscribeToCollection('assets', callback);
+  },
+
+  subscribeToUserAssets(userId, callback) {
+    return firebaseUtils.subscribeToCollection('assets', callback, [
+      queryBuilders.where('assignedTo', '==', userId)
+    ]);
+  },
+
+  subscribeToAllAssetRequests(callback) {
+    return firebaseUtils.subscribeToCollection('asset_requests', callback);
+  },
+
+  subscribeToUserAssetRequests(userId, callback) {
+    return firebaseUtils.subscribeToCollection('asset_requests', callback, [
+      queryBuilders.where('requestedBy', '==', userId)
+    ]);
   }
 };
 

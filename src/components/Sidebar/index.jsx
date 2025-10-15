@@ -5,7 +5,8 @@ import {
   FiHome, 
   FiUserCheck,
   FiBarChart2,
-  FiFolder
+  FiFolder,
+  FiPackage
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,6 +27,7 @@ const Sidebar = memo(({ sidebarOpen }) => {
     ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
       { path: '/users', icon: FiUserCheck, label: 'User Management' }
     ] : []),
+    { path: '/assets', icon: FiPackage, label: 'Asset Manager' },
     ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
       { path: '/analytics', icon: FiBarChart2, label: 'Analytics' }
     ] : [])

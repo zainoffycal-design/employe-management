@@ -17,6 +17,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectBoard = lazy(() => import('./pages/ProjectBoard'));
 const ProjectManagement = lazy(() => import('./pages/ProjectManagement'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
+const AssetManager = lazy(() => import('./pages/AssetManager'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Signup = lazy(() => import('./pages/Signup'));
 const SetupPassword = lazy(() => import('./pages/SetupPassword'));
@@ -110,6 +111,11 @@ const AppLayout = () => {
                     ) : (
                       <Navigate to="/" replace />
                     )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/assets" element={
+                  <ProtectedRoute>
+                    <AssetManager />
                   </ProtectedRoute>
                 } />
                 <Route path="/analytics" element={

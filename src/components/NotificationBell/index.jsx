@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { 
   FiBell, 
   FiCheck, 
@@ -23,8 +23,25 @@ const NotificationBell = memo(() => {
   const { currentUser } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotification();
   const navigate = useNavigate();
+  const notificationRef = useRef(null);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
 
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const handleNotificationClick = async (notification) => {
     if (!notification.read) {
@@ -93,7 +110,7 @@ const NotificationBell = memo(() => {
   if (!currentUser) return null;
 
   return (
-    <div className="notification-bell">
+    <div className="notification-bell" ref={notificationRef}>
       <button 
         className="notification-trigger"
         onClick={() => setIsOpen(!isOpen)}

@@ -387,5 +387,29 @@ export const notificationService = {
       console.error('Error cleaning up user notifications:', error);
       throw error;
     }
+  },
+
+  async createNotification(notificationData) {
+    try {
+      const notificationsRef = collection(db, 'notifications');
+      
+      const notification = {
+        userId: notificationData.userId,
+        type: notificationData.type || 'general',
+        title: notificationData.title,
+        message: notificationData.message,
+        read: false,
+        createdAt: serverTimestamp(),
+        actionUrl: notificationData.actionUrl || '/',
+        ...notificationData.data
+      };
+
+      const docRef = await addDoc(notificationsRef, notification);
+      
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
   }
 }; 

@@ -13,7 +13,8 @@ import {
   FiBarChart,
   FiUserPlus,
   FiUserCheck,
-  FiCalendar
+  FiCalendar,
+  FiPackage
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
@@ -201,6 +202,13 @@ const Dashboard = () => {
         description: 'Manage your projects',
         link: '/projects',
         color: '#15A970'
+      },
+      {
+        icon: FiPackage,
+        title: 'Asset Manager',
+        description: 'Manage your office assets',
+        link: '/assets',
+        color: '#8B5CF6'
       }
     ];
 

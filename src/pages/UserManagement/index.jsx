@@ -59,13 +59,14 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
           <div className={`badge badge--role ${getRoleBadgeColor(user.role)}`}>
             {getRoleDisplayName(user.role)}
           </div>
-          {!isSuperManager && (
-            <span className={`badge badge--status ${user.status}`}>
-              {user.status === 'active' ? 'Active' : 
-               user.status === 'invited' ? 'Invited' : 
-               user.status === 'inactive' ? 'Inactive' : 'Unknown'}
-            </span>
-          )}
+          <span className={`badge badge--status ${user.status}`}>
+            {user.status === 'active' ? 'Active' : 
+             user.status === 'invited' ? 'Invited' : 
+             user.status === 'inactive' ? 'Inactive' : 'Unknown'}
+          </span>
+          <span className={`badge badge--active ${user.isActive === false ? 'inactive' : 'active'}`}>
+            {user.isActive === false ? 'Inactive' : 'Active'}
+          </span>
         </div>
       </div>
       {canManageUsers && !isCurrentUser && (
@@ -79,7 +80,7 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
               <FiMail />
             </button>
           )}
-          {}
+          
           {!(currentUserRole === 'manager' && isSuperManager) && (
             <>
               <button
@@ -201,7 +202,7 @@ const UserManagement = () => {
 
     try {
       const emailExists = users.some(user => 
-        user.email.toLowerCase() === newUser.email.toLowerCase()
+        user.email.toLowerCase() === newUser.email.toLowerCase() && user.isActive !== false
       );
       
       if (emailExists) {
@@ -322,9 +323,9 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) {
       try {
-        await userManagementService.updateUserRole(userId, 'inactive', []);
+        await userManagementService.deleteUser(userId);
         await loadUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
@@ -342,6 +343,7 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
+
 
   const openEditUserModal = (user) => {
     setEditingUser(user);
