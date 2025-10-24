@@ -120,7 +120,7 @@
   .projects-card,
   .tasks-card {
     flex: 1;
-    @include flex-center;
+    
     flex-direction: column;
     align-items: stretch;
     overflow: hidden;
@@ -503,6 +503,17 @@
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+    .side-by-side-sections {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+   
+  }
+  @media (max-width: 992px) {
+    .projects-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 768px) {
@@ -516,14 +527,8 @@
       grid-template-columns: 1fr;
     }
 
-    .side-by-side-sections {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
+   
 
-    .projects-grid {
-      grid-template-columns: 1fr;
-    }
 
     .quick-actions {
       grid-template-columns: 1fr;

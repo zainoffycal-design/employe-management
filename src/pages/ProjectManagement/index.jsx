@@ -85,7 +85,7 @@ const ProjectManagement = () => {
   }));
 
   const managerFilterOptions = allUsers
-    .filter(user => user.role === 'manager' || user.role === 'super_manager')
+    .filter(user => (user.role === 'manager' || user.role === 'super_manager') && user.isActive !== false)
     .map(user => ({
       value: user.id,
       label: user.name,

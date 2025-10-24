@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo.svg';
 import './AuthLayout.scss';
 
 const AuthLayout = memo(({ 

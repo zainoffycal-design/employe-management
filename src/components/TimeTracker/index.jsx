@@ -95,11 +95,13 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
       <div className="time-tracker-header">
         <div className="time-icon">
           <FiClock size={16} />
+        <span className="time-label ms-2">Time Tracking</span>
         </div>
-        <span className="time-label">Time Tracking</span>
-        <div className="total-hours">
-          {formatHours(totalHours)}
-        </div>
+        {totalHours > 0 && (
+          <div className="total-hours">
+            {formatHours(totalHours)}
+          </div>
+        )}
       </div>
 
       <div className="manual-time">

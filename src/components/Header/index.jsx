@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { getRoleDisplayName } from '../../utils/permissionUtils';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo.svg';
 import Modal from '../Modal';
 import Button from '../Button';
 import Avatar from '../Avatar';

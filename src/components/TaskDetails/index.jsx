@@ -9,7 +9,9 @@ import {
   FiFlag,
   FiUsers,
   FiEdit3,
-  FiTrash2
+  FiTrash2,
+  FiCheck,
+  FiX
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
@@ -25,6 +27,8 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
   const currentTask = tasks.find(t => t.id === task.id) || task;
 
@@ -73,6 +77,74 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     } catch (error) {
       console.error('Error updating task time:', error);
       setError('Failed to update time tracking');
+    }
+  };
+
+  const canEditComment = (comment) => {
+    return currentUser.role === 'super_manager' || 
+           currentUser.role === 'manager' || 
+           comment.authorId === currentUser.uid;
+  };
+
+  const canDeleteComment = (comment) => {
+    return currentUser.role === 'super_manager' || 
+           currentUser.role === 'manager';
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingComment(comment.id);
+    setEditCommentText(comment.text);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditCommentText('');
+  };
+
+  const handleSaveEdit = async (commentId) => {
+    if (!editCommentText.trim()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const updatedComments = currentTask.comments.map(comment => 
+        comment.id === commentId 
+          ? { ...comment, text: editCommentText.trim(), updatedAt: new Date().toISOString() }
+          : comment
+      );
+
+      await updateTask(currentTask.projectId, currentTask.id, {
+        comments: updatedComments
+      });
+
+      setEditingComment(null);
+      setEditCommentText('');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      setError('Failed to update comment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const updatedComments = currentTask.comments.filter(comment => comment.id !== commentId);
+
+      await updateTask(currentTask.projectId, currentTask.id, {
+        comments: updatedComments
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      setError('Failed to delete comment');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -175,6 +247,33 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
         users={users}
       />
 
+      {project?.teamMembers && project.teamMembers.length > 0 && (
+        <div className="collaborators-section">
+          <div className="collaborators-header">
+            <FiUsers size={14} />
+            <h4>Project Collaborators ({project.teamMembers.length})</h4>
+          </div>
+          <div className="collaborators-list">
+            {project.teamMembers.map(memberId => {
+              const member = users.find(u => u.id === memberId);
+              if (!member) return null;
+              
+              return (
+                <div key={memberId} className="collaborator-badge">
+                  <Avatar
+                    src={member.avatar}
+                    name={member.name}
+                    size="small"
+                  />
+                  <span className="collaborator-name">{member.name}</span>
+                  <span className="collaborator-role">{member.role}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="comments-section">
         <div className="comments-header">
           <FiMessageSquare size={14} />
@@ -199,10 +298,68 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
                   />
                   <div className="comment-meta">
                     <span className="comment-author">{comment.authorName}</span>
-                    <span className="comment-time">{formatRelativeTime(comment.createdAt)}</span>
+                    <span className="comment-time">
+                      {formatRelativeTime(comment.createdAt)}
+                      {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+                        <span className="edited-indicator"> (edited)</span>
+                      )}
+                    </span>
                   </div>
+                  {(canEditComment(comment) || canDeleteComment(comment)) && (
+                    <div className="comment-actions">
+                      {canEditComment(comment) && (
+                        <button
+                          className="comment-action-btn"
+                          onClick={() => handleEditComment(comment)}
+                          title="Edit comment"
+                          disabled={loading}
+                        >
+                          <FiEdit3 size={12} />
+                        </button>
+                      )}
+                      {canDeleteComment(comment) && (
+                        <button
+                          className="comment-action-btn delete"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          title="Delete comment"
+                          disabled={loading}
+                        >
+                          <FiTrash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="comment-text">{comment.text}</div>
+                
+                {editingComment === comment.id ? (
+                  <div className="comment-edit-form">
+                    <textarea
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      className="comment-edit-input"
+                      rows="2"
+                      disabled={loading}
+                    />
+                    <div className="comment-edit-actions">
+                      <button
+                        className="comment-edit-btn save"
+                        onClick={() => handleSaveEdit(comment.id)}
+                        disabled={!editCommentText.trim() || loading}
+                      >
+                        <FiCheck size={12} />
+                      </button>
+                      <button
+                        className="comment-edit-btn cancel"
+                        onClick={handleCancelEdit}
+                        disabled={loading}
+                      >
+                        <FiX size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="comment-text">{comment.text}</div>
+                )}
               </motion.div>
             ))
           ) : (

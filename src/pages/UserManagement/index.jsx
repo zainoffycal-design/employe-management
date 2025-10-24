@@ -64,9 +64,6 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
              user.status === 'invited' ? 'Invited' : 
              user.status === 'inactive' ? 'Inactive' : 'Unknown'}
           </span>
-          <span className={`badge badge--active ${user.isActive === false ? 'inactive' : 'active'}`}>
-            {user.isActive === false ? 'Inactive' : 'Active'}
-          </span>
         </div>
       </div>
       {canManageUsers && !isCurrentUser && (
@@ -143,8 +140,9 @@ const UserManagement = () => {
     return roles;
   };
 
-  const allUsersIncludingCurrent = [...users];
-  const currentUserExists = users.some(user => 
+  const activeUsers = users.filter(user => user.isActive !== false || user.status === 'invited');
+  const allUsersIncludingCurrent = [...activeUsers];
+  const currentUserExists = activeUsers.some(user => 
     user.id === currentUser.uid || 
     user.email === currentUser.email ||
     (user.uid && user.uid === currentUser.uid)
