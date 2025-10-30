@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { FiFolder, FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser } from 'react-icons/fi';
+import { FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './ProjectCard.scss';
@@ -24,7 +24,7 @@ const ProjectCard = memo(({
 
   const projectTasks = tasks.filter(task => task.projectId === project.id);
   const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-  const inProgressTasks = projectTasks.filter(task => task.status === 'in_progress').length;
+  const inProgressTasks = projectTasks.filter(task => task.status === 'in-progress').length;
   const todoTasks = projectTasks.filter(task => task.status === 'todo').length;
   
   const progressPercentage = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
@@ -39,9 +39,6 @@ const ProjectCard = memo(({
       style={{ cursor: 'pointer' }}
     >
       <div className="project-card-header">
-        <div className="project-icon">
-          <FiFolder size={20} />
-        </div>
         <div className="project-info">
           <h3 className="project-title">{project.name}</h3>
           <p className="project-description">{project.description}</p>

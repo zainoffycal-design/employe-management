@@ -1,141 +1,54 @@
 @use '../../styles/_shared.scss' as *;
 
 .rich-text-editor {
-  position: relative;
-  z-index: 1;
-  
-  .ql-toolbar {
-    border: 1px solid var(--gray-300);
-    border-bottom: none;
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-    background: var(--gray-50);
-    
-    .ql-stroke {
-      stroke: var(--gray-600);
-    }
-    
-    .ql-fill {
-      fill: var(--gray-600);
-    }
-    
-    .ql-picker-label {
-      color: var(--gray-600);
-    }
-    
-    button:hover {  
-      .ql-stroke {
-        stroke: var(--primary-color);
-      }
-      
-      .ql-fill {
-        fill: var(--primary-color);
-      }
-    }
-    
-    button.ql-active {
-      .ql-stroke {
-        stroke: var(--primary-color);
-      }
-      
-      .ql-fill {
-        fill: var(--primary-color);
+  --rte-height: 120px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+
+  .rte-toolbar {
+    margin-bottom: 8px;
+
+    .rte-buttons {
+      display: flex;
+      gap: 6px;
+
+      button {
+        padding: 4px 8px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+
+        &.active {
+          background: var(--primary-color);
+          color: #fff;
+          border-color: var(--primary-color);
+        }
       }
     }
   }
-  
-  .ql-container {
-    border: 1px solid var(--gray-300);
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
-    font-size: 14px;
-    line-height: 1.5;
-    
-    .ql-editor {
-      padding: 12px;
-      min-height: 80px;
-      color: var(--text-primary);
-      &:focus{
-        outline: none;
-      }
-      
-      &.ql-blank::before {
-        color: var(--gray-400);
-        font-style: normal;
-        left: 12px;
-        right: 12px;
-      }
-      
-      p {
-        margin: 0 0 8px 0;
-        color: var(--text-primary);
-        
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-      
-      ul, ol {
-        margin: 8px 0;
-        padding-left: 20px;
-        
-        li {
-          margin: 4px 0;
-          color: var(--text-primary);
-        }
-      }
-      
-      a {
-        color: var(--primary-color);
-        text-decoration: underline;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        
-        &:hover {
-          color: var(--primary-hover);
-          transform: translateY(-1px);
-        }
-        
-        &:visited {
-          color: var(--primary-color);
-        }
-      }
-      
-      strong {
-        font-weight: 600;
-        color: var(--text-primary);
-      }
-      
-      em {
-        font-style: italic;
-        color: var(--text-primary);
-      }
-      
-      h1, h2, h3 {
-        margin: 12px 0 8px 0;
-        font-weight: 600;
-        color: var(--text-primary);
-        
-        &:first-child {
-          margin-top: 0;
-        }
-      }
-      
-      h1 {
-        font-size: 1.5em;
-      }
-      
-      h2 {
-        font-size: 1.25em;
-      }
-      
-      h3 {
-        font-size: 1.1em;
-      }
+
+  .ProseMirror {
+    min-height: var(--rte-height);
+    padding: 8px 10px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    outline: none;
+
+    p { margin: 0 0 8px 0; }
+
+    ul, ol { padding-left: 20px; }
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px var(--primary-light);
     }
-  }
-  
-  .ql-tooltip {
-    left: 8px !important;
-    top: 100% !important;
   }
 }
 

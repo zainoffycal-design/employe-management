@@ -1,6 +1,5 @@
 @use "styles/_shared.scss" as *;
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import 'quill/dist/quill.snow.css';
 
 :root {
   --primary-color: #15a970;
@@ -48,7 +47,7 @@
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-sidebar: 2;
-  --z-header: 1100;
+  --z-header: 1;
   --z-modal: 1100;
   --z-tooltip: 1200;
 }
@@ -666,6 +665,7 @@ input[type="checkbox"] {
           color: var(--gray-600);
           cursor: pointer;
           transition: var(--transition);
+          flex: 0 0 36px;
           
           &:hover {
             background: var(--gray-200);

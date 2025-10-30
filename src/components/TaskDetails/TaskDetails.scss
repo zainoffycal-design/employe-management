@@ -92,6 +92,7 @@
       align-items: center;
       padding: 0.5rem 0;
       border-bottom: 1px solid #f1f3f4;
+      flex-wrap: wrap;
 
       &:last-child {
         border-bottom: none;
@@ -191,6 +192,8 @@
       }
     }
   }
+
+  /* review-section styles moved to TaskReview/TaskReview.scss */
 
   .comments-section {
     flex: 1;

@@ -77,17 +77,12 @@
   &.compact {
     font-size: 13px;
     line-height: 1.4;
-    max-height: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     margin-bottom: 12px;
+    overflow: hidden;
     
     p {
       margin: 0 0 4px 0;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      line-break: anywhere;
     }
     
     ul, ol {

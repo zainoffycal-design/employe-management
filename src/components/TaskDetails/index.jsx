@@ -18,6 +18,7 @@ import { useTask } from '../../contexts/TaskContext';
 import Avatar from '../Avatar';
 import RichTextViewer from '../RichTextViewer';
 import TimeTracker from '../TimeTracker';
+import TaskReview from '../TaskReview';
 import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate } from '../../utils/uiUtils';
 import './TaskDetails.scss';
 
@@ -246,6 +247,16 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
         currentUser={currentUser}
         users={users}
       />
+
+      {(currentUser.role === 'super_manager' || currentUser.role === 'manager') && currentTask.status === 'done' && (
+        <TaskReview 
+          task={currentTask}
+          allTasks={tasks}
+          currentUser={currentUser}
+          users={users}
+          onSave={(data) => updateTask(currentTask.projectId, currentTask.id, data)}
+        />
+      )}
 
       {project?.teamMembers && project.teamMembers.length > 0 && (
         <div className="collaborators-section">

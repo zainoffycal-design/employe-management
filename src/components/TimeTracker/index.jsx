@@ -174,7 +174,12 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
               .reverse()
               .map((entry) => {
                 const entryUser = users.find(u => u.id === entry.userId || u.uid === entry.userId);
-                const canEdit = !disabled && (entry.userId === currentUser?.uid || entry.userId === currentUser?.id);
+                const canEdit = !disabled && (
+                  entry.userId === currentUser?.uid || 
+                  entry.userId === currentUser?.id ||
+                  currentUser?.role === 'super_manager' ||
+                  currentUser?.role === 'manager'
+                );
                 
                 return (
                   <div key={entry.id} className="time-entry">

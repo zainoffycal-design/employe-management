@@ -14,7 +14,8 @@ import {
   FiTrash2,
   FiVolume2,
   FiVolumeX,
-  FiMessageSquare
+  FiMessageSquare,
+  FiStar
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -807,6 +808,12 @@ const ProjectBoard = () => {
                             {formatHours(task.totalHours)}
                           </span>
                         ) : null}
+                        {task.status === 'done' && !task.reviews && !task.review && (
+                          <span className="review-required-indicator" title="Add manager review">
+                            <FiStar size={12} />
+                            <span>Add Review</span>
+                          </span>
+                        )}
                         {(!task.timeEntries || task.timeEntries.length === 0) && (!task.totalHours || task.totalHours === 0) && (
                           <span className="time-required-indicator" title="Time entry required before moving to In Review or Complete">
                             <FiClock size={12} />
