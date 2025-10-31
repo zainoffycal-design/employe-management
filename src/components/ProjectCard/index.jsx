@@ -11,7 +11,8 @@ const ProjectCard = memo(({
   index = 0,
   tasks = [],
   variant = "full",
-  users = []
+  users = [],
+  isCompleted = false
 }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -19,8 +20,6 @@ const ProjectCard = memo(({
   const handleCardClick = () => {
     navigate(`/project/${project.id}/board`);
   };
-
-
 
   const projectTasks = tasks.filter(task => task.projectId === project.id);
   const completedTasks = projectTasks.filter(task => task.status === 'done').length;
@@ -31,7 +30,7 @@ const ProjectCard = memo(({
 
   return (
     <motion.div
-      className={`project-card ${variant === 'dashboard' ? 'dashboard-variant' : ''}`}
+      className={`project-card ${variant === 'dashboard' ? 'dashboard-variant' : ''} ${isCompleted ? 'completed' : ''}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
@@ -40,7 +39,15 @@ const ProjectCard = memo(({
     >
       <div className="project-card-header">
         <div className="project-info">
-          <h3 className="project-title">{project.name}</h3>
+          <div className="project-title-wrapper">
+            <h3 className="project-title">{project.name}</h3>
+            {isCompleted && (
+              <span className="completed-badge">
+                <FiCheckCircle size={14} />
+                Completed
+              </span>
+            )}
+          </div>
           <p className="project-description">{project.description}</p>
         </div>
       </div>

@@ -41,6 +41,7 @@ const ProjectManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedManager, setSelectedManager] = useState(null);
+  const [projectFilter, setProjectFilter] = useState('active');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -92,6 +93,12 @@ const ProjectManagement = () => {
       role: user.role === 'super_manager' ? 'Super Manager' : 'Manager',
       avatar: user.avatar
     }));
+
+  const projectFilterOptions = [
+    { value: 'all', label: 'All Projects' },
+    { value: 'active', label: 'Active Projects' },
+    { value: 'completed', label: 'Completed Projects' }
+  ];
 
   const CustomOption = ({ children, ...props }) => {
     const { data } = props;
@@ -196,25 +203,45 @@ const ProjectManagement = () => {
     }
   };
 
+  const isProjectCompleted = useCallback((project) => {
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    if (projectTasks.length === 0) return false;
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+    const progressPercentage = Math.round((completedTasks / projectTasks.length) * 100);
+    return progressPercentage === 100;
+  }, [tasks]);
+
+  const activeProjects = useMemo(() => {
+    return projects?.filter(project => !isProjectCompleted(project)) || [];
+  }, [projects, isProjectCompleted]);
+
+  const completedProjects = useMemo(() => {
+    return projects?.filter(project => isProjectCompleted(project)) || [];
+  }, [projects, isProjectCompleted]);
+
   const filteredProjects = useMemo(() => {
-    return projects
+    let baseProjects = projects;
+    
+    if (projectFilter === 'active') {
+      baseProjects = activeProjects;
+    } else if (projectFilter === 'completed') {
+      baseProjects = completedProjects;
+    }
+
+    return baseProjects
       ?.filter(project => {
         const matchesSearch = !searchTerm.trim() || (() => {
-        const searchLower = searchTerm.toLowerCase();
-        
-        if (project.name.toLowerCase().includes(searchLower)) return true;
-        
-        if (project.description.toLowerCase().includes(searchLower)) return true;
-        
-        if (project.teamMembers && project.teamMembers.length > 0) {
-          const hasMatchingMember = project.teamMembers.some(memberId => {
-            const user = allUsers.find(u => u.id === memberId);
-            return user?.name.toLowerCase().includes(searchLower);
-          });
-          if (hasMatchingMember) return true;
-        }
-        
-        return false;
+          const searchLower = searchTerm.toLowerCase();
+          if (project.name.toLowerCase().includes(searchLower)) return true;
+          if (project.description.toLowerCase().includes(searchLower)) return true;
+          if (project.teamMembers && project.teamMembers.length > 0) {
+            const hasMatchingMember = project.teamMembers.some(memberId => {
+              const user = allUsers.find(u => u.id === memberId);
+              return user?.name.toLowerCase().includes(searchLower);
+            });
+            if (hasMatchingMember) return true;
+          }
+          return false;
         })();
 
         const matchesManager = !selectedManager || 
@@ -228,7 +255,7 @@ const ProjectManagement = () => {
         const dateB = new Date(b.createdAt || 0);
         return dateB - dateA;
       });
-  }, [projects, searchTerm, selectedManager, allUsers]);
+  }, [projects, projectFilter, activeProjects, completedProjects, searchTerm, selectedManager, allUsers]);
 
   const renderTeamMemberSelect = () => (
     <div className="form-group">
@@ -265,31 +292,30 @@ const ProjectManagement = () => {
         actions={
           <>
             <div className="filters-container">
-            <div className={`search-box ${searchTerm.trim() ? 'search-active' : ''}`}>
-              <FiSearch size={16} />
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm.trim() && (
-                <button 
-                  onClick={() => setSearchTerm('')}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: 'pointer',
-                    color: 'var(--gray-500)',
-                    padding: '2px'
-                  }}
-                  title="Clear search"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-              
+              <div className={`search-box ${searchTerm.trim() ? 'search-active' : ''}`}>
+                <FiSearch size={16} />
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm.trim() && (
+                  <button 
+                    onClick={() => setSearchTerm('')}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer',
+                      color: 'var(--gray-500)',
+                      padding: '2px'
+                    }}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               {currentUser?.role === 'super_manager' && (
                 <div className="manager-filter">
                   <Select
@@ -304,7 +330,6 @@ const ProjectManagement = () => {
                 </div>
               )}
             </div>
-            
             {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
               <Button 
                 variant="primary"
@@ -319,8 +344,20 @@ const ProjectManagement = () => {
       />
 
       <div className="projects-grid">
-        {filteredProjects?.length > 0 ? (
-          filteredProjects.map((project, index) => (
+        <div className="projects-grid-header">
+          <div className="project-filter-dropdown">
+            <Select
+              options={projectFilterOptions}
+              value={projectFilterOptions.find(option => option.value === projectFilter)}
+              onChange={(selected) => setProjectFilter(selected.value)}
+              styles={reactSelectStyles}
+              placeholder="Filter projects"
+            />
+          </div>
+        </div>
+        <div className="projects-grid-list">
+          {filteredProjects?.length > 0 ? (
+            filteredProjects.map((project, index) => (
             <div key={project.id} className="project-card-container">
               <ProjectCard
                 project={project}
@@ -328,6 +365,7 @@ const ProjectManagement = () => {
                 tasks={tasks}
                 index={index}
                 users={allUsers}
+                isCompleted={isProjectCompleted(project)}
               />
               {(currentUser.role === 'super_manager' || project.managerId === currentUser.uid) && (
                 <div className="project-actions">
@@ -382,6 +420,7 @@ const ProjectManagement = () => {
             )}
           </div>
         )}
+        </div>
       </div>
 
       <Modal
@@ -498,7 +537,6 @@ const ProjectManagement = () => {
         </form>
       </Modal>
 
-      {}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => {

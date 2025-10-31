@@ -22,6 +22,15 @@
     height: 4px;
     background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
   }
+
+  &.completed {
+    border-color: #10b981;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.02), white);
+    
+    &::before {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
+  }
   
   &:hover {
     box-shadow: var(--shadow-md);
@@ -41,21 +50,46 @@
     flex: 1;
     min-width: 0;
   }
+
+  .project-title-wrapper {
+    @include flex-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
   
   .project-title {
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    flex: 1;
+  }
+
+  .completed-badge {
+    @include flex-center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    background: #10b981;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    svg {
+      margin: 0;
+    }
   }
   
   .project-description {
-    font-size: 12rem;
+    font-size: 12px;
     color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;

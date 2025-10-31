@@ -12,6 +12,7 @@
     @include flex-center;
     gap: 1rem;
     margin-right: 1rem;
+    flex-wrap: wrap;
 
     .search-box {
       width: 240px;

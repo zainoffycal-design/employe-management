@@ -5,8 +5,10 @@
 
   .filters-container {
     @include flex-center;
+    justify-content: flex-end;
     gap: 1rem;
     margin-right: 1rem;
+    flex-wrap: wrap;
 
     .search-box {
       width: 240px;
@@ -50,10 +52,27 @@
   }
 
   .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
     margin-bottom: 2rem;
+
+    .projects-grid-header {
+      @include flex-between;
+      justify-content: flex-end;
+      margin-bottom: 1rem;
+
+      .project-filter-dropdown {
+        width: 180px;
+        
+        div {
+          min-height: unset;
+        }
+      }
+    }
+
+    .projects-grid-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
     
     .empty-state {
       grid-column: 1 / -1;
@@ -134,7 +153,6 @@
   .project-card {
     @include flex-center;
     align-items: flex-start;
-    gap: 1rem;
     padding: 1rem;
     background: white;
     border-radius: var(--border-radius);
