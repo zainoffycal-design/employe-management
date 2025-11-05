@@ -766,39 +766,7 @@ const ProjectBoard = () => {
                     <h3>{task.title}</h3>
                     <RichTextViewer content={task.description} className="compact" />
                     <div className="task-meta">
-                      <div className="task-assignees">
-                        {task.assignee && (
-                          Array.isArray(task.assignee) 
-                            ? task.assignee.slice(0, 3).map((assigneeId, index) => {
-                                const user = users.find(u => u.id === assigneeId);
-                                return user ? (
-                                  <Avatar 
-                                    key={assigneeId}
-                                    src={user.avatar}
-                                    name={user.name}
-                                    size="small"
-                                    className="assignee-avatar"
-                                    title={user.name}
-                                  />
-                                ) : null;
-                              })
-                            : (
-                              <Avatar 
-                                src={users.find(u => u.id === task.assignee)?.avatar}
-                                name={users.find(u => u.id === task.assignee)?.name}
-                                size="small"
-                                className="assignee-avatar"
-                                title={users.find(u => u.id === task.assignee)?.name}
-                              />
-                            )
-                        )}
-                        {task.assignee && Array.isArray(task.assignee) && task.assignee.length > 3 && (
-                          <div className="assignee-more" title={`+${task.assignee.length - 3} more`}>
-                            +{task.assignee.length - 3}
-                          </div>
-                        )}
-                      </div>
-                      <div className="task-info">
+                      <div className="task-info-left">
                         <span className="priority" style={{ backgroundColor: getPriorityColor(task.priority) }}>
                           {task.priority}
                         </span>
@@ -820,13 +788,21 @@ const ProjectBoard = () => {
                             <span>Time Required</span>
                           </span>
                         )}
-                        {task.deadline && (
+                        {task.comments && task.comments.length > 0 && (
+                          <span className="comments-badge">
+                            <FiMessageSquare size={12} />
+                            <span>{task.comments.length}</span>
+                          </span>
+                        )}
+                      </div>
+                      {task.deadline && (
+                        <div className="task-info-right">
                           <span className="deadline">
                             <FiCalendar size={12} />
                             {new Date(task.deadline).toLocaleDateString()}
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                     <div className="task-footer">
                       <div className="task-info-details">
@@ -862,13 +838,6 @@ const ProjectBoard = () => {
                         )}
                       </div>
                     </div>
-                    
-                    {task.comments && task.comments.length > 0 && (
-                      <div className="task-comments-indicator">
-                        <FiMessageSquare size={12} />
-                        <span>{task.comments.length}</span>
-                      </div>
-                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>

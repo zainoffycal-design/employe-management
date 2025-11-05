@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import './Modal.scss';
@@ -10,16 +10,9 @@ const Modal = memo(({
   children, 
   size = 'medium',
   showCloseButton = true,
-  closeOnOverlayClick = true,
   className = '',
   ...props 
 }) => {
-  const handleOverlayClick = useCallback((e) => {
-    if (closeOnOverlayClick && e.target === e.currentTarget) {
-      onClose();
-    }
-  }, [closeOnOverlayClick, onClose]);
-
   const sizeClasses = {
     small: 'modal--small',
     medium: 'modal--medium',
@@ -32,7 +25,6 @@ const Modal = memo(({
       {isOpen && (
         <motion.div 
           className="modal-overlay"
-          onClick={handleOverlayClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -41,7 +33,6 @@ const Modal = memo(({
         >
           <motion.div 
             className={`modal ${sizeClasses[size]} ${className}`}
-            onClick={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}

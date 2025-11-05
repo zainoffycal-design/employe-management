@@ -360,9 +360,9 @@ const UserManagement = () => {
           canManageUsers && (
             <Button
               variant="primary"
-            onClick={() => setShowAddUser(true)}
-          >
-            <FiUserPlus /> Add New User
+              onClick={() => setShowAddUser(true)}
+            >
+              <FiUserPlus /> Add New User
             </Button>
           )
         }

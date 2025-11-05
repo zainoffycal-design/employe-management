@@ -161,6 +161,15 @@ const ProjectManagement = () => {
     setError('');
 
     try {
+      if (selectedProject) {
+        const isCompleted = isProjectCompleted(selectedProject);
+        if (isCompleted && currentUser.role !== 'super_manager') {
+          setError('Only super managers can edit completed projects');
+          setLoading(false);
+          return;
+        }
+      }
+
       if (formData.teamMembers.length === 0) {
         setError('Please select at least one team member');
         setLoading(false);
@@ -192,6 +201,15 @@ const ProjectManagement = () => {
     setError('');
 
     try {
+      if (deletingProject) {
+        const isCompleted = isProjectCompleted(deletingProject);
+        if (isCompleted && currentUser.role !== 'super_manager') {
+          setError('Only super managers can delete completed projects');
+          setLoading(false);
+          return;
+        }
+      }
+
       await deleteProject(deletingProject.id);
       setShowDeleteConfirm(false);
       setDeletingProject(null);
@@ -367,33 +385,40 @@ const ProjectManagement = () => {
                 users={allUsers}
                 isCompleted={isProjectCompleted(project)}
               />
-              {(currentUser.role === 'super_manager' || project.managerId === currentUser.uid) && (
-                <div className="project-actions">
-                  <button
-                    className="action-btn"
-                    onClick={() => {
-                      setSelectedProject(project);
-                      setFormData({
-                        name: project.name,
-                        description: project.description,
-                        teamMembers: project.teamMembers.map(id => ({
-                          value: id,
-                          label: users.find(user => user.id === id)?.name || 'Unknown User'
-                        }))
-                      });
-                      setShowEditModal(true);
-                    }}
-                  >
-                    <FiEdit2 size={14} />
-                  </button>
-                  <button
-                    className="action-btn delete"
-                    onClick={() => handleDeleteProject(project)}
-                  >
-                    <FiTrash2 size={14} />
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const isCompleted = isProjectCompleted(project);
+                const canEditDelete = isCompleted 
+                  ? currentUser.role === 'super_manager'
+                  : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid);
+                
+                return canEditDelete && (
+                  <div className="project-actions">
+                    <button
+                      className="action-btn"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setFormData({
+                          name: project.name,
+                          description: project.description,
+                          teamMembers: project.teamMembers.map(id => ({
+                            value: id,
+                            label: users.find(user => user.id === id)?.name || 'Unknown User'
+                          }))
+                        });
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <FiEdit2 size={14} />
+                    </button>
+                    <button
+                      className="action-btn delete"
+                      onClick={() => handleDeleteProject(project)}
+                    >
+                      <FiTrash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           ))
         ) : (

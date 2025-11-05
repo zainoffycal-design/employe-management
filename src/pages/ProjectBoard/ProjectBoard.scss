@@ -357,41 +357,12 @@
           margin-bottom: 0.5rem;
           align-items: flex-start;
 
-          .task-assignees {
-            @include flex-center;
-
-            .assignee-avatar {
-              width: 25px;
-              height: 25px;
-              border-radius: 50%;
-              margin-left: -4px;
-              border: 2px solid white;
-
-              &:first-child {
-                margin-left: 0;
-              }
-            }
-
-            .assignee-more {
-              width: 20px;
-              height: 20px;
-              border-radius: 50%;
-              background-color: var(--gray-300);
-              color: var(--gray-600);
-              font-size: 0.6rem;
-              font-weight: 600;
-              @include flex-center;
-              margin-left: -4px;
-              border: 2px solid white;
-              cursor: help;
-            }
-          }
-
-          .task-info {
+          .task-info-left {
             @include flex-center;
             justify-content: flex-start;
             gap: 0.375rem;
             flex-wrap: wrap;
+            flex: 1;
 
             .priority {
               padding: 0.15rem 0.375rem;
@@ -443,12 +414,32 @@
               }
             }
 
+            .comments-badge {
+              @include flex-center;
+              gap: 0.25rem;
+              padding: 0.15rem 0.375rem;
+              background: #006b39;
+              color: white;
+              border-radius: 4px;
+              font-size: 0.7rem;
+              font-weight: 500;
+
+              svg {
+                color: white;
+              }
+            }
+          }
+
+          .task-info-right {
+            @include flex-center;
+            justify-content: flex-end;
+            gap: 0.375rem;
+
             .deadline {
               @include flex-center;
               gap: 0.5rem;
               color: var(--gray-600);
               font-size: 0.7rem;
-              margin-top: 0.25rem;
             }
           }
         }
@@ -536,25 +527,6 @@
                 font-size: 0.6rem;
               }
             }
-          }
-        }
-        .task-comments-indicator {
-          position: absolute;
-          bottom: 0.8rem;
-          right: 0.5rem;
-          @include flex-center;
-          gap: 0.25rem;
-          padding: 0.25rem 0.5rem;
-          background-color: rgba(21, 169, 112, 0.9);
-          border-radius: 0.5rem;
-          font-size: 0.75rem;
-          color: white;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          z-index: 10;
-    
-          &:hover {
-            background-color: rgba(21, 169, 112, 1);
           }
         }
       }

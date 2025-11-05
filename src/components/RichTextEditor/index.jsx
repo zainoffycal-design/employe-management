@@ -2,6 +2,7 @@ import React, { memo, useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import Underline from "@tiptap/extension-underline";
 import "./RichTextEditor.scss";
 
 const RichTextEditor = memo(({ value, onChange, placeholder = "Enter description...", height = "120px", readOnly = false }) => {
@@ -12,7 +13,8 @@ const RichTextEditor = memo(({ value, onChange, placeholder = "Enter description
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
       }),
-      Link.configure({ openOnClick: true, HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } })
+      Link.configure({ openOnClick: true, HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } }),
+      Underline
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
@@ -36,7 +38,7 @@ const RichTextEditor = memo(({ value, onChange, placeholder = "Enter description
           <div className="rte-buttons">
             <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'active' : ''}>B</button>
             <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'active' : ''}>I</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleUnderline?.().run?.()} disabled>U</button>
+            <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'active' : ''}>U</button>
             <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'active' : ''}>• List</button>
             <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'active' : ''}>1. List</button>
             <button
