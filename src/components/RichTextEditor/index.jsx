@@ -44,14 +44,42 @@ const RichTextEditor = memo(({ value, onChange, placeholder = "Enter description
             <button
               type="button"
               onClick={() => {
-                const previousUrl = editor.getAttributes('link').href || '';
-                const url = window.prompt('Enter URL', previousUrl);
-                if (url === null) return;
-                if (url === '') {
+                const { from, to } = editor.state.selection;
+                const selectedText = editor.state.doc.textBetween(from, to, ' ');
+                
+                if (editor.isActive('link')) {
                   editor.chain().focus().extendMarkRange('link').unsetLink().run();
                   return;
                 }
-                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+                
+                if (selectedText) {
+                  let url = selectedText.trim();
+                  
+                  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    if (url.startsWith('www.')) {
+                      url = 'https://' + url;
+                    } else if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(url)) {
+                      url = 'https://' + url;
+                    } else {
+                      url = 'https://' + url;
+                    }
+                  }
+                  
+                  editor.chain().focus().setLink({ href: url }).run();
+                } else {
+                  const previousUrl = editor.getAttributes('link').href || '';
+                  const url = window.prompt('Enter URL', previousUrl);
+                  if (url === null) return;
+                  if (url === '') {
+                    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+                    return;
+                  }
+                  let finalUrl = url.trim();
+                  if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                    finalUrl = 'https://' + finalUrl;
+                  }
+                  editor.chain().focus().setLink({ href: finalUrl }).run();
+                }
               }}
               className={editor.isActive('link') ? 'active' : ''}
             >

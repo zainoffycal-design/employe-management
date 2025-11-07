@@ -13,9 +13,11 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = useCallback((e) => {
@@ -25,12 +27,14 @@ const Login = () => {
       [name]: value
     }));
     if (error) setError('');
-  }, [error]);
+    if (success) setSuccess('');
+  }, [error, success]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
@@ -45,6 +49,29 @@ const Login = () => {
     }
   }, [login, formData, navigate]);
 
+  const handleForgotPassword = useCallback(async () => {
+    if (!formData.email.trim()) {
+      setError('Please enter your email to reset your password');
+      setSuccess('');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    try {
+      setResetLoading(true);
+      const result = await resetPassword(formData.email);
+      if (result.success) {
+        setSuccess('Check your email for the password reset link.');
+      } else {
+        setError(result.error || 'Failed to send password reset email');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setResetLoading(false);
+    }
+  }, [formData.email, resetPassword]);
+
   return (
     <AuthLayout 
       title="Welcome Back"
@@ -52,6 +79,15 @@ const Login = () => {
       className="login-page"
     >
       <form onSubmit={handleSubmit} className="auth-form">
+        {success && (
+          <motion.div 
+            className="success-message"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <span>{success}</span>
+          </motion.div>
+        )}
         {error && (
           <motion.div 
             className="error-message"
@@ -97,6 +133,16 @@ const Login = () => {
               {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
             </button>
           </div>
+        </div>
+        <div className="d-flex justify-content-end mb-3">
+          <button
+            type="button"
+            className="btn btn-link p-0"
+            onClick={handleForgotPassword}
+            disabled={resetLoading || isLoading}
+          >
+            {resetLoading ? 'Sending reset link...' : 'Forgot password?'}
+          </button>
         </div>
         <Button 
           type="submit" 

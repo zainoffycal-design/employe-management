@@ -18,6 +18,7 @@ import {
   getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   updateProfile
@@ -161,6 +162,11 @@ export const firebaseUtils = {
     const auth = getAuth();
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
+  },
+
+  async resetPassword(email) {
+    const auth = getAuth();
+    await sendPasswordResetEmail(auth, email);
   },
 
   async signUp(email, password, name) {

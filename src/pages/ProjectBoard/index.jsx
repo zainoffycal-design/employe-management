@@ -21,7 +21,7 @@ import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
-import { getPriorityColor, getStatusDisplayName, getColumnColorByStatus, getRemainingTime, formatCreatedTime, reactSelectStyles, formatHours } from '../../utils/uiUtils';
+import { getPriorityColor, getStatusDisplayName, getRemainingTime, formatCreatedTime, reactSelectStyles, formatHours } from '../../utils/uiUtils';
 import Modal from '../../components/Modal';
 import SlideModal from '../../components/SlideModal';
 import TaskDetails from '../../components/TaskDetails';
@@ -169,11 +169,13 @@ const ProjectBoard = () => {
 
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
+    currentUser.role === 'manager' ||
     currentProject?.managerId === currentUser.uid ||
     currentProject?.teamMembers?.includes(currentUser.uid);
 
   const canMarkComplete = 
     currentUser.role === 'super_manager' || 
+    currentUser.role === 'manager' ||
     currentProject?.managerId === currentUser.uid;
 
   const canDeleteTask = 
@@ -732,11 +734,8 @@ const ProjectBoard = () => {
                       cursor: (task.status === 'done' && !canMarkComplete) ? 'default' : 'pointer'
                     }}
                   >
-                    <div className="task-header">
-                    <div className="task-status" style={{ backgroundColor: getColumnColorByStatus(task.status) }}>
-                      {getStatusDisplayName(task.status)}
-                      </div>
-                      {hasEditAccess && (
+                    {hasEditAccess && (
+                      <div className="task-header">
                         <div className="task-actions">
                           <button
                             className="task-action-btn"
@@ -761,8 +760,8 @@ const ProjectBoard = () => {
                             </button>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <h3>{task.title}</h3>
                     <RichTextViewer content={task.description} className="compact" />
                     <div className="task-meta">
@@ -869,106 +868,109 @@ const ProjectBoard = () => {
           setError('');
         }}
         title="Add New Task"
+        size="large"
       >
         <form onSubmit={handleAddTask}>
-          {error && (
-            <div className="alert alert-danger">
-              {error}
-            </div>
-          )}
-          
-          <div className="form-group">
-            <label>Task Title</label>
-            <input
-              type="text"
-              className="form-control"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              placeholder="Enter task title"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Description</label>
-            <RichTextEditor
-              value={newTask.description}
-              onChange={(value) => setNewTask({ ...newTask, description: value })}
-              placeholder="Enter task description"
-              height="120px"
-            />
-          </div>
-
-          <div className="form-row">
+          <div className="modal-form-content">
+            {error && (
+              <div className="alert alert-danger">
+                {error}
+              </div>
+            )}
+            
             <div className="form-group">
-              <label>
-                <FiFlag className="me-2" />
-                Priority
-              </label>
-              <select
+              <label>Task Title</label>
+              <input
+                type="text"
                 className="form-control"
-                value={newTask.priority}
-                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
             </div>
 
             <div className="form-group">
-              <label>
-                <FiUsers className="me-2" />
-                Assignees
-              </label>
-              <Select
-                options={assigneeOptions}
-                value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
-                onChange={(selectedOptions) => setNewTask({ 
-                  ...newTask, 
-                  assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
-                })}
-                placeholder="Select Assignees"
-                isMulti
-                isClearable
-                styles={reactSelectStyles}
-                components={{ Option: CustomOption }}
+              <label>Description</label>
+              <RichTextEditor
+                value={newTask.description}
+                onChange={(value) => setNewTask({ ...newTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
               />
             </div>
-          </div>
 
-          <div className="form-group">
-            <label>
-              <FiCalendar className="me-2" />
-              Deadline
-            </label>
-            <div className="deadline-inputs">
-              <input
-                type="date"
-                className="form-control"
-                value={newTask.deadline?.split('T')[0] || ''}
-                onChange={(e) => {
-                  const date = e.target.value;
-                  const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
-                  setNewTask({ 
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <FiFlag className="me-2" />
+                  Priority
+                </label>
+                <select
+                  className="form-control"
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <FiUsers className="me-2" />
+                  Assignees
+                </label>
+                <Select
+                  options={assigneeOptions}
+                  value={assigneeOptions.filter(option => newTask.assignee.includes(option.value))}
+                  onChange={(selectedOptions) => setNewTask({ 
                     ...newTask, 
-                    deadline: date ? `${date}T${time}` : ''
-                  });
-                }}
-              />
-              <input
-                type="time"
-                className="form-control"
-                value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
-                onChange={(e) => {
-                  const time = e.target.value;
-                  const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
-                  setNewTask({ 
-                    ...newTask, 
-                    deadline: time ? `${date}T${time}` : ''
-                  });
-                }}
-              />
+                    assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
+                  })}
+                  placeholder="Select Assignees"
+                  isMulti
+                  isClearable
+                  styles={reactSelectStyles}
+                  components={{ Option: CustomOption }}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>
+                <FiCalendar className="me-2" />
+                Deadline
+              </label>
+              <div className="deadline-inputs">
+                <input
+                  type="date"
+                  className="form-control"
+                  value={newTask.deadline?.split('T')[0] || ''}
+                  onChange={(e) => {
+                    const date = e.target.value;
+                    const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
+                    setNewTask({ 
+                      ...newTask, 
+                      deadline: date ? `${date}T${time}` : ''
+                    });
+                  }}
+                />
+                <input
+                  type="time"
+                  className="form-control"
+                  value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
+                    setNewTask({ 
+                      ...newTask, 
+                      deadline: time ? `${date}T${time}` : ''
+                    });
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -1010,122 +1012,125 @@ const ProjectBoard = () => {
           setError('');
         }}
         title="Edit Task"
+        size="large"
       >
         <form onSubmit={handleUpdateTask}>
-          {error && (
-            <div className="alert alert-danger">
-              {error}
-            </div>
-          )}
-          
-          <div className="form-group">
-            <label>Task Title</label>
-            <input
-              type="text"
-              className="form-control"
-              value={editingTask?.title || ''}
-              onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-              placeholder="Enter task title"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Description</label>
-            <RichTextEditor
-              value={editingTask?.description || ''}
-              onChange={(value) => setEditingTask({ ...editingTask, description: value })}
-              placeholder="Enter task description"
-              height="120px"
-            />
-          </div>
-
-          <div className="form-row">
+          <div className="modal-form-content">
+            {error && (
+              <div className="alert alert-danger">
+                {error}
+              </div>
+            )}
+            
             <div className="form-group">
-              <label>
-                <FiFlag className="me-2" />
-                Priority
-              </label>
-              <select
+              <label>Task Title</label>
+              <input
+                type="text"
                 className="form-control"
-                value={editingTask?.priority || 'medium'}
-                onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>
-                <FiUsers className="me-2" />
-                Assignees
-              </label>
-              <Select
-                options={assigneeOptions}
-                value={assigneeOptions.filter(option => editingTask?.assignee?.includes(option.value))}
-                onChange={(selectedOptions) => setEditingTask({ 
-                  ...editingTask, 
-                  assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
-                })}
-                placeholder="Select Assignees"
-                isMulti
-                isClearable
-                styles={reactSelectStyles}
-                components={{ Option: CustomOption }}
+                value={editingTask?.title || ''}
+                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
               />
             </div>
-          </div>
 
-          <div className="form-row">
             <div className="form-group">
-              <label>
-                <FiCalendar className="me-2" />
-                Deadline
-              </label>
-              <div className="deadline-inputs">
-                <input
-                  type="date"
+              <label>Description</label>
+              <RichTextEditor
+                value={editingTask?.description || ''}
+                onChange={(value) => setEditingTask({ ...editingTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <FiFlag className="me-2" />
+                  Priority
+                </label>
+                <select
                   className="form-control"
-                  value={editingTask?.deadline?.split('T')[0] || ''}
-                  onChange={(e) => {
-                    const date = e.target.value;
-                    const time = editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
-                    setEditingTask({ 
-                      ...editingTask, 
-                      deadline: date ? `${date}T${time}` : ''
-                    });
-                  }}
-                />
-                <input
-                  type="time"
-                  className="form-control"
-                  value={editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const date = editingTask?.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
-                    setEditingTask({ 
-                      ...editingTask, 
-                      deadline: time ? `${date}T${time}` : ''
-                    });
-                  }}
+                  value={editingTask?.priority || 'medium'}
+                  onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <FiUsers className="me-2" />
+                  Assignees
+                </label>
+                <Select
+                  options={assigneeOptions}
+                  value={assigneeOptions.filter(option => editingTask?.assignee?.includes(option.value))}
+                  onChange={(selectedOptions) => setEditingTask({ 
+                    ...editingTask, 
+                    assignee: selectedOptions ? selectedOptions.map(option => option.value) : []
+                  })}
+                  placeholder="Select Assignees"
+                  isMulti
+                  isClearable
+                  styles={reactSelectStyles}
+                  components={{ Option: CustomOption }}
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                className="form-control"
-                value={editingTask?.status || 'todo'}
-                onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
-              >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="in-review">In Review</option>
-                {canMarkComplete && <option value="done">Complete</option>}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <FiCalendar className="me-2" />
+                  Deadline
+                </label>
+                <div className="deadline-inputs">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={editingTask?.deadline?.split('T')[0] || ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
+                      setEditingTask({ 
+                        ...editingTask, 
+                        deadline: date ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date = editingTask?.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
+                      setEditingTask({ 
+                        ...editingTask, 
+                        deadline: time ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  className="form-control"
+                  value={editingTask?.status || 'todo'}
+                  onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
+                >
+                  <option value="todo">Todo</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="in-review">In Review</option>
+                  {canMarkComplete && <option value="done">Complete</option>}
+                </select>
+              </div>
             </div>
           </div>
 

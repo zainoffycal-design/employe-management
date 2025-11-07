@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
 import { notificationService } from '../services/notificationService';
+import { unassignUsersFromProjectTasks } from '../services/projectCleanupService';
 
 const TaskContext = createContext();
 
@@ -13,6 +14,11 @@ export const TaskProvider = ({ children }) => {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const { currentUser } = useAuth();
+  const cleanedProjectsRef = useRef(new Set());
+
+  useEffect(() => {
+    cleanedProjectsRef.current.clear();
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -94,7 +100,23 @@ export const TaskProvider = ({ children }) => {
 
   const updateProject = async (projectId, projectData) => {
     try {
+      const existingProject = await firebaseUtils.getDocument('projects', projectId);
       await firebaseUtils.updateDocument('projects', projectId, projectData);
+
+      let removedMembers = [];
+
+      if (
+        existingProject &&
+        Array.isArray(existingProject.teamMembers) &&
+        Array.isArray(projectData.teamMembers)
+      ) {
+        removedMembers = existingProject.teamMembers.filter(
+          (member) => !projectData.teamMembers.includes(member)
+        );
+      }
+
+      const cleanupTargets = removedMembers.length > 0 ? removedMembers : ['Unknown', 'unknown'];
+      await unassignUsersFromProjectTasks(projectId, cleanupTargets);
     } catch (error) {
       console.error('Error updating project:', error);
       throw error;
@@ -240,6 +262,30 @@ export const TaskProvider = ({ children }) => {
       return false;
     });
   }, [tasks, projects, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser || projects.length === 0) return;
+
+    const cleanupUnknownAssignments = async () => {
+      try {
+        await Promise.all(
+          projects.map((project) => {
+            if (!project?.id) return Promise.resolve();
+
+            const hasCleaned = cleanedProjectsRef.current.has(project.id);
+            if (hasCleaned) return Promise.resolve();
+
+            cleanedProjectsRef.current.add(project.id);
+            return unassignUsersFromProjectTasks(project.id, ['Unknown', 'unknown']);
+          })
+        );
+      } catch (error) {
+        console.error('Error cleaning project assignments:', error);
+      }
+    };
+
+    cleanupUnknownAssignments();
+  }, [projects, currentUser]);
 
   const value = useMemo(() => ({
     tasks: accessibleTasks,

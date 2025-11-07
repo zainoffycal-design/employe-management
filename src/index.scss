@@ -84,7 +84,7 @@ body {
 }
 
 .app-content {
-  padding-top: 72px;
+ min-height: 100vh
 }
 
 .card {
@@ -849,7 +849,7 @@ input[type="checkbox"] {
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   text-align: left;
 }
 .form-group label {
@@ -879,7 +879,7 @@ input[type="checkbox"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin-bottom: 1rem;
+ 
 }
 @media (max-width: 768px) {
   .form-row {

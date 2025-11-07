@@ -1,305 +1,294 @@
-@use '../../styles/_shared.scss' as *;
+@use '../../styles/_shared.scss'as *;
 
 .project-management {
-  padding: 2rem;
+      padding: 2rem;
 
-  .filters-container {
-    @include flex-center;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-right: 1rem;
-    flex-wrap: wrap;
+      .filters-container {
+            @include flex-center;
+            justify-content: flex-end;
+            gap: 1rem;
+            flex-wrap: wrap;
 
-    .search-box {
-      width: 240px;
-    }
+            .search-box {
+                  width: 240px;
+            }
 
-    .manager-filter {
-      width: 200px;
-      
-      div{
-        min-height: unset;
-      }
-    }
-  }
+            .manager-filter {
+                  width: 200px;
 
-  .page-header {
-    @include flex-between;
-    margin-bottom: 2rem;
-
-    .header-content {
-      h1 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        @include flex-center;
-        justify-content: flex-start;
-        gap: 0.75rem;
-        margin-bottom: 0.5rem;
-
-        .header-icon {
-          color: var(--text-primary);
-        }
+                  div {
+                        min-height: unset;
+                  }
+            }
       }
 
-      p {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-      }
-    }
+      .page-header {
+            @include flex-between;
+            margin-bottom: 2rem;
+
+            .header-content {
+                  h1 {
+                        font-size: 1.5rem;
+                        font-weight: 600;
+                        color: var(--text-primary);
+                        @include flex-center;
+                        justify-content: flex-start;
+                        gap: 0.75rem;
+                        margin-bottom: 0.5rem;
+
+                        .header-icon {
+                              color: var(--text-primary);
+                        }
+                  }
+
+                  p {
+                        color: var(--text-secondary);
+                        font-size: 0.9rem;
+                  }
+            }
 
 
-  }
-
-  .projects-grid {
-    margin-bottom: 2rem;
-
-    .projects-grid-header {
-      @include flex-between;
-      justify-content: flex-end;
-      margin-bottom: 1rem;
-
-      .project-filter-dropdown {
-        width: 180px;
-        
-        div {
-          min-height: unset;
-        }
-      }
-    }
-
-    .projects-grid-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-    
-    .empty-state {
-      grid-column: 1 / -1;
-      @include empty-state(300px, white);
-      border: 2px dashed var(--gray-200);
-      margin: 2rem 0;
-      
-      .empty-state-icon {
-        @include flex-center;
-        margin-bottom: 1.5rem;
-      }
-      
-      h3 {
-        margin-bottom: 0.75rem;
-      }
-      
-      p {
-        margin-bottom: 2rem;
-        max-width: 500px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      
-      .create-first-project-btn {
-        @include flex-center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-      }
-    }
-  }
-
-  .project-card-container {
-    position: relative;
-
-    .project-actions {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      @include flex-center;
-      gap: 0.5rem;
-      opacity: 0;
-      transition: var(--transition);
-      z-index: 10;
-
-      .action-btn {
-        @include flex-center;
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 50%;
-        background: white;
-        color: var(--gray-600);
-        cursor: pointer;
-        transition: var(--transition);
-        box-shadow: var(--shadow-sm);
-
-        &:hover {
-          background: var(--gray-100);
-          color: var(--gray-800);
-          box-shadow: var(--shadow-md);
-        }
-
-        &.delete {
-          &:hover {
-            background: var(--error-color);
-            color: white;
-          }
-        }
-      }
-    }
-
-    &:hover .project-actions {
-      opacity: 1;
-    }
-  }
-
-  .project-card {
-    @include flex-center;
-    align-items: flex-start;
-    padding: 1rem;
-    background: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    position: relative;
-    height: 100%;
-    min-height: 110px;
-    transition: all 0.2s ease;
-
-    &:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-
-    .project-info {
-      flex: 1;
-      min-width: 0;
-      @include flex-center;
-      flex-direction: column;
-      align-items: flex-start;
-
-     
-
-      .project-description {
-        color: var(--text-secondary);
-        font-size: 12px;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;        flex-grow: 1;
       }
 
-      .project-meta {
-        @include flex-center;
-        justify-content: flex-start;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
+      .projects-grid {
+            margin-bottom: 2rem;
 
-        .badge {
-          @include flex-center;
-          padding: 0.35rem 0.75rem;
-          border-radius: 6px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          letter-spacing: 0.02em;
+            .projects-grid-header {
+                  @include flex-between;
+                  justify-content: flex-end;
+                  margin-bottom: 1rem;
 
-          svg {
-            margin-right: 4px;
-          }
+                  .project-filter-dropdown {
+                        width: 180px;
 
-          &--designer {
-            background-color: #e3f2fd;
-            color: #1976d2;
-          }
+                        div {
+                              min-height: unset;
+                        }
+                  }
+            }
 
-          &--developer {
-            background-color: #f3e5f5;
-            color: #7b1fa2;
-          }
-        }
+            .projects-grid-list {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                  gap: 1rem;
+            }
+
+            .empty-state {
+                  grid-column: 1 / -1;
+                  @include empty-state(300px, white);
+                  border: 2px dashed var(--gray-200);
+                  margin: 2rem 0;
+
+                  .empty-state-icon {
+                        @include flex-center;
+                        margin-bottom: 1.5rem;
+                  }
+
+                  h3 {
+                        margin-bottom: 0.75rem;
+                  }
+
+                  p {
+                        margin-bottom: 2rem;
+                        max-width: 500px;
+                        margin-left: auto;
+                        margin-right: auto;
+                  }
+
+                  .create-first-project-btn {
+                        @include flex-center;
+                        gap: 0.5rem;
+                        padding: 0.75rem 1.5rem;
+                        font-weight: 500;
+                  }
+            }
       }
 
-      .view-board-btn {
-        align-self: flex-start;
-        padding: 0.5rem 1rem;
-        font-size: 0.8rem;
-        @include flex-center;
-        gap: 0.5rem;
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
+      .project-card-container {
+            position: relative;
 
-        &:hover {
-          background-color: var(--primary-dark);
-          transform: translateY(-1px);
-        }
+            .project-actions {
+                  position: absolute;
+                  top: 1rem;
+                  right: 1rem;
+                  @include flex-center;
+                  gap: 0.5rem;
+                  opacity: 0;
+                  transition: var(--transition);
+                  z-index: 10;
 
-        svg {
-          width: 14px;
-          height: 14px;
-        }
+                  .action-btn {
+                        @include flex-center;
+                        width: 32px;
+                        height: 32px;
+                        border: none;
+                        border-radius: 50%;
+                        background: white;
+                        color: var(--gray-600);
+                        cursor: pointer;
+                        transition: var(--transition);
+                        box-shadow: var(--shadow-sm);
+
+                        &:hover {
+                              background: var(--gray-100);
+                              color: var(--gray-800);
+                              box-shadow: var(--shadow-md);
+                        }
+
+                        &.delete {
+                              &:hover {
+                                    background: var(--error-color);
+                                    color: white;
+                              }
+                        }
+                  }
+            }
+
+            &:hover .project-actions {
+                  opacity: 1;
+            }
       }
-    }
 
-    .project-actions {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      @include flex-center;
-      gap: 0.5rem;
+      .project-card {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 1rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            height: 100%;
+            min-height: 110px;
+            transition: all 0.2s ease;
 
-      .action-btn {
-        width: 28px;
-        height: 28px;
-        @include flex-center;
-        border: none;
-        border-radius: 4px;
-        background: var(--gray-100);
-        color: var(--gray-600);
-        cursor: pointer;
-        transition: all 0.2s;
+            &:hover {
+                  box-shadow: var(--shadow-md);
+                  transform: translateY(-2px);
+            }
 
-        &:hover {
-          background: var(--gray-200);
-          color: var(--gray-800);
-        }
+            .project-info {
+                  flex: 1;
+                  min-width: 0;
+                  @include flex-center;
+                  flex-direction: column;
+                  align-items: flex-start;
 
-        &.delete:hover {
-          background: #fee2e2;
-          color: #dc2626;
-        }
 
-        svg {
-          width: 14px;
-          height: 14px;
-        }
+
+                  .project-description {
+                        color: var(--text-secondary);
+                        font-size: 12px;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 1;
+                        line-clamp: 1;
+                        -webkit-box-orient: vertical;
+                        overflow: hidden;
+                        flex-grow: 1;
+                  }
+
+                  .project-meta {
+                        @include flex-center;
+                        justify-content: flex-start;
+                        gap: 0.5rem;
+                        margin-bottom: 1rem;
+
+                        .badge {
+                              @include flex-center;
+                              padding: 0.35rem 0.75rem;
+                              border-radius: 6px;
+                              font-size: 0.75rem;
+                              font-weight: 500;
+                              letter-spacing: 0.02em;
+
+                              svg {
+                                    margin-right: 4px;
+                              }
+
+                              &--designer {
+                                    background-color: #e3f2fd;
+                                    color: #1976d2;
+                              }
+
+                              &--developer {
+                                    background-color: #f3e5f5;
+                                    color: #7b1fa2;
+                              }
+                        }
+                  }
+
+                  .view-board-btn {
+                        align-self: flex-start;
+                        padding: 0.5rem 1rem;
+                        font-size: 0.8rem;
+                        @include flex-center;
+                        gap: 0.5rem;
+                        background-color: var(--primary-color);
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+
+                        &:hover {
+                              background-color: var(--primary-dark);
+                              transform: translateY(-1px);
+                        }
+
+                        svg {
+                              width: 14px;
+                              height: 14px;
+                        }
+                  }
+            }
+
+            .project-actions {
+                  position: absolute;
+                  top: 1rem;
+                  right: 1rem;
+                  @include flex-center;
+                  gap: 0.5rem;
+
+                  .action-btn {
+                        width: 28px;
+                        height: 28px;
+                        @include flex-center;
+                        border: none;
+                        border-radius: 4px;
+                        background: var(--gray-100);
+                        color: var(--gray-600);
+                        cursor: pointer;
+                        transition: all 0.2s;
+
+                        &:hover {
+                              background: var(--gray-200);
+                              color: var(--gray-800);
+                        }
+
+                        &.delete:hover {
+                              background: #fee2e2;
+                              color: #dc2626;
+                        }
+
+                        svg {
+                              width: 14px;
+                              height: 14px;
+                        }
+                  }
+            }
       }
-    }
-  }
 
+      @media (max-width: 768px) {
+            padding: 1rem;
 
+            .page-header {
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 1rem;
+            }
 
-
-  .modal-actions {
-    @include flex-between;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-  }
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .projects-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-} 
+            .projects-grid {
+                  grid-template-columns: 1fr;
+            }
+      }
+}

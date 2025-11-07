@@ -154,6 +154,40 @@ export const formatHours = (hours) => {
   return `${hours.toFixed(1)}h`;
 };
 
+export const parseLinks = (text) => {
+  if (!text) return [];
+  
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = urlRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: text.substring(lastIndex, match.index) });
+    }
+    
+    let url = match[0];
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    parts.push({
+      type: 'link',
+      url: url,
+      text: match[0]
+    });
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', content: text.substring(lastIndex) });
+  }
+  
+  return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+};
+
 export const reactSelectStyles = {
   control: (base) => ({
     ...base,

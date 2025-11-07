@@ -97,6 +97,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const resetPassword = useCallback(async (email) => {
+    try {
+      setIsFormSubmitting(true);
+      await firebaseUtils.resetPassword(email);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    } finally {
+      setIsFormSubmitting(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     await firebaseUtils.signOut();
     setCurrentUser(null);
@@ -126,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    resetPassword,
     hasPermission,
     canEditTasks,
     canDeleteTasks,
@@ -137,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     canAssignTasks,
     canViewOwnTasks,
     canViewAllTasks
-  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks]);
+  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, resetPassword, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks]);
 
   return (
     <AuthContext.Provider value={value}>

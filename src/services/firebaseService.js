@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
+import { removeUsersFromProjects } from './projectCleanupService';
 
 export const projectService = {
   async createProject(projectData) {
@@ -135,6 +136,15 @@ export const userManagementService = {
           
           await Promise.all(invitationsSnapshot.docs.map(doc => deleteDoc(doc.ref)));
         }
+
+        const identifiers = [userId];
+        if (userData.email) {
+          identifiers.push(userData.email);
+        }
+
+        await removeUsersFromProjects(identifiers);
+      } else {
+        await removeUsersFromProjects([userId]);
       }
     } catch (error) {
       console.error('Error deleting user:', error);

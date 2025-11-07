@@ -11,7 +11,6 @@
   .filters-container {
     @include flex-center;
     gap: 1rem;
-    margin-right: 1rem;
     flex-wrap: wrap;
 
     .search-box {
@@ -282,25 +281,9 @@
         }
 
         .task-header {
-          @include flex-between;
-          align-items: flex-start;
-          margin-bottom: 0.5rem;
-
-        .task-status {
-          display: inline-block;
-          padding: 0.25rem 0.5rem;
-          border-radius: 6px;
-          color: white;
-          font-size: 0.7rem;
-          font-weight: 600;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          transition: all 0.2s ease;
-          
-          &:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-          }
-          }
+         position: absolute;
+         top: 0.875rem;
+         right: 0.875rem;
 
           .task-actions {
             @include flex-center;
@@ -309,8 +292,8 @@
             transition: opacity 0.2s ease;
 
             .task-action-btn {
-              background: none;
-              border: none;
+              background: var(--gray-100);
+              border: 1px solid var(--primary-color);
               padding: 0.25rem;
               border-radius: 4px;
               color: var(--gray-600);
@@ -560,16 +543,6 @@
       }
     }
   }
-
-  .modal-actions {
-    @include flex-between;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--gray-200);
-  }
-
   @media (max-width: 900px) {
     .page-header {
       .header-actions {

@@ -20,6 +20,7 @@ import RichTextViewer from '../RichTextViewer';
 import TimeTracker from '../TimeTracker';
 import TaskReview from '../TaskReview';
 import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate } from '../../utils/uiUtils';
+import LinkifiedText from '../LinkifiedText';
 import './TaskDetails.scss';
 
 const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) => {
@@ -369,7 +370,9 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
                     </div>
                   </div>
                 ) : (
-                  <div className="comment-text">{comment.text}</div>
+                  <div className="comment-text">
+                    <LinkifiedText text={comment.text} />
+                  </div>
                 )}
               </motion.div>
             ))

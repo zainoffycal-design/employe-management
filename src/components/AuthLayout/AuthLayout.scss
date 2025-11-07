@@ -19,6 +19,14 @@
   text-align: center;
 }
 
+.btn-link{
+      color: var(--primary-color);
+      &:hover{
+            box-shadow: none !important;
+            color: var(--primary-color) !important;
+      }
+}
+
 .auth-header {
   margin-bottom: 2.5rem;
 

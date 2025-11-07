@@ -53,7 +53,6 @@
   .filters-container {
     @include flex-center;
     gap: 1rem;
-    margin-right: 1rem;
 
     .search-box {
       width: 240px;
@@ -806,15 +805,6 @@
         }
       }
     }
-  }
-
-  .modal-actions {
-    @include flex-between;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--gray-200);
   }
 }
 
