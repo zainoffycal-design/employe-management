@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiMessageSquare, 
@@ -19,20 +19,184 @@ import Avatar from '../Avatar';
 import RichTextViewer from '../RichTextViewer';
 import TimeTracker from '../TimeTracker';
 import TaskReview from '../TaskReview';
-import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate } from '../../utils/uiUtils';
+import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate, extractMentionsFromText } from '../../utils/uiUtils';
 import LinkifiedText from '../LinkifiedText';
+import { userManagementService } from '../../services/firebaseService';
+import { notificationService } from '../../services/notificationService';
 import './TaskDetails.scss';
 
 const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) => {
   const { currentUser } = useAuth();
   const { updateTask, tasks } = useTask();
   const [newComment, setNewComment] = useState('');
+  const [displayComment, setDisplayComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [editingComment, setEditingComment] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const commentInputRef = useRef(null);
+  const mentionDropdownRef = useRef(null);
+  const inputWrapperRef = useRef(null);
 
   const currentTask = tasks.find(t => t.id === task.id) || task;
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const usersData = await userManagementService.getAllUsers();
+        const activeUsers = usersData.filter(user => user.isActive !== false);
+        setAllUsers(activeUsers);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        mentionDropdownRef.current &&
+        !mentionDropdownRef.current.contains(event.target) &&
+        commentInputRef.current &&
+        !commentInputRef.current.contains(event.target)
+      ) {
+        setShowMentionDropdown(false);
+      }
+    };
+
+    if (showMentionDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showMentionDropdown]);
+
+  const projectCollaborators = useMemo(() => {
+    if (!project?.teamMembers?.length || !allUsers.length) return [];
+    const memberIds = new Set(project.teamMembers);
+    return allUsers.filter(user => 
+      memberIds.has(user.id) && 
+      user.isActive !== false
+    );
+  }, [project?.teamMembers, allUsers]);
+
+  const filteredUsers = useMemo(() => {
+    if (!projectCollaborators.length) return [];
+    const query = mentionQuery.toLowerCase();
+    const filtered = projectCollaborators.filter(user => 
+      user.id !== currentUser.uid &&
+      (query === '' || 
+       user.name.toLowerCase().includes(query) || 
+       (user.email && user.email.toLowerCase().includes(query)))
+    );
+    return filtered.slice(0, 8);
+  }, [mentionQuery, projectCollaborators, currentUser.uid]);
+
+  const handleCommentChange = (e) => {
+    const displayValue = e.target.value;
+    setDisplayComment(displayValue);
+    
+    const rawValue = getRawTextFromDisplay(displayValue);
+    setNewComment(rawValue);
+
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = displayValue.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        setMentionQuery(textAfterAt);
+        setShowMentionDropdown(true);
+        setSelectedMentionIndex(0);
+      } else {
+        setShowMentionDropdown(false);
+        setMentionQuery('');
+      }
+    } else {
+      setShowMentionDropdown(false);
+      setMentionQuery('');
+    }
+  };
+
+  const insertMention = (user) => {
+    const cursorPosition = commentInputRef.current.selectionStart;
+    const displayBeforeCursor = displayComment.substring(0, cursorPosition);
+    const displayAfterCursor = displayComment.substring(cursorPosition);
+    const lastAtIndex = displayBeforeCursor.lastIndexOf('@');
+    
+    const beforeMention = displayBeforeCursor.substring(0, lastAtIndex);
+    const mentionDisplay = `@${user.name}`;
+    const mentionData = `@[${user.name}](${user.id})`;
+    const newDisplayText = beforeMention + mentionDisplay + ' ' + displayAfterCursor;
+    const newRawText = beforeMention + mentionData + ' ' + displayAfterCursor;
+    
+    setNewComment(newRawText);
+    setDisplayComment(newDisplayText);
+    setShowMentionDropdown(false);
+    setMentionQuery('');
+    
+    setTimeout(() => {
+      if (commentInputRef.current) {
+        const newCursorPosition = beforeMention.length + mentionDisplay.length + 1;
+        commentInputRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+        commentInputRef.current.focus();
+      }
+    }, 0);
+  };
+
+  const updateDisplayText = (text) => {
+    if (!text) {
+      setDisplayComment('');
+      return;
+    }
+    const display = text.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
+    setDisplayComment(display);
+  };
+
+  const getRawTextFromDisplay = useCallback((displayText) => {
+    if (!displayText || !projectCollaborators.length) return displayText;
+    
+    let result = displayText;
+    const sortedCollaborators = [...projectCollaborators].sort((a, b) => b.name.length - a.name.length);
+    
+    sortedCollaborators.forEach(user => {
+      const displayMention = `@${user.name}`;
+      const rawMention = `@[${user.name}](${user.id})`;
+      const regex = new RegExp(displayMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      result = result.replace(regex, rawMention);
+    });
+    
+    return result;
+  }, [projectCollaborators]);
+
+  const handleKeyDown = (e) => {
+    if (showMentionDropdown && filteredUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev < filteredUsers.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => prev > 0 ? prev - 1 : 0);
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredUsers[selectedMentionIndex]);
+      } else if (e.key === 'Escape') {
+        setShowMentionDropdown(false);
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAddComment(e);
+    }
+  };
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -42,22 +206,42 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     setError('');
 
     try {
+      const mentions = extractMentionsFromText(newComment);
+      const mentionedUserIds = mentions.map(m => m.userId);
+
       const comment = {
         id: Date.now().toString(),
         text: newComment.trim(),
         authorId: currentUser.uid,
         authorName: currentUser.name,
         authorAvatar: currentUser.avatar,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        mentions: mentionedUserIds
       };
 
-      const updatedComments = [...(currentTask.comments || []), comment];
+      const updatedComments = [comment, ...(currentTask.comments || [])];
       
       await updateTask(currentTask.projectId, currentTask.id, {
         comments: updatedComments
       });
 
+      if (mentionedUserIds.length > 0 && project) {
+        try {
+          await notificationService.createCommentMentionNotification(
+            mentionedUserIds,
+            comment,
+            currentTask,
+            project,
+            currentUser
+          );
+        } catch (notifError) {
+          console.error('Error creating mention notifications:', notifError);
+        }
+      }
+
       setNewComment('');
+      setDisplayComment('');
+      setShowMentionDropdown(false);
     } catch (error) {
       console.error('Error adding comment:', error);
       setError('Failed to add comment');
@@ -66,12 +250,6 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleAddComment(e);
-    }
-  };
 
   const handleTimeUpdate = async (timeData) => {
     try {
@@ -95,7 +273,8 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
 
   const handleEditComment = (comment) => {
     setEditingComment(comment.id);
-    setEditCommentText(comment.text);
+    const displayText = comment.text.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
+    setEditCommentText(displayText);
   };
 
   const handleCancelEdit = () => {
@@ -110,9 +289,10 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     setError('');
 
     try {
+      const rawText = getRawTextFromDisplay(editCommentText);
       const updatedComments = currentTask.comments.map(comment => 
         comment.id === commentId 
-          ? { ...comment, text: editCommentText.trim(), updatedAt: new Date().toISOString() }
+          ? { ...comment, text: rawText.trim(), updatedAt: new Date().toISOString() }
           : comment
       );
 
@@ -155,6 +335,15 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
     currentUser.role === 'super_manager' || 
     project?.managerId === currentUser.uid ||
     project?.teamMembers?.includes(currentUser.uid);
+
+  const sortedComments = useMemo(() => {
+    if (!currentTask.comments) return [];
+    return [...currentTask.comments].sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [currentTask.comments]);
 
   return (
     <div className="task-details">
@@ -293,8 +482,8 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
         </div>
 
         <div className="comments-list">
-          {currentTask.comments && currentTask.comments.length > 0 ? (
-            currentTask.comments.map(comment => (
+          {sortedComments.length > 0 ? (
+            sortedComments.map(comment => (
               <motion.div
                 key={comment.id}
                 className="comment-item"
@@ -388,12 +577,13 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
           {error && (
             <div className="error-message">{error}</div>
           )}
-          <div className="comment-input-wrapper">
+          <div className="comment-input-wrapper" ref={inputWrapperRef}>
             <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              ref={commentInputRef}
+              value={displayComment}
+              onChange={handleCommentChange}
               onKeyDown={handleKeyDown}
-              placeholder="Add a comment..."
+              placeholder="Add a comment... (use @ to mention someone)"
               rows="1"
               className="comment-input"
               disabled={loading}
@@ -406,6 +596,33 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
             >
               <FiSend size={14} />
             </button>
+            {showMentionDropdown && filteredUsers.length > 0 && (
+              <div
+                ref={mentionDropdownRef}
+                className="mention-dropdown"
+              >
+                {filteredUsers.map((user, index) => (
+                  <div
+                    key={user.id}
+                    className={`mention-item ${index === selectedMentionIndex ? 'selected' : ''}`}
+                    onClick={() => insertMention(user)}
+                    onMouseEnter={() => setSelectedMentionIndex(index)}
+                  >
+                    <Avatar
+                      src={user.avatar}
+                      name={user.name}
+                      size="small"
+                    />
+                    <div className="mention-item-info">
+                      <span className="mention-item-name">{user.name}</span>
+                      {user.email && (
+                        <span className="mention-item-email">{user.email}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </form>
       </div>

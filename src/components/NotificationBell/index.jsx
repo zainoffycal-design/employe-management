@@ -76,6 +76,8 @@ const NotificationBell = memo(() => {
         return <FiFolder size={16} />;
       case 'task_completion':
         return <FiCheckCircle size={16} />;
+      case 'comment_mention':
+        return <FiUsers size={16} />;
       default:
         return <FiBell size={16} />;
     }
@@ -89,6 +91,8 @@ const NotificationBell = memo(() => {
         return '#8b5cf6';
       case 'task_completion':
         return '#059669';
+      case 'comment_mention':
+        return '#15A970';
       default:
         return 'var(--gray-600)';
     }

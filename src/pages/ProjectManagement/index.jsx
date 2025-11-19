@@ -19,6 +19,7 @@ import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import ProjectCard from '../../components/ProjectCard';
 import Avatar from '../../components/Avatar';
+import BudgetManager from '../../components/BudgetManager';
 import './ProjectManagement.scss';
 
 const ProjectManagement = () => {
@@ -35,7 +36,13 @@ const ProjectManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    teamMembers: []
+    teamMembers: [],
+    budget: {
+      type: 'none',
+      fixedBudget: '',
+      hourlyRate: '',
+      payments: []
+    }
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -139,14 +146,30 @@ const ProjectManagement = () => {
         return;
       }
 
-      await createProject({
+      const projectData = {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value),
         managerId: currentUser.uid,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      if (formData.budget.type === 'none') {
+        delete projectData.budget;
+      }
+
+      await createProject(projectData);
       setShowCreateModal(false);
-      setFormData({ name: '', description: '', teamMembers: [] });
+      setFormData({ 
+        name: '', 
+        description: '', 
+        teamMembers: [],
+        budget: {
+          type: 'none',
+          fixedBudget: '',
+          hourlyRate: '',
+          payments: []
+        }
+      });
     } catch (error) {
       console.error('Error creating project:', error);
       setError('Failed to create project');
@@ -163,26 +186,57 @@ const ProjectManagement = () => {
     try {
       if (selectedProject) {
         const isCompleted = isProjectCompleted(selectedProject);
-        if (isCompleted && currentUser.role !== 'super_manager') {
+        if (isCompleted && currentUser.role !== 'super_manager' && currentUser.role !== 'bd') {
           setError('Only super managers can edit completed projects');
           setLoading(false);
           return;
         }
       }
 
-      if (formData.teamMembers.length === 0) {
-        setError('Please select at least one team member');
-        setLoading(false);
-        return;
+      const isBdUser = currentUser.role === 'bd';
+      
+      if (!isBdUser) {
+        if (formData.teamMembers.length === 0) {
+          setError('Please select at least one team member');
+          setLoading(false);
+          return;
+        }
       }
 
-      await updateProject(selectedProject.id, {
-        ...formData,
-        teamMembers: formData.teamMembers.map(member => member.value)
-      });
+      let projectData;
+      
+      if (isBdUser) {
+        if (formData.budget && formData.budget.type !== 'none') {
+          projectData = { budget: formData.budget };
+        } else if (formData.budget && formData.budget.type === 'none') {
+          projectData = { budget: null };
+        } else {
+          projectData = {};
+        }
+      } else {
+        projectData = {
+          ...formData,
+          teamMembers: formData.teamMembers.map(member => member.value)
+        };
+        if (formData.budget.type === 'none') {
+          delete projectData.budget;
+        }
+      }
+
+      await updateProject(selectedProject.id, projectData);
       setShowEditModal(false);
       setSelectedProject(null);
-      setFormData({ name: '', description: '', teamMembers: [] });
+      setFormData({ 
+        name: '', 
+        description: '', 
+        teamMembers: [],
+        budget: {
+          type: 'none',
+          fixedBudget: '',
+          hourlyRate: '',
+          payments: []
+        }
+      });
     } catch (error) {
       console.error('Error updating project:', error);
       setError('Failed to update project');
@@ -387,11 +441,14 @@ const ProjectManagement = () => {
               />
               {(() => {
                 const isCompleted = isProjectCompleted(project);
-                const canEditDelete = isCompleted 
+                const canEdit = isCompleted 
+                  ? currentUser.role === 'super_manager' || currentUser.role === 'bd'
+                  : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid || currentUser.role === 'bd');
+                const canDelete = isCompleted 
                   ? currentUser.role === 'super_manager'
                   : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid);
                 
-                return canEditDelete && (
+                return canEdit && (
                   <div className="project-actions">
                     <button
                       className="action-btn"
@@ -403,19 +460,27 @@ const ProjectManagement = () => {
                           teamMembers: project.teamMembers.map(id => ({
                             value: id,
                             label: users.find(user => user.id === id)?.name || 'Unknown User'
-                          }))
+                          })),
+                          budget: project.budget || {
+                            type: 'none',
+                            fixedBudget: '',
+                            hourlyRate: '',
+                            payments: []
+                          }
                         });
                         setShowEditModal(true);
                       }}
                     >
                       <FiEdit2 size={14} />
                     </button>
-                    <button
-                      className="action-btn delete"
-                      onClick={() => handleDeleteProject(project)}
-                    >
-                      <FiTrash2 size={14} />
-                    </button>
+                    {canDelete && (
+                      <button
+                        className="action-btn delete"
+                        onClick={() => handleDeleteProject(project)}
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 );
               })()}
@@ -452,7 +517,17 @@ const ProjectManagement = () => {
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
-          setFormData({ name: '', description: '', teamMembers: [] });
+          setFormData({ 
+            name: '', 
+            description: '', 
+            teamMembers: [],
+            budget: {
+              type: 'none',
+              fixedBudget: '',
+              hourlyRate: '',
+              payments: []
+            }
+          });
           setError('');
         }}
         title="Create New Project"
@@ -481,12 +556,29 @@ const ProjectManagement = () => {
             />
           </div>
           {renderTeamMemberSelect()}
+          {(currentUser?.role === 'super_manager' || currentUser?.role === 'bd') && (
+            <BudgetManager
+              value={formData.budget}
+              onChange={(budget) => setFormData({ ...formData, budget })}
+              disabled={loading}
+            />
+          )}
           <div className="modal-actions">
             <Button 
               variant="secondary"
               onClick={() => {
                 setShowCreateModal(false);
-                setFormData({ name: '', description: '', teamMembers: [] });
+                setFormData({ 
+                  name: '', 
+                  description: '', 
+                  teamMembers: [],
+                  budget: {
+                    type: 'none',
+                    fixedBudget: '',
+                    hourlyRate: '',
+                    payments: []
+                  }
+                });
                 setError('');
               }}
             >
@@ -509,42 +601,73 @@ const ProjectManagement = () => {
         onClose={() => {
           setShowEditModal(false);
           setSelectedProject(null);
-          setFormData({ name: '', description: '', teamMembers: [] });
+          setFormData({ 
+            name: '', 
+            description: '', 
+            teamMembers: [],
+            budget: {
+              type: 'none',
+              fixedBudget: '',
+              hourlyRate: '',
+              payments: []
+            }
+          });
           setError('');
         }}
-        title="Edit Project"
+        title={currentUser?.role === 'bd' ? "Edit Project Budget" : "Edit Project"}
       >
         <form onSubmit={handleEditProject}>
           {error && (
             <div className="alert alert-danger">{error}</div>
           )}
-          <div className="form-group">
-            <label>Project Name</label>
-            <input
-              type="text"
-              className="form-control"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+          {currentUser?.role !== 'bd' && (
+            <>
+              <div className="form-group">
+                <label>Project Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  className="form-control"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                />
+              </div>
+              {renderTeamMemberSelect()}
+            </>
+          )}
+          {(currentUser?.role === 'super_manager' || currentUser?.role === 'bd') && (
+            <BudgetManager
+              value={formData.budget}
+              onChange={(budget) => setFormData({ ...formData, budget })}
+              disabled={loading}
             />
-          </div>
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              className="form-control"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-            />
-          </div>
-          {renderTeamMemberSelect()}
+          )}
           <div className="modal-actions">
             <Button 
               variant="secondary"
               onClick={() => {
                 setShowEditModal(false);
                 setSelectedProject(null);
-                setFormData({ name: '', description: '', teamMembers: [] });
+                setFormData({ 
+                  name: '', 
+                  description: '', 
+                  teamMembers: [],
+                  budget: {
+                    type: 'none',
+                    fixedBudget: '',
+                    hourlyRate: '',
+                    payments: []
+                  }
+                });
                 setError('');
               }}
             >
@@ -554,9 +677,9 @@ const ProjectManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
-              loadingText="Updating Project..."
+              loadingText={currentUser?.role === 'bd' ? "Updating Budget..." : "Updating Project..."}
             >
-              Update Project
+              {currentUser?.role === 'bd' ? "Update Budget" : "Update Project"}
             </Button>
           </div>
         </form>

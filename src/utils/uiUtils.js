@@ -188,6 +188,76 @@ export const parseLinks = (text) => {
   return parts.length > 0 ? parts : [{ type: 'text', content: text }];
 };
 
+export const parseMentions = (text) => {
+  if (!text) return [];
+  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  const mentions = [];
+  let match;
+  
+  while ((match = mentionRegex.exec(text)) !== null) {
+    mentions.push({
+      name: match[1],
+      userId: match[2],
+      startIndex: match.index,
+      endIndex: match.index + match[0].length
+    });
+  }
+  
+  return mentions;
+};
+
+export const extractMentionsFromText = (text) => {
+  if (!text) return [];
+  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  const mentions = [];
+  let match;
+  
+  while ((match = mentionRegex.exec(text)) !== null) {
+    mentions.push({
+      name: match[1],
+      userId: match[2]
+    });
+  }
+  
+  return [...new Map(mentions.map(m => [m.userId, m])).values()];
+};
+
+export const parseTextWithMentions = (text) => {
+  if (!text) return [];
+  
+  const parts = [];
+  let lastIndex = 0;
+  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  let match;
+  
+  while ((match = mentionRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      const textBefore = text.substring(lastIndex, match.index);
+      if (textBefore) {
+        parts.push({ type: 'text', content: textBefore });
+      }
+    }
+    
+    parts.push({
+      type: 'mention',
+      name: match[1],
+      userId: match[2],
+      text: match[0]
+    });
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  if (lastIndex < text.length) {
+    const remainingText = text.substring(lastIndex);
+    if (remainingText) {
+      parts.push({ type: 'text', content: remainingText });
+    }
+  }
+  
+  return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+};
+
 export const reactSelectStyles = {
   control: (base) => ({
     ...base,

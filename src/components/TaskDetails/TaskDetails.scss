@@ -315,6 +315,15 @@
           line-height: 1.4;
           font-size: 0.875rem;
           margin: 0;
+
+          .mention-tag {
+            color: #15A970;
+            font-weight: 500;
+            background-color: rgba(21, 169, 112, 0.1);
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            display: inline-block;
+          }
         }
 
         .comment-edit-form {
@@ -490,6 +499,72 @@
             height: 14px;
           }
         }
+
+        .mention-dropdown {
+          position: absolute;
+          bottom: 100%;
+          left: 0;
+          right: 0;
+          margin-bottom: 0.5rem;
+          background: white;
+          border: 1px solid #dee2e6;
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          max-height: 240px;
+          overflow-y: auto;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease-out;
+
+          .mention-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+            border-bottom: 1px solid #f1f3f4;
+
+            &:first-child {
+              border-top-left-radius: 0.5rem;
+              border-top-right-radius: 0.5rem;
+            }
+
+            &:last-child {
+              border-bottom: none;
+              border-bottom-left-radius: 0.5rem;
+              border-bottom-right-radius: 0.5rem;
+            }
+
+            &:hover,
+            &.selected {
+              background-color: #f8f9fa;
+            }
+
+            .mention-item-info {
+              display: flex;
+              flex-direction: column;
+              flex: 1;
+              min-width: 0;
+
+              .mention-item-name {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: #495057;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+
+              .mention-item-email {
+                font-size: 0.75rem;
+                color: #6c757d;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -542,5 +617,16 @@
         }
       }
     }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 } 

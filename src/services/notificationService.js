@@ -411,5 +411,43 @@ export const notificationService = {
       console.error('Error creating notification:', error);
       throw error;
     }
+  },
+
+  async createCommentMentionNotification(mentionedUsers, commentData, taskData, projectData, mentionedBy) {
+    try {
+      const batch = writeBatch(db);
+      const notificationsRef = collection(db, 'notifications');
+      
+      mentionedUsers.forEach((userId) => {
+        if (userId === mentionedBy.uid) return;
+        
+        const notificationRef = doc(notificationsRef);
+        const notificationData = {
+          userId,
+          type: 'comment_mention',
+          title: 'You were mentioned in a comment',
+          message: `${mentionedBy.name} mentioned you in a comment on task "${taskData.title}"`,
+          taskId: taskData.id,
+          projectId: projectData.id,
+          projectName: projectData.name,
+          taskTitle: taskData.title,
+          commentId: commentData.id,
+          mentionedBy: mentionedBy.uid,
+          mentionedByName: mentionedBy.name,
+          read: false,
+          createdAt: serverTimestamp(),
+          actionUrl: `/project/${projectData.id}/board`
+        };
+        
+        batch.set(notificationRef, notificationData);
+      });
+
+      await batch.commit();
+      
+      return true;
+    } catch (error) {
+      console.error('Error creating comment mention notifications:', error);
+      throw error;
+    }
   }
 }; 

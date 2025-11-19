@@ -1,6 +1,6 @@
-import React, { memo, useState } from "react";
+import React, { memo, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar } from "react-icons/fi";
+import { FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import SlideModal from "../SlideModal";
@@ -39,6 +39,47 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
 
   const progressPercentage = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
 
+  const totalProjectHours = useMemo(() => {
+    return projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
+  }, [projectTasks]);
+
+  const budgetStats = useMemo(() => {
+    if (!project.budget || project.budget.type === 'none') return null;
+    
+    if (project.budget.type === 'fixed') {
+      const totalBudget = parseFloat(project.budget.fixedBudget || 0);
+      const totalReceived = (project.budget.payments || []).reduce((sum, payment) => {
+        return sum + (parseFloat(payment.amount) || 0);
+      }, 0);
+      const remaining = totalBudget - totalReceived;
+      const receivedPercentage = totalBudget > 0 ? (totalReceived / totalBudget) * 100 : 0;
+      
+      return {
+        type: 'fixed',
+        totalBudget,
+        totalReceived,
+        remaining,
+        receivedPercentage
+      };
+    }
+    
+    if (project.budget.type === 'hourly') {
+      const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
+      const estimatedBudget = totalProjectHours * hourlyRate;
+      
+      return {
+        type: 'hourly',
+        hourlyRate,
+        totalHours: totalProjectHours,
+        estimatedBudget
+      };
+    }
+    
+    return null;
+  }, [project.budget, totalProjectHours]);
+
+  const canViewBudget = currentUser?.role === 'super_manager' || currentUser?.role === 'bd';
+
   return (
     <motion.div
       className={`project-card ${variant === "dashboard" ? "dashboard-variant" : ""} ${isCompleted ? "completed" : ""}`}
@@ -76,6 +117,61 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
           <div className="progress-fill" style={{ width: `${progressPercentage}%` }}></div>
         </div>
       </div>
+
+      {canViewBudget && budgetStats && (
+        <div className="project-budget">
+          {budgetStats.type === 'fixed' && (
+            <>
+              <div className="budget-header">
+                <div className="budget-title">
+                  <FiDollarSign size={14} />
+                  <span>Budget</span>
+                </div>
+                <span className="budget-total">${budgetStats.totalBudget.toFixed(2)}</span>
+              </div>
+              <div className="budget-progress-bar">
+                <div 
+                  className="budget-progress-fill" 
+                  style={{ width: `${Math.min(budgetStats.receivedPercentage, 100)}%` }}
+                ></div>
+              </div>
+              <div className="budget-details">
+                <div className="budget-item">
+                  <span className="budget-label">Received</span>
+                  <span className="budget-value received">${budgetStats.totalReceived.toFixed(2)}</span>
+                </div>
+                <div className="budget-item">
+                  <span className="budget-label">Remaining</span>
+                  <span className={`budget-value ${budgetStats.remaining < 0 ? 'negative' : ''}`}>
+                    ${budgetStats.remaining.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+          {budgetStats.type === 'hourly' && (
+            <>
+              <div className="budget-header">
+                <div className="budget-title">
+                  <FiClock size={14} />
+                  <span>Hour-Based Budget</span>
+                </div>
+                <span className="budget-total">${budgetStats.hourlyRate.toFixed(2)}/hr</span>
+              </div>
+              <div className="budget-details">
+                <div className="budget-item">
+                  <span className="budget-label">Total Hours</span>
+                  <span className="budget-value">{budgetStats.totalHours.toFixed(1)}h</span>
+                </div>
+                <div className="budget-item">
+                  <span className="budget-label">Estimated</span>
+                  <span className="budget-value">${budgetStats.estimatedBudget.toFixed(2)}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {variant !== "dashboard" && (
         <div className="project-stats">

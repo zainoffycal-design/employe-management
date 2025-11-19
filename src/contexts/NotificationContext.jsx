@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { notificationService } from '../services/notificationService';
 import toast from 'react-hot-toast';
+import soundManager from '../utils/soundUtils';
 
 const NotificationContext = createContext();
 
@@ -13,32 +14,46 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { currentUser } = useAuth();
+  const previousNotificationsRef = useRef([]);
 
   useEffect(() => {
     if (!currentUser) {
       setNotifications([]);
       setUnreadCount(0);
+      previousNotificationsRef.current = [];
       return;
     }
 
+    previousNotificationsRef.current = [];
     notificationService.cleanupUserNotifications(currentUser.uid);
 
     const unsubscribe = notificationService.subscribeToNotifications(
       currentUser.uid,
       (newNotifications) => {
+        const previousNotifications = previousNotificationsRef.current;
+        const previousIds = new Set(previousNotifications.map(n => n.id));
+        
+        const newNotificationsList = newNotifications.filter(n => !previousIds.has(n.id));
+        
         setNotifications(newNotifications);
         const unread = newNotifications.filter(n => !n.read).length;
         setUnreadCount(unread);
         
-        const newNotificationsCount = newNotifications.filter(n => {
-          const isNew = !n.read && n.createdAt && 
-            new Date().getTime() - n.createdAt.toDate().getTime() < 5000;
-          return isNew;
+        const newNotificationsCount = newNotificationsList.filter(n => {
+          if (n.read) return false;
+          if (!n.createdAt) return false;
+          
+          const createdAt = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+          const timeDiff = new Date().getTime() - createdAt.getTime();
+          return timeDiff < 5000;
         }).length;
         
         if (newNotificationsCount > 0) {
+          soundManager.playMove();
           toast.success(`${newNotificationsCount} new notification${newNotificationsCount > 1 ? 's' : ''} received!`);
         }
+        
+        previousNotificationsRef.current = newNotifications;
       }
     );
 
