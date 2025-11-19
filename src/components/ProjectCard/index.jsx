@@ -118,7 +118,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
         </div>
       </div>
 
-      {canViewBudget && budgetStats && (
+      {canViewBudget && budgetStats && variant !== "dashboard" && (
         <div className="project-budget">
           {budgetStats.type === 'fixed' && (
             <>

@@ -262,13 +262,11 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
 
   const canEditComment = (comment) => {
     return currentUser.role === 'super_manager' || 
-           currentUser.role === 'manager' || 
            comment.authorId === currentUser.uid;
   };
 
   const canDeleteComment = (comment) => {
-    return currentUser.role === 'super_manager' || 
-           currentUser.role === 'manager';
+    return currentUser.role === 'super_manager';
   };
 
   const handleEditComment = (comment) => {
