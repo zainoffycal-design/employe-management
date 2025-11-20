@@ -153,6 +153,7 @@ const ProjectManagement = () => {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value),
         managerId: currentUser.uid,
+        createdBy: currentUser.uid,
         status: 'active',
         createdAt: new Date().toISOString()
       };
@@ -476,12 +477,17 @@ const ProjectManagement = () => {
               {(() => {
                 const isCompleted = isProjectCompleted(project);
                 const allTasksDone = hasAllTasksCompleted(project);
+                const isCreator = project.createdBy === currentUser.uid || project.managerId === currentUser.uid;
+                const isManagerInProject = currentUser.role === 'manager' && 
+                  project.teamMembers && 
+                  project.teamMembers.includes(currentUser.uid);
+                
                 const canEdit = isCompleted 
                   ? currentUser.role === 'super_manager' || currentUser.role === 'bd'
-                  : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid || currentUser.role === 'bd');
+                  : (currentUser.role === 'super_manager' || isCreator || isManagerInProject || currentUser.role === 'bd');
                 const canDelete = isCompleted 
-                  ? currentUser.role === 'super_manager'
-                  : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid);
+                  ? currentUser.role === 'super_manager' || isCreator
+                  : (currentUser.role === 'super_manager' || isCreator);
                 const canMarkDone = !isCompleted && allTasksDone && 
                   (currentUser.role === 'super_manager' || currentUser.role === 'manager' || project.managerId === currentUser.uid);
                 

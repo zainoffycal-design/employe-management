@@ -75,7 +75,8 @@ export const TaskProvider = ({ children }) => {
     try {
       const projectId = await firebaseUtils.createDocument('projects', {
         ...projectData,
-        managerId: currentUser.uid
+        managerId: currentUser.uid,
+        createdBy: projectData.createdBy || currentUser.uid
       });
 
       if (projectData.teamMembers && projectData.teamMembers.length > 0) {
