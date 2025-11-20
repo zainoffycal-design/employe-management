@@ -56,6 +56,7 @@ const ProjectBoard = () => {
     priority: 'medium',
     assignee: [],
     deadline: '',
+    estimatedHours: '',
     status: 'todo',
     comments: [],
     links: [],
@@ -278,6 +279,7 @@ const ProjectBoard = () => {
         priority: newTask.priority,
         assignee: newTask.assignee,
         deadline: newTask.deadline,
+        estimatedHours: newTask.estimatedHours ? parseFloat(newTask.estimatedHours) : null,
         createdBy: currentUser.uid,
         status: 'todo'
       };
@@ -291,6 +293,7 @@ const ProjectBoard = () => {
         priority: 'medium',
         assignee: [],
         deadline: '',
+        estimatedHours: '',
         status: 'todo'
       });
       setShowAddTask(false);
@@ -344,6 +347,7 @@ const ProjectBoard = () => {
         priority: editingTask.priority,
         assignee: editingTask.assignee,
         deadline: editingTask.deadline,
+        estimatedHours: editingTask.estimatedHours ? parseFloat(editingTask.estimatedHours) : null,
         status: editingTask.status
       };
 
@@ -901,6 +905,7 @@ const ProjectBoard = () => {
             priority: 'medium',
             assignee: [],
             deadline: '',
+            estimatedHours: '',
             status: 'todo'
           });
           setError('');
@@ -976,37 +981,55 @@ const ProjectBoard = () => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>
-                <FiCalendar className="me-2" />
-                Deadline
-              </label>
-              <div className="deadline-inputs">
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <FiCalendar className="me-2" />
+                  Deadline
+                </label>
+                <div className="deadline-inputs">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={newTask.deadline?.split('T')[0] || ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
+                      setNewTask({ 
+                        ...newTask, 
+                        deadline: date ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
+                      setNewTask({ 
+                        ...newTask, 
+                        deadline: time ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <FiClock className="me-2" />
+                  Estimated Hours
+                </label>
                 <input
-                  type="date"
+                  type="number"
                   className="form-control"
-                  value={newTask.deadline?.split('T')[0] || ''}
-                  onChange={(e) => {
-                    const date = e.target.value;
-                    const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
-                    setNewTask({ 
-                      ...newTask, 
-                      deadline: date ? `${date}T${time}` : ''
-                    });
-                  }}
-                />
-                <input
-                  type="time"
-                  className="form-control"
-                  value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
-                    setNewTask({ 
-                      ...newTask, 
-                      deadline: time ? `${date}T${time}` : ''
-                    });
-                  }}
+                  value={newTask.estimatedHours || ''}
+                  onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
+                  placeholder="e.g., 8"
+                  min="0"
+                  step="0.5"
                 />
               </div>
             </div>
@@ -1023,6 +1046,7 @@ const ProjectBoard = () => {
                   priority: 'medium',
                   assignee: [],
                   deadline: '',
+                  estimatedHours: '',
                   status: 'todo'
                 });
                 setError('');
@@ -1157,18 +1181,34 @@ const ProjectBoard = () => {
               </div>
 
               <div className="form-group">
-                <label>Status</label>
-                <select
+                <label>
+                  <FiClock className="me-2" />
+                  Estimated Hours
+                </label>
+                <input
+                  type="number"
                   className="form-control"
-                  value={editingTask?.status || 'todo'}
-                  onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
-                >
-                  <option value="todo">Todo</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="in-review">In Review</option>
-                  {canMarkComplete && <option value="done">Complete</option>}
-                </select>
+                  value={editingTask?.estimatedHours || ''}
+                  onChange={(e) => setEditingTask({ ...editingTask, estimatedHours: e.target.value })}
+                  placeholder="e.g., 8"
+                  min="0"
+                  step="0.5"
+                />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Status</label>
+              <select
+                className="form-control"
+                value={editingTask?.status || 'todo'}
+                onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
+              >
+                <option value="todo">Todo</option>
+                <option value="in-progress">In Progress</option>
+                <option value="in-review">In Review</option>
+                {canMarkComplete && <option value="done">Complete</option>}
+              </select>
             </div>
           </div>
 

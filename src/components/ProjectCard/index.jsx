@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUsers, FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
+import { FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import SlideModal from "../SlideModal";
@@ -42,6 +42,26 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
   const totalProjectHours = useMemo(() => {
     return projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
   }, [projectTasks]);
+
+  const totalEstimatedHours = useMemo(() => {
+    return projectTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0);
+  }, [projectTasks]);
+
+  const timeStats = useMemo(() => {
+    if (totalEstimatedHours === 0) return null;
+    
+    const progressPercentage = totalEstimatedHours > 0 
+      ? Math.min((totalProjectHours / totalEstimatedHours) * 100, 100) 
+      : 0;
+    const remaining = totalEstimatedHours - totalProjectHours;
+    
+    return {
+      estimated: totalEstimatedHours,
+      actual: totalProjectHours,
+      remaining,
+      progressPercentage
+    };
+  }, [totalEstimatedHours, totalProjectHours]);
 
   const budgetStats = useMemo(() => {
     if (!project.budget || project.budget.type === 'none') return null;
@@ -119,30 +139,30 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
       </div>
 
       {canViewBudget && budgetStats && variant !== "dashboard" && (
-        <div className="project-budget">
+        <div className="project-info-card budget">
           {budgetStats.type === 'fixed' && (
             <>
-              <div className="budget-header">
-                <div className="budget-title">
+              <div className="info-header">
+                <div className="info-title">
                   <FiDollarSign size={14} />
                   <span>Budget</span>
                 </div>
-                <span className="budget-total">${budgetStats.totalBudget.toFixed(2)}</span>
+                <span className="info-total">${budgetStats.totalBudget.toFixed(2)}</span>
               </div>
-              <div className="budget-progress-bar">
+              <div className="info-progress-bar">
                 <div 
-                  className="budget-progress-fill" 
+                  className="info-progress-fill" 
                   style={{ width: `${Math.min(budgetStats.receivedPercentage, 100)}%` }}
                 ></div>
               </div>
-              <div className="budget-details">
-                <div className="budget-item">
-                  <span className="budget-label">Received</span>
-                  <span className="budget-value received">${budgetStats.totalReceived.toFixed(2)}</span>
+              <div className="info-details">
+                <div className="info-item">
+                  <span className="info-label">Received</span>
+                  <span className="info-value positive">${budgetStats.totalReceived.toFixed(2)}</span>
                 </div>
-                <div className="budget-item">
-                  <span className="budget-label">Remaining</span>
-                  <span className={`budget-value ${budgetStats.remaining < 0 ? 'negative' : ''}`}>
+                <div className="info-item">
+                  <span className="info-label">Remaining</span>
+                  <span className={`info-value ${budgetStats.remaining < 0 ? 'negative' : ''}`}>
                     ${budgetStats.remaining.toFixed(2)}
                   </span>
                 </div>
@@ -151,21 +171,21 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
           )}
           {budgetStats.type === 'hourly' && (
             <>
-              <div className="budget-header">
-                <div className="budget-title">
+              <div className="info-header">
+                <div className="info-title">
                   <FiClock size={14} />
                   <span>Hour-Based Budget</span>
                 </div>
-                <span className="budget-total">${budgetStats.hourlyRate.toFixed(2)}/hr</span>
+                <span className="info-total">${budgetStats.hourlyRate.toFixed(2)}/hr</span>
               </div>
-              <div className="budget-details">
-                <div className="budget-item">
-                  <span className="budget-label">Total Hours</span>
-                  <span className="budget-value">{budgetStats.totalHours.toFixed(1)}h</span>
+              <div className="info-details">
+                <div className="info-item">
+                  <span className="info-label">Total Hours</span>
+                  <span className="info-value">{budgetStats.totalHours.toFixed(1)}h</span>
                 </div>
-                <div className="budget-item">
-                  <span className="budget-label">Estimated</span>
-                  <span className="budget-value">${budgetStats.estimatedBudget.toFixed(2)}</span>
+                <div className="info-item">
+                  <span className="info-label">Estimated</span>
+                  <span className="info-value">${budgetStats.estimatedBudget.toFixed(2)}</span>
                 </div>
               </div>
             </>
@@ -173,28 +193,42 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
         </div>
       )}
 
-      {variant !== "dashboard" && (
-        <div className="project-stats">
-          <div className="stat-item">
-            <FiUsers size={14} />
-            <span>{project.teamMembers?.length || 0}</span>
-            <small>Members</small>
+      {variant !== "dashboard" && timeStats && (
+        <div className="project-info-card time">
+          <div className="info-header">
+            <div className="info-title">
+              <FiClock size={14} />
+              <span>Time Estimate</span>
+            </div>
+            <span className="info-total">{timeStats.estimated.toFixed(1)}h</span>
           </div>
-          <div className="stat-item">
-            <FiClock size={14} />
-            <span>{todoTasks}</span>
-            <small>To Do</small>
-          </div>
-          <div className="stat-item">
-            <FiTrendingUp size={14} />
-            <span>{inProgressTasks}</span>
-            <small>In Progress</small>
-          </div>
-          <div className="stat-item">
-            <FiCheckCircle size={14} />
-            <span>{completedTasks}</span>
-            <small>Done</small>
-          </div>
+          {timeStats.estimated > 0 && (
+            <>
+              <div className="info-progress-bar">
+                <div 
+                  className="info-progress-fill" 
+                  style={{ 
+                    width: `${Math.min(timeStats.progressPercentage, 100)}%`,
+                    backgroundColor: timeStats.actual > timeStats.estimated ? '#ef4444' : '#15A970'
+                  }}
+                ></div>
+              </div>
+              <div className="info-details">
+                <div className="info-item">
+                  <span className="info-label">Actual</span>
+                  <span className={`info-value ${timeStats.actual > timeStats.estimated ? 'negative' : ''}`}>
+                    {timeStats.actual.toFixed(1)}h
+                  </span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Remaining</span>
+                  <span className={`info-value ${timeStats.remaining < 0 ? 'negative' : ''}`}>
+                    {timeStats.remaining >= 0 ? `+${timeStats.remaining.toFixed(1)}h` : `${timeStats.remaining.toFixed(1)}h`}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
