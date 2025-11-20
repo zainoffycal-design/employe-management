@@ -120,12 +120,18 @@ const ProjectBoard = () => {
     const loadUsers = async () => {
       try {
         const allUsers = await userManagementService.getAllUsers();
-        const projectUsers = allUsers.filter(user => 
-          user.isActive && (
-            currentProject?.teamMembers.includes(user.id) || 
-            user.role === 'manager'
-          )
-        );
+        const teamMemberIds = currentProject?.teamMembers || [];
+        const managerId = currentProject?.managerId;
+        
+        const projectUsers = allUsers.filter(user => {
+          if (!user.isActive) return false;
+          
+          const isTeamMember = Array.isArray(teamMemberIds) && teamMemberIds.includes(user.id);
+          const isProjectManager = managerId === user.id;
+          
+          return isTeamMember || isProjectManager;
+        });
+        
         setUsers(projectUsers);
       } catch (error) {
         console.error('Error loading users:', error);
@@ -148,12 +154,14 @@ const ProjectBoard = () => {
     }
   }, [currentUser, projects]);
 
-  const assigneeOptions = users.map(user => ({
-    value: user.id,
-    label: user.name,
-    role: user.role.charAt(0).toUpperCase() + user.role.slice(1),
-    avatar: user.avatar
-  }));
+  const assigneeOptions = users
+    .filter(user => user.role !== 'super_manager')
+    .map(user => ({
+      value: user.id,
+      label: user.name,
+      role: user.role.charAt(0).toUpperCase() + user.role.slice(1),
+      avatar: user.avatar
+    }));
 
   const isLoading = authLoading || !projectsLoaded || !currentUser;
   const isProjectNotFound = !isLoading && !currentProject;
