@@ -3,10 +3,14 @@ import { FiStar, FiCheck } from 'react-icons/fi';
 import './TaskReview.scss';
 
 const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) => {
-  const assignees = Array.isArray(task?.assignee) ? task.assignee : (task?.assignee ? [task.assignee] : []);
+  const allAssignees = Array.isArray(task?.assignee) ? task.assignee : (task?.assignee ? [task.assignee] : []);
+  const assignees = allAssignees.filter(assigneeId => {
+    const user = users?.find(u => u.id === assigneeId);
+    return user && user.isActive !== false;
+  });
   const existingReviews = task?.reviews || {};
   
-  const [selectedAssignee, setSelectedAssignee] = useState(assignees[0] || '');
+  const [selectedAssignee, setSelectedAssignee] = useState('');
   const [rating, setRating] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
@@ -14,6 +18,16 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
   const [editingReviewIndex, setEditingReviewIndex] = useState(null);
 
   const isManager = currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
+  
+  useEffect(() => {
+    if (task?.id && assignees.length > 0) {
+      setSelectedAssignee(assignees[0] || '');
+      setIsEditing(false);
+      setEditingReviewIndex(null);
+      setRating('');
+      setComment('');
+    }
+  }, [task?.id]);
   
   const allUserReviews = useMemo(() => {
     const userReviewsMap = {};
@@ -45,16 +59,20 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
       const reviews = existingReviews[selectedAssignee];
       const reviewArray = Array.isArray(reviews) ? reviews : [reviews];
       const latestReview = reviewArray[reviewArray.length - 1];
-      if (latestReview) {
+      if (latestReview && !isEditing) {
         setRating(String(latestReview.rating));
         setComment(latestReview.comment || '');
       }
     } else {
-      setRating('');
-      setComment('');
+      if (!isEditing) {
+        setRating('');
+        setComment('');
+      }
     }
-    setEditingReviewIndex(null);
-  }, [selectedAssignee]);
+    if (!isEditing) {
+      setEditingReviewIndex(null);
+    }
+  }, [selectedAssignee, existingReviews, isEditing]);
 
   const getMonthKey = () => {
     const now = new Date();
@@ -103,14 +121,16 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
       
       const results = [];
       Object.keys(assigneeRatings).forEach(assigneeId => {
+        const user = users?.find(u => u.id === assigneeId);
+        if (!user || user.isActive === false) return;
+        
         const ratings = assigneeRatings[assigneeId];
         const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
         const total = ratings.reduce((a, b) => a + b, 0);
-        const user = users?.find(u => u.id === assigneeId);
         results.push({
           monthKey,
           assigneeId,
-          assigneeName: user?.name || 'Unknown',
+          assigneeName: user.name,
           avg: avg.toFixed(1),
           total: total.toFixed(1),
           count: ratings.length
@@ -168,6 +188,15 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
   const monthlyRatings = getMonthlyRatings();
   const selectedReviewData = selectedAssignee ? existingReviews[selectedAssignee] : null;
   const selectedReview = selectedReviewData && !Array.isArray(selectedReviewData) ? selectedReviewData : null;
+  
+  const hasReview = selectedReviewData && (
+    (Array.isArray(selectedReviewData) && selectedReviewData.length > 0) || 
+    (!Array.isArray(selectedReviewData) && selectedReviewData)
+  );
+
+  if (assignees.length === 0) {
+    return null;
+  }
 
   return (
     <div className="task-review">
@@ -208,9 +237,10 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
           >
             {assignees.map(assigneeId => {
               const user = users?.find(u => u.id === assigneeId);
+              if (!user || user.isActive === false) return null;
               return (
                 <option key={assigneeId} value={assigneeId}>
-                  {user?.name || 'Unknown'}
+                  {user.name}
                 </option>
               );
             })}
@@ -218,45 +248,47 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
         </div>
       )}
 
-      {selectedReviewData && Array.isArray(selectedReviewData) && selectedReviewData.length > 0 && !isEditing && (
+      {hasReview && !isEditing && (
         <div className="task-review__existing">
-          <div className="task-review__row">
-            <span className="task-review__label">Latest Review:</span>
-            <span className="task-review__value">{selectedReviewData[selectedReviewData.length - 1].rating} / 10</span>
-          </div>
-          {selectedReviewData[selectedReviewData.length - 1].comment && (
-            <div className="task-review__row">
-              <span className="task-review__label">Comment:</span>
-              <span className="task-review__value">{selectedReviewData[selectedReviewData.length - 1].comment}</span>
-            </div>
-          )}
-          {isManager && (
-            <button className="task-review__edit" onClick={() => {
-              setEditingReviewIndex(selectedReviewData.length - 1);
-              setIsEditing(true);
-            }}>Edit Review</button>
-          )}
-        </div>
-      )}
-      
-      {selectedReview && !isEditing && !Array.isArray(selectedReviewData) && (
-        <div className="task-review__existing">
-          <div className="task-review__row">
-            <span className="task-review__label">Rating:</span>
-            <span className="task-review__value">{selectedReview.rating} / 10</span>
-          </div>
-          {selectedReview.comment && (
-            <div className="task-review__row">
-              <span className="task-review__label">Comment:</span>
-              <span className="task-review__value">{selectedReview.comment}</span>
-            </div>
-          )}
-          {isManager && (
-            <button className="task-review__edit" onClick={() => {
-              setEditingReviewIndex(0);
-              setIsEditing(true);
-            }}>Edit Review</button>
-          )}
+          {Array.isArray(selectedReviewData) && selectedReviewData.length > 0 ? (
+            <>
+              <div className="task-review__row">
+                <span className="task-review__label">Latest Review:</span>
+                <span className="task-review__value">{selectedReviewData[selectedReviewData.length - 1].rating} / 10</span>
+              </div>
+              {selectedReviewData[selectedReviewData.length - 1].comment && (
+                <div className="task-review__row">
+                  <span className="task-review__label">Comment:</span>
+                  <span className="task-review__value">{selectedReviewData[selectedReviewData.length - 1].comment}</span>
+                </div>
+              )}
+              {isManager && (
+                <button className="task-review__edit" onClick={() => {
+                  setEditingReviewIndex(selectedReviewData.length - 1);
+                  setIsEditing(true);
+                }}>Edit Review</button>
+              )}
+            </>
+          ) : selectedReview ? (
+            <>
+              <div className="task-review__row">
+                <span className="task-review__label">Rating:</span>
+                <span className="task-review__value">{selectedReview.rating} / 10</span>
+              </div>
+              {selectedReview.comment && (
+                <div className="task-review__row">
+                  <span className="task-review__label">Comment:</span>
+                  <span className="task-review__value">{selectedReview.comment}</span>
+                </div>
+              )}
+              {isManager && (
+                <button className="task-review__edit" onClick={() => {
+                  setEditingReviewIndex(0);
+                  setIsEditing(true);
+                }}>Edit Review</button>
+              )}
+            </>
+          ) : null}
         </div>
       )}
 
@@ -310,8 +342,13 @@ const TaskReview = memo(({ task, allTasks = [], currentUser, onSave, users }) =>
         </form>
       )}
 
-      {isManager && !selectedReviewData && !isEditing && (
-        <button className="task-review__edit" onClick={() => setIsEditing(true)}>
+      {isManager && !hasReview && !isEditing && (
+        <button className="task-review__edit" onClick={() => {
+          setIsEditing(true);
+          setRating('');
+          setComment('');
+          setEditingReviewIndex(null);
+        }}>
           Add Review
         </button>
       )}

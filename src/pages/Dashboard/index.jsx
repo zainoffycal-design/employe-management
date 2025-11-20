@@ -145,16 +145,7 @@ const Dashboard = () => {
   const { projectHours, totalHours } = useMemo(() => getProjectHours(), [getProjectHours]);
 
   const completedProjects = useMemo(() => 
-    projects.filter(project => {
-      const projectTasks = tasks.filter(task => task.projectId === project.id);
-      const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-      const totalTasks = projectTasks.length;
-      
-      if (totalTasks === 0) return false;
-      
-      const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-      return progressPercentage === 100;
-    }), [projects, tasks]
+    projects.filter(project => project.status === 'completed'), [projects]
   );
 
   const stats = useMemo(() => [

@@ -7,7 +7,8 @@ import {
   FiLayout,
   FiEdit2,
   FiTrash2,
-  FiSearch
+  FiSearch,
+  FiCheck
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,8 +30,10 @@ const ProjectManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMarkDoneConfirm, setShowMarkDoneConfirm] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
+  const [markingDoneProject, setMarkingDoneProject] = useState(null);
   const [users, setUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [formData, setFormData] = useState({
@@ -150,6 +153,7 @@ const ProjectManagement = () => {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value),
         managerId: currentUser.uid,
+        status: 'active',
         createdAt: new Date().toISOString()
       };
 
@@ -275,7 +279,37 @@ const ProjectManagement = () => {
     }
   };
 
+  const handleMarkAsDone = (project) => {
+    setMarkingDoneProject(project);
+    setShowMarkDoneConfirm(true);
+  };
+
+  const confirmMarkAsDone = async () => {
+    if (!markingDoneProject) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await updateProject(markingDoneProject.id, {
+        status: 'completed',
+        completedAt: new Date().toISOString()
+      });
+      setShowMarkDoneConfirm(false);
+      setMarkingDoneProject(null);
+    } catch (error) {
+      console.error('Error marking project as done:', error);
+      setError('Failed to mark project as completed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isProjectCompleted = useCallback((project) => {
+    return project.status === 'completed';
+  }, []);
+
+  const hasAllTasksCompleted = useCallback((project) => {
     const projectTasks = tasks.filter(task => task.projectId === project.id);
     if (projectTasks.length === 0) return false;
     const completedTasks = projectTasks.filter(task => task.status === 'done').length;
@@ -284,12 +318,12 @@ const ProjectManagement = () => {
   }, [tasks]);
 
   const activeProjects = useMemo(() => {
-    return projects?.filter(project => !isProjectCompleted(project)) || [];
-  }, [projects, isProjectCompleted]);
+    return projects?.filter(project => !project.status || project.status !== 'completed') || [];
+  }, [projects]);
 
   const completedProjects = useMemo(() => {
-    return projects?.filter(project => isProjectCompleted(project)) || [];
-  }, [projects, isProjectCompleted]);
+    return projects?.filter(project => project.status === 'completed') || [];
+  }, [projects]);
 
   const filteredProjects = useMemo(() => {
     let baseProjects = projects;
@@ -441,42 +475,58 @@ const ProjectManagement = () => {
               />
               {(() => {
                 const isCompleted = isProjectCompleted(project);
+                const allTasksDone = hasAllTasksCompleted(project);
                 const canEdit = isCompleted 
                   ? currentUser.role === 'super_manager' || currentUser.role === 'bd'
                   : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid || currentUser.role === 'bd');
                 const canDelete = isCompleted 
                   ? currentUser.role === 'super_manager'
                   : (currentUser.role === 'super_manager' || project.managerId === currentUser.uid);
+                const canMarkDone = !isCompleted && allTasksDone && 
+                  (currentUser.role === 'super_manager' || currentUser.role === 'manager' || project.managerId === currentUser.uid);
                 
-                return canEdit && (
+                return (canEdit || canMarkDone) && (
                   <div className="project-actions">
-                    <button
-                      className="action-btn"
-                      onClick={() => {
-                        setSelectedProject(project);
-                        setFormData({
-                          name: project.name,
-                          description: project.description,
-                          teamMembers: project.teamMembers.map(id => ({
-                            value: id,
-                            label: users.find(user => user.id === id)?.name || 'Unknown User'
-                          })),
-                          budget: project.budget || {
-                            type: 'none',
-                            fixedBudget: '',
-                            hourlyRate: '',
-                            payments: []
-                          }
-                        });
-                        setShowEditModal(true);
-                      }}
-                    >
-                      <FiEdit2 size={14} />
-                    </button>
+                    {canMarkDone && (
+                      <button
+                        className="action-btn mark-done"
+                        onClick={() => handleMarkAsDone(project)}
+                        title="Mark as Done"
+                      >
+                        <FiCheck size={14} />
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        className="action-btn"
+                        onClick={() => {
+                          setSelectedProject(project);
+                          setFormData({
+                            name: project.name,
+                            description: project.description,
+                            teamMembers: project.teamMembers.map(id => ({
+                              value: id,
+                              label: users.find(user => user.id === id)?.name || 'Unknown User'
+                            })),
+                            budget: project.budget || {
+                              type: 'none',
+                              fixedBudget: '',
+                              hourlyRate: '',
+                              payments: []
+                            }
+                          });
+                          setShowEditModal(true);
+                        }}
+                        title="Edit Project"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
+                    )}
                     {canDelete && (
                       <button
                         className="action-btn delete"
                         onClick={() => handleDeleteProject(project)}
+                        title="Delete Project"
                       >
                         <FiTrash2 size={14} />
                       </button>
@@ -722,6 +772,48 @@ const ProjectManagement = () => {
               loadingText="Deleting Project..."
             >
               Delete Project
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showMarkDoneConfirm}
+        onClose={() => {
+          setShowMarkDoneConfirm(false);
+          setMarkingDoneProject(null);
+          setError('');
+        }}
+        title="Mark Project as Completed"
+      >
+        <div className="delete-confirmation">
+          {error && (
+            <div className="alert alert-danger">
+              {error}
+            </div>
+          )}
+          
+          <p>Are you sure you want to mark the project "<strong>{markingDoneProject?.name}</strong>" as completed?</p>
+          <p className="text-muted">This will move the project to the completed projects section.</p>
+
+          <div className="modal-actions">
+            <Button 
+              variant="secondary"
+              onClick={() => {
+                setShowMarkDoneConfirm(false);
+                setMarkingDoneProject(null);
+                setError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary"
+              onClick={confirmMarkAsDone}
+              loading={loading}
+              loadingText="Marking as Done..."
+            >
+              Mark as Done
             </Button>
           </div>
         </div>

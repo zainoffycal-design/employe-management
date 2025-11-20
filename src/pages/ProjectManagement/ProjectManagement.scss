@@ -141,6 +141,16 @@
                                     color: white;
                               }
                         }
+
+                        &.mark-done {
+                              background: #dcfce7;
+                              color: #16a34a;
+
+                              &:hover {
+                                    background: #bbf7d0;
+                                    color: #15803d;
+                              }
+                        }
                   }
             }
 
@@ -268,6 +278,16 @@
                         &.delete:hover {
                               background: #fee2e2;
                               color: #dc2626;
+                        }
+
+                        &.mark-done {
+                              background: #dcfce7;
+                              color: #16a34a;
+
+                              &:hover {
+                                    background: #bbf7d0;
+                                    color: #15803d;
+                              }
                         }
 
                         svg {
