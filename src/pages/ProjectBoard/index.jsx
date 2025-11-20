@@ -223,12 +223,25 @@ const ProjectBoard = () => {
     });
   }, [currentProject, projectTasks, searchTerm, selectedAssignee, users]);
 
-  const tasksByStatus = useMemo(() => ({
-    'Todo': filteredTasks.filter(task => task.status === 'todo'),
-    'Progress': filteredTasks.filter(task => task.status === 'in-progress'),
-    'In Review': filteredTasks.filter(task => task.status === 'in-review'),
-    'Complete': filteredTasks.filter(task => task.status === 'done')
-  }), [filteredTasks]);
+  const tasksByStatus = useMemo(() => {
+    const todo = filteredTasks.filter(task => task.status === 'todo');
+    const progress = filteredTasks.filter(task => task.status === 'in-progress');
+    const inReview = filteredTasks.filter(task => task.status === 'in-review');
+    const complete = filteredTasks
+      .filter(task => task.status === 'done')
+      .sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0);
+        const dateB = new Date(b.updatedAt || b.createdAt || 0);
+        return dateB - dateA;
+      });
+    
+    return {
+      'Todo': todo,
+      'Progress': progress,
+      'In Review': inReview,
+      'Complete': complete
+    };
+  }, [filteredTasks]);
 
   const getOptimisticTasksForColumn = useCallback((columnId) => {
     const status = getStatusFromColumnId(columnId);
@@ -471,7 +484,11 @@ const ProjectBoard = () => {
         }
       }
     } else {
-        const updatedTask = { ...draggedTask, status: columnId };
+        const updatedTask = { 
+          ...draggedTask, 
+          status: columnId,
+          updatedAt: new Date().toISOString()
+        };
       
       const sourceColumnId = draggedTask.status;
       const sourceTasks = getOptimisticTasksForColumn(sourceColumnId);
@@ -490,10 +507,19 @@ const ProjectBoard = () => {
           newTasks = [...currentTasksInColumn, updatedTask];
         }
       } else {
-        newTasks = [...currentTasksInColumn, updatedTask];
+        if (columnId === 'done') {
+          newTasks = [updatedTask, ...currentTasksInColumn];
+        } else {
+          newTasks = [...currentTasksInColumn, updatedTask];
+        }
       }
       
       if (columnId === 'done') {
+        newTasks.sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt || 0);
+          const dateB = new Date(b.updatedAt || b.createdAt || 0);
+          return dateB - dateA;
+        });
         soundManager.playComplete();
       } else if (columnId === 'in-progress') {
         soundManager.playMove();
@@ -725,7 +751,7 @@ const ProjectBoard = () => {
                 {getOptimisticTasksForColumn(column.id).map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`task-card ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''} ${task.status === 'done' && !canMarkComplete ? 'restricted-task' : ''}`}
+                    className={`task-card ${task.status === 'done' ? 'task-card-completed' : ''} ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''} ${task.status === 'done' && !canMarkComplete ? 'restricted-task' : ''}`}
                     draggable={hasEditAccess && !(task.status === 'done' && !canMarkComplete)}
                     onDragStart={hasEditAccess && !(task.status === 'done' && !canMarkComplete) ? (e) => handleDragStart(e, task) : undefined}
                     onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id, task.id) : undefined}
@@ -771,7 +797,9 @@ const ProjectBoard = () => {
                       </div>
                     )}
                     <h3>{task.title}</h3>
-                    <RichTextViewer content={task.description} className="compact" />
+                    {task.status !== 'done' && (
+                      <RichTextViewer content={task.description} className="compact" />
+                    )}
                     <div className="task-meta">
                       <div className="task-info-left">
                         <span className="priority" style={{ backgroundColor: getPriorityColor(task.priority) }}>
@@ -789,7 +817,7 @@ const ProjectBoard = () => {
                             <span>Add Review</span>
                           </span>
                         )}
-                        {(!task.timeEntries || task.timeEntries.length === 0) && (!task.totalHours || task.totalHours === 0) && (
+                        {task.status !== 'done' && (!task.timeEntries || task.timeEntries.length === 0) && (!task.totalHours || task.totalHours === 0) && (
                           <span className="time-required-indicator" title="Time entry required before moving to In Review or Complete">
                             <FiClock size={12} />
                             <span>Time Required</span>
@@ -802,7 +830,7 @@ const ProjectBoard = () => {
                           </span>
                         )}
                       </div>
-                      {task.deadline && (
+                      {task.status !== 'done' && task.deadline && (
                         <div className="task-info-right">
                           <span className="deadline">
                             <FiCalendar size={12} />
@@ -811,40 +839,42 @@ const ProjectBoard = () => {
                         </div>
                       )}
                     </div>
-                    <div className="task-footer">
-                      <div className="task-info-details">
-                        {task.assignee && task.assignee.length > 0 && (
-                          <div className="assignee-info">
-                            <FiUser size={12} />
-                            <span>
-                              Assigned to {Array.isArray(task.assignee) 
-                                ? task.assignee.map(id => users.find(u => u.id === id)?.name || 'Unknown').join(', ')
-                                : users.find(u => u.id === task.assignee)?.name || 'Unknown'
-                              }
-                            </span>
-                          </div>
-                        )}
-                        {(task.createdAt || task.deadline) && (
-                          <div className="time-info">
-                            {task.createdAt && (
-                              <span className="created-time">
-                                <FiClock size={12} />
-                                {formatCreatedTime(task.createdAt)}
+                    {task.status !== 'done' && (
+                      <div className="task-footer">
+                        <div className="task-info-details">
+                          {task.assignee && task.assignee.length > 0 && (
+                            <div className="assignee-info">
+                              <FiUser size={12} />
+                              <span>
+                                Assigned to {Array.isArray(task.assignee) 
+                                  ? task.assignee.map(id => users.find(u => u.id === id)?.name || 'Unknown').join(', ')
+                                  : users.find(u => u.id === task.assignee)?.name || 'Unknown'
+                                }
                               </span>
-                            )}
-                            {task.createdAt && task.deadline && (
-                              <span className="separator">•</span>
-                            )}
-                            {task.deadline && (
-                              <span className={`deadline-info ${getRemainingTime(task.deadline)?.type || 'normal'}`}>
-                                <FiCalendar size={12} />
-                                {getRemainingTime(task.deadline)?.text}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                            </div>
+                          )}
+                          {(task.createdAt || task.deadline) && (
+                            <div className="time-info">
+                              {task.createdAt && (
+                                <span className="created-time">
+                                  <FiClock size={12} />
+                                  {formatCreatedTime(task.createdAt)}
+                                </span>
+                              )}
+                              {task.createdAt && task.deadline && (
+                                <span className="separator">•</span>
+                              )}
+                              {task.deadline && (
+                                <span className={`deadline-info ${getRemainingTime(task.deadline)?.type || 'normal'}`}>
+                                  <FiCalendar size={12} />
+                                  {getRemainingTime(task.deadline)?.text}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
