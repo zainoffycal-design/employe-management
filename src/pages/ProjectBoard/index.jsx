@@ -22,12 +22,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
 import { getPriorityColor, getStatusDisplayName, getRemainingTime, formatCreatedTime, reactSelectStyles, formatHours } from '../../utils/uiUtils';
+import { canMoveTasks } from '../../utils/permissionUtils';
 import Modal from '../../components/Modal';
 import SlideModal from '../../components/SlideModal';
 import TaskDetails from '../../components/TaskDetails';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
+import EstimatedTimeSelector from '../../components/EstimatedTimeSelector';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import RichTextViewer from '../../components/RichTextViewer';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -56,7 +58,8 @@ const ProjectBoard = () => {
     priority: 'medium',
     assignee: [],
     deadline: '',
-    estimatedHours: '',
+    estimatedHours: null,
+    estimatedTimeData: null,
     status: 'todo',
     comments: [],
     links: [],
@@ -179,8 +182,9 @@ const ProjectBoard = () => {
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
     currentUser.role === 'manager' ||
-    currentProject?.managerId === currentUser.uid ||
-    currentProject?.teamMembers?.includes(currentUser.uid);
+    currentProject?.managerId === currentUser.uid;
+
+  const canMoveTask = canMoveTasks(currentUser);
 
   const canMarkComplete = 
     currentUser.role === 'super_manager' || 
@@ -279,7 +283,8 @@ const ProjectBoard = () => {
         priority: newTask.priority,
         assignee: newTask.assignee,
         deadline: newTask.deadline,
-        estimatedHours: newTask.estimatedHours ? parseFloat(newTask.estimatedHours) : null,
+        estimatedHours: newTask.estimatedHours || (newTask.estimatedTimeData?.hours || null),
+        estimatedTimeData: newTask.estimatedTimeData || null,
         createdBy: currentUser.uid,
         status: 'todo'
       };
@@ -347,7 +352,8 @@ const ProjectBoard = () => {
         priority: editingTask.priority,
         assignee: editingTask.assignee,
         deadline: editingTask.deadline,
-        estimatedHours: editingTask.estimatedHours ? parseFloat(editingTask.estimatedHours) : null,
+        estimatedHours: editingTask.estimatedHours || (editingTask.estimatedTimeData?.hours || null),
+        estimatedTimeData: editingTask.estimatedTimeData || null,
         status: editingTask.status
       };
 
@@ -658,7 +664,7 @@ const ProjectBoard = () => {
   return (
     <div className="project-board">
       <PageTitle 
-        title={`${currentProject?.name} Tasks`}
+        title={currentProject?.name || 'Project'}
         subtitle="Keep track of your team's tasks all in one place."
         icon={FiUsers}
         showBackButton={true}
@@ -731,9 +737,9 @@ const ProjectBoard = () => {
         {columns.map(column => (
           <div 
             key={column.id}
-            className={`board-column ${column.id} ${draggedOverColumn === column.id ? 'drag-over' : ''} ${!hasEditAccess ? 'read-only' : ''} ${column.id === 'done' && !canMarkComplete ? 'restricted' : ''}`}
-            onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id) : undefined}
-            onDrop={hasEditAccess ? (e) => handleDrop(e, column.id) : undefined}
+            className={`board-column ${column.id} ${draggedOverColumn === column.id ? 'drag-over' : ''} ${!canMoveTask ? 'read-only' : ''} ${column.id === 'done' && !canMarkComplete ? 'restricted' : ''}`}
+            onDragOver={canMoveTask ? (e) => handleDragOver(e, column.id) : undefined}
+            onDrop={canMoveTask ? (e) => handleDrop(e, column.id) : undefined}
           >
             <div className="column-header">
               <div className="status-badge" style={{ backgroundColor: column.color }}>
@@ -743,7 +749,7 @@ const ProjectBoard = () => {
             </div>
 
             <div className="task-list">   
-              {hasEditAccess && (
+              {canMoveTask && (
                 <div 
                   className={`drop-zone-start ${draggedOverColumn === column.id && !draggedOverTask ? 'drag-over' : ''}`}
                   onDragOver={(e) => handleDragOver(e, column.id)}
@@ -755,12 +761,12 @@ const ProjectBoard = () => {
                 {getOptimisticTasksForColumn(column.id).map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`task-card ${task.status === 'done' ? 'task-card-completed' : ''} ${!hasEditAccess ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''} ${task.status === 'done' && !canMarkComplete ? 'restricted-task' : ''}`}
-                    draggable={hasEditAccess && !(task.status === 'done' && !canMarkComplete)}
-                    onDragStart={hasEditAccess && !(task.status === 'done' && !canMarkComplete) ? (e) => handleDragStart(e, task) : undefined}
-                    onDragOver={hasEditAccess ? (e) => handleDragOver(e, column.id, task.id) : undefined}
-                    onDrop={hasEditAccess ? (e) => handleDrop(e, column.id, task.id) : undefined}
-                    onDragEnd={hasEditAccess ? handleDragEnd : undefined}
+                    className={`task-card ${task.status === 'done' ? 'task-card-completed' : ''} ${!canMoveTask ? 'read-only' : ''} ${draggedOverTask === task.id ? 'drag-over-task' : ''} ${pendingUpdates.has(task.id) ? 'updating' : ''} ${task.status === 'done' && !canMarkComplete ? 'restricted-task' : ''}`}
+                    draggable={canMoveTask && !(task.status === 'done' && !canMarkComplete)}
+                    onDragStart={canMoveTask && !(task.status === 'done' && !canMarkComplete) ? (e) => handleDragStart(e, task) : undefined}
+                    onDragOver={canMoveTask ? (e) => handleDragOver(e, column.id, task.id) : undefined}
+                    onDrop={canMoveTask ? (e) => handleDrop(e, column.id, task.id) : undefined}
+                    onDragEnd={canMoveTask ? handleDragEnd : undefined}
                     onClick={() => handleTaskClick(task)}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -883,7 +889,7 @@ const ProjectBoard = () => {
                 ))}
               </AnimatePresence>
               
-              {hasEditAccess && (
+              {canMoveTask && (
                 <div 
                   className={`drop-zone-end ${draggedOverColumn === column.id && !draggedOverTask ? 'drag-over' : ''}`}
                   onDragOver={(e) => handleDragOver(e, column.id)}
@@ -921,26 +927,57 @@ const ProjectBoard = () => {
               </div>
             )}
             
-            <div className="form-group">
-              <label>Task Title</label>
-              <input
-                type="text"
-                className="form-control"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="Enter task title"
-                required
-              />
+            <div className="form-row">
+              <div className="form-group col-12">
+                <EstimatedTimeSelector
+                  value={newTask.estimatedTimeData || newTask.estimatedHours}
+                  onChange={(data) => {
+                    setNewTask({
+                      ...newTask,
+                      estimatedTimeData: data,
+                      estimatedHours: data?.hours || null
+                    });
+                  }}
+                  disabled={loading}
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <RichTextEditor
-                value={newTask.description}
-                onChange={(value) => setNewTask({ ...newTask, description: value })}
-                placeholder="Enter task description"
-                height="250px"
-              />
+            <div className="form-row">
+              <div className="form-group col-12">
+                <label>
+                  <FiCalendar className="me-2" />
+                  Deadline
+                </label>
+                <div className="deadline-inputs">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={newTask.deadline?.split('T')[0] || ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
+                      setNewTask({ 
+                        ...newTask, 
+                        deadline: date ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
+                      setNewTask({ 
+                        ...newTask, 
+                        deadline: time ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-row">
@@ -981,57 +1018,26 @@ const ProjectBoard = () => {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <FiCalendar className="me-2" />
-                  Deadline
-                </label>
-                <div className="deadline-inputs">
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={newTask.deadline?.split('T')[0] || ''}
-                    onChange={(e) => {
-                      const date = e.target.value;
-                      const time = newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
-                      setNewTask({ 
-                        ...newTask, 
-                        deadline: date ? `${date}T${time}` : ''
-                      });
-                    }}
-                  />
-                  <input
-                    type="time"
-                    className="form-control"
-                    value={newTask.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
-                    onChange={(e) => {
-                      const time = e.target.value;
-                      const date = newTask.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
-                      setNewTask({ 
-                        ...newTask, 
-                        deadline: time ? `${date}T${time}` : ''
-                      });
-                    }}
-                  />
-                </div>
-              </div>
+            <div className="form-group">
+              <label>Task Title</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
 
-              <div className="form-group">
-                <label>
-                  <FiClock className="me-2" />
-                  Estimated Hours
-                </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={newTask.estimatedHours || ''}
-                  onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
-                  placeholder="e.g., 8"
-                  min="0"
-                  step="0.5"
-                />
-              </div>
+            <div className="form-group">
+              <label>Description</label>
+              <RichTextEditor
+                value={newTask.description}
+                onChange={(value) => setNewTask({ ...newTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
+              />
             </div>
           </div>
 
@@ -1046,7 +1052,8 @@ const ProjectBoard = () => {
                   priority: 'medium',
                   assignee: [],
                   deadline: '',
-                  estimatedHours: '',
+                  estimatedHours: null,
+                  estimatedTimeData: null,
                   status: 'todo'
                 });
                 setError('');
@@ -1084,26 +1091,57 @@ const ProjectBoard = () => {
               </div>
             )}
             
-            <div className="form-group">
-              <label>Task Title</label>
-              <input
-                type="text"
-                className="form-control"
-                value={editingTask?.title || ''}
-                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                placeholder="Enter task title"
-                required
-              />
+            <div className="form-row">
+              <div className="form-group col-12">
+                <EstimatedTimeSelector
+                  value={editingTask?.estimatedTimeData || editingTask?.estimatedHours}
+                  onChange={(data) => {
+                    setEditingTask({
+                      ...editingTask,
+                      estimatedTimeData: data,
+                      estimatedHours: data?.hours || null
+                    });
+                  }}
+                  disabled={loading}
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <RichTextEditor
-                value={editingTask?.description || ''}
-                onChange={(value) => setEditingTask({ ...editingTask, description: value })}
-                placeholder="Enter task description"
-                height="250px"
-              />
+            <div className="form-row">
+              <div className="form-group col-12">
+                <label>
+                  <FiCalendar className="me-2" />
+                  Deadline
+                </label>
+                <div className="deadline-inputs">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={editingTask?.deadline?.split('T')[0] || ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
+                      setEditingTask({ 
+                        ...editingTask, 
+                        deadline: date ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date = editingTask?.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
+                      setEditingTask({ 
+                        ...editingTask, 
+                        deadline: time ? `${date}T${time}` : ''
+                      });
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-row">
@@ -1144,57 +1182,26 @@ const ProjectBoard = () => {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <FiCalendar className="me-2" />
-                  Deadline
-                </label>
-                <div className="deadline-inputs">
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={editingTask?.deadline?.split('T')[0] || ''}
-                    onChange={(e) => {
-                      const date = e.target.value;
-                      const time = editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5);
-                      setEditingTask({ 
-                        ...editingTask, 
-                        deadline: date ? `${date}T${time}` : ''
-                      });
-                    }}
-                  />
-                  <input
-                    type="time"
-                    className="form-control"
-                    value={editingTask?.deadline?.split('T')[1] || new Date().toTimeString().slice(0, 5)}
-                    onChange={(e) => {
-                      const time = e.target.value;
-                      const date = editingTask?.deadline?.split('T')[0] || new Date().toISOString().split('T')[0];
-                      setEditingTask({ 
-                        ...editingTask, 
-                        deadline: time ? `${date}T${time}` : ''
-                      });
-                    }}
-                  />
-                </div>
-              </div>
+            <div className="form-group">
+              <label>Task Title</label>
+              <input
+                type="text"
+                className="form-control"
+                value={editingTask?.title || ''}
+                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
 
-              <div className="form-group">
-                <label>
-                  <FiClock className="me-2" />
-                  Estimated Hours
-                </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={editingTask?.estimatedHours || ''}
-                  onChange={(e) => setEditingTask({ ...editingTask, estimatedHours: e.target.value })}
-                  placeholder="e.g., 8"
-                  min="0"
-                  step="0.5"
-                />
-              </div>
+            <div className="form-group">
+              <label>Description</label>
+              <RichTextEditor
+                value={editingTask?.description || ''}
+                onChange={(value) => setEditingTask({ ...editingTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
+              />
             </div>
 
             <div className="form-group">

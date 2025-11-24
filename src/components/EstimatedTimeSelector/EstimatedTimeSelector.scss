@@ -1,0 +1,25 @@
+@use '../../styles/_shared.scss' as *;
+
+.estimated-time-selector {
+  .selector-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+
+    svg {
+    }
+  }
+
+  .selector-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .form-group {
+      margin-bottom: 0;
+    }
+  }
+}

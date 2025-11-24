@@ -331,8 +331,18 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
 
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
-    project?.managerId === currentUser.uid ||
-    project?.teamMembers?.includes(currentUser.uid);
+    currentUser.role === 'manager' ||
+    project?.managerId === currentUser.uid;
+
+  const isAssignedToTask = useMemo(() => {
+    if (!currentTask.assignee) return false;
+    if (Array.isArray(currentTask.assignee)) {
+      return currentTask.assignee.includes(currentUser.uid);
+    }
+    return currentTask.assignee === currentUser.uid;
+  }, [currentTask.assignee, currentUser.uid]);
+
+  const canTrackTime = hasEditAccess || isAssignedToTask;
 
   const sortedComments = useMemo(() => {
     if (!currentTask.comments) return [];
@@ -431,7 +441,7 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
       <TimeTracker 
         task={currentTask}
         onUpdate={handleTimeUpdate}
-        disabled={!hasEditAccess}
+        disabled={!canTrackTime}
         currentUser={currentUser}
         users={users}
       />
