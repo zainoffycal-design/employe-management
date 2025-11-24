@@ -20,6 +20,20 @@
 
     .form-group {
       margin-bottom: 0;
+
+      .hours-input-wrapper {
+        position: relative;
+
+        .hours-suffix {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #64748b;
+          font-size: 0.875rem;
+          pointer-events: none;
+        }
+      }
     }
   }
 }

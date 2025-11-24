@@ -468,7 +468,6 @@ const EstimatedTimeSelector = ({ value, onChange, disabled = false }) => {
 
         {isInternalPageSelected && (
           <div className="form-group">
-            <label>Number of Pages</label>
             <input
               type="number"
               className="form-control"
@@ -502,16 +501,24 @@ const EstimatedTimeSelector = ({ value, onChange, disabled = false }) => {
 
         {showHoursInput && (
           <div className="form-group">
-            <input
-              type="number"
-              className="form-control"
-              value={customHours}
-              onChange={(e) => !disabled && handleCustomHoursChange(e.target.value)}
-              placeholder="Enter hours"
-              min="0"
-              step="1"
-              disabled={disabled}
-            />
+            <div className="hours-input-wrapper">
+              <input
+                type="number"
+                className="form-control"
+                value={customHours}
+                onChange={(e) => !disabled && handleCustomHoursChange(e.target.value)}
+                placeholder="Enter hours"
+                min="0"
+                step="1"
+                disabled={disabled}
+                style={customHours && parseFloat(customHours) > 0 ? { paddingRight: '60px' } : {}}
+              />
+              {customHours && parseFloat(customHours) > 0 && (
+                <span className="hours-suffix">
+                  {parseFloat(customHours) === 1 ? 'hour' : 'hours'}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
