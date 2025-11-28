@@ -19,6 +19,7 @@ const ProjectManagement = lazy(() => import('./pages/ProjectManagement'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const AssetManager = lazy(() => import('./pages/AssetManager'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
 const Signup = lazy(() => import('./pages/Signup'));
 const SetupPassword = lazy(() => import('./pages/SetupPassword'));
 
@@ -122,6 +123,15 @@ const AppLayout = () => {
                   <ProtectedRoute>
                     {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
                       <Analytics />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/payments" element={
+                  <ProtectedRoute>
+                    {currentUser?.role === 'super_manager' ? (
+                      <FinanceManagement />
                     ) : (
                       <Navigate to="/" replace />
                     )}

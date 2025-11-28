@@ -86,12 +86,20 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     if (project.budget.type === 'hourly') {
       const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
       const estimatedBudget = totalProjectHours * hourlyRate;
+      const totalReceived = (project.budget.payments || []).reduce((sum, payment) => {
+        return sum + (parseFloat(payment.amount) || 0);
+      }, 0);
+      const remaining = estimatedBudget - totalReceived;
+      const receivedPercentage = estimatedBudget > 0 ? (totalReceived / estimatedBudget) * 100 : 0;
       
       return {
         type: 'hourly',
         hourlyRate,
         totalHours: totalProjectHours,
-        estimatedBudget
+        estimatedBudget,
+        totalReceived,
+        remaining,
+        receivedPercentage
       };
     }
     
@@ -161,9 +169,9 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   <span className="info-value positive">${budgetStats.totalReceived.toFixed(2)}</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Remaining</span>
-                  <span className={`info-value ${budgetStats.remaining < 0 ? 'negative' : ''}`}>
-                    ${budgetStats.remaining.toFixed(2)}
+                  <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
+                  <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
+                    {budgetStats.remaining < 0 ? `+$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
                   </span>
                 </div>
               </div>
@@ -178,14 +186,26 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                 </div>
                 <span className="info-total">${budgetStats.hourlyRate.toFixed(2)}/hr</span>
               </div>
+              <div className="info-progress-bar">
+                <div 
+                  className="info-progress-fill" 
+                  style={{ width: `${Math.min(budgetStats.receivedPercentage, 100)}%` }}
+                ></div>
+              </div>
               <div className="info-details">
                 <div className="info-item">
-                  <span className="info-label">Total Hours</span>
-                  <span className="info-value">{budgetStats.totalHours.toFixed(1)}h</span>
+                  <span className="info-label">Received</span>
+                  <span className="info-value positive">${budgetStats.totalReceived.toFixed(2)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Estimated</span>
                   <span className="info-value">${budgetStats.estimatedBudget.toFixed(2)}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
+                  <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
+                    {budgetStats.remaining < 0 ? `+$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
+                  </span>
                 </div>
               </div>
             </>

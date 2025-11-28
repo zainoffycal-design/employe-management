@@ -24,7 +24,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type,
       fixedBudget: type === 'fixed' ? fixedBudget : '',
       hourlyRate: type === 'hourly' ? hourlyRate : '',
-      payments: type === 'fixed' ? payments : []
+      payments: type === 'none' ? [] : payments
     };
     onChange(newValue);
   };
@@ -55,8 +55,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
     const newPayment = {
       id: Date.now().toString(),
       amount: '',
-      receivedAt: new Date().toISOString().split('T')[0],
-      notes: ''
+      receivedAt: new Date().toISOString().split('T')[0]
     };
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
@@ -189,9 +188,9 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                 <span className="summary-value received">${totalReceived.toFixed(2)}</span>
               </div>
               <div className="summary-item">
-                <span className="summary-label">Remaining:</span>
-                <span className={`summary-value ${remainingBudget < 0 ? 'negative' : ''}`}>
-                  ${remainingBudget.toFixed(2)}
+                <span className="summary-label">{remainingBudget < 0 ? 'Bonus:' : 'Remaining:'}</span>
+                <span className={`summary-value ${remainingBudget < 0 ? 'bonus' : ''}`}>
+                  {remainingBudget < 0 ? `+$${Math.abs(remainingBudget).toFixed(2)}` : `$${remainingBudget.toFixed(2)}`}
                 </span>
               </div>
             </div>
@@ -295,17 +294,6 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                               <FiTrash2 size={14} />
                             </button>
                           </div>
-                          <div className="form-group">
-                            <label>Notes (Optional)</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={payment.notes || ''}
-                              onChange={(e) => handlePaymentChange(payment.id, 'notes', e.target.value)}
-                              placeholder="Payment notes..."
-                              disabled={disabled}
-                            />
-                          </div>
                         </>
                       )}
                     </div>
@@ -341,6 +329,117 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
             <small className="form-text text-muted">
               Budget will be calculated based on total hours tracked × hourly rate
             </small>
+          </div>
+
+          <div className="payments-section">
+            <div className="payments-header">
+              <label>Payment Received</label>
+              <button
+                type="button"
+                className="add-payment-btn"
+                onClick={handleAddPayment}
+                disabled={disabled}
+              >
+                <FiPlus size={14} />
+                Add Payment
+              </button>
+            </div>
+
+            {payments.length > 0 ? (
+              <div className="payments-list">
+                {payments.map((payment, index) => {
+                  const isEditing = editingPaymentId === payment.id;
+                  const hasAmount = payment.amount && parseFloat(payment.amount) > 0;
+                  
+                  return (
+                    <div key={payment.id} className={`payment-item ${isEditing ? 'editing' : ''}`}>
+                      {!isEditing && hasAmount ? (
+                        <div className="payment-summary">
+                          <div className="payment-amount-display">
+                            <FiDollarSign size={14} />
+                            <span className="amount-value">${parseFloat(payment.amount || 0).toFixed(2)}</span>
+                            {payment.receivedAt && (
+                              <span className="payment-date">
+                                {new Date(payment.receivedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="payment-actions">
+                            <button
+                              type="button"
+                              className="edit-payment-btn"
+                              onClick={() => handleStartEdit(payment.id)}
+                              disabled={disabled}
+                              title="Edit payment"
+                            >
+                              <FiEdit3 size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="remove-payment-btn"
+                              onClick={() => handleRemovePayment(payment.id)}
+                              disabled={disabled}
+                              title="Remove payment"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="payment-row">
+                            <div className="form-group-inline">
+                              <label>Amount</label>
+                              <div className="input-with-icon">
+                                <FiDollarSign className="input-icon" />
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  value={payment.amount}
+                                  onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
+                                  onBlur={() => handleFinishEdit(payment.id)}
+                                  placeholder="0.00"
+                                  min="0"
+                                  step="0.01"
+                                  disabled={disabled}
+                                  autoFocus={isEditing && !hasAmount}
+                                />
+                              </div>
+                            </div>
+                            <div className="form-group-inline">
+                              <label>Date Received</label>
+                              <div className="input-with-icon">
+                                <FiCalendar className="input-icon" />
+                                <input
+                                  type="date"
+                                  className="form-control"
+                                  value={payment.receivedAt}
+                                  onChange={(e) => handlePaymentChange(payment.id, 'receivedAt', e.target.value)}
+                                  disabled={disabled}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="remove-payment-btn"
+                              onClick={() => handleRemovePayment(payment.id)}
+                              disabled={disabled}
+                              title="Remove payment"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="no-payments">
+                <p>No payments recorded yet. Click "Add Payment" to track received payments.</p>
+              </div>
+            )}
           </div>
         </div>
       )}

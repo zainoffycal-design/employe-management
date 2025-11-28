@@ -267,7 +267,12 @@
                               }
 
                               &.negative {
-                                    color: #dc3545;
+                                color: #dc3545;
+                              }
+
+                              &.bonus {
+                                color: #10b981;
+                                font-weight: 600;
                               }
                         }
                   }
