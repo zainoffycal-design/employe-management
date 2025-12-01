@@ -121,7 +121,11 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate) => {
     .filter(p => p !== null && p.received > 0)
     .sort((a, b) => (b.received || 0) - (a.received || 0));
 
+  const projectsWithThisMonthPayments = projectPayments.filter(p => p.thisMonthPaymentCount > 0);
+  const hasThisMonthPayments = projectsWithThisMonthPayments.length > 0;
+
   const grandTotalReceived = projectPayments.reduce((sum, p) => sum + (p.received || 0), 0);
+  const grandTotalThisMonthReceived = projectsWithThisMonthPayments.reduce((sum, p) => sum + (p.thisMonthReceived || 0), 0);
   
   const grandTotalEstimated = projectPayments.reduce((sum, p) => {
     if (p.budgetType === 'fixed') {
@@ -131,9 +135,10 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate) => {
   }, 0);
 
   return {
-    projectPayments,
-    grandTotalReceived,
-    grandTotalEstimated
+    projectPayments: hasThisMonthPayments ? projectsWithThisMonthPayments : projectPayments,
+    grandTotalReceived: hasThisMonthPayments ? grandTotalThisMonthReceived : grandTotalReceived,
+    grandTotalEstimated,
+    hasThisMonthPayments
   };
 };
 

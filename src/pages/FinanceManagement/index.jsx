@@ -63,7 +63,7 @@ const FinanceManagement = () => {
             className="month-input"
           />
         </div>
-        {monthlyPayments.projectPayments.length > 0 ? (
+        {monthlyPayments.hasThisMonthPayments && monthlyPayments.projectPayments.length > 0 ? (
           <>
             <div className="payments-summary">
               <motion.div 
