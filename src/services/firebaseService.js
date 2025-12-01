@@ -1,5 +1,5 @@
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
-import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
@@ -298,5 +298,61 @@ export const authService = {
 
   onAuthStateChanged: (callback) => {
     return firebaseUtils.onAuthStateChanged(callback);
+  }
+};
+
+export const budgetService = {
+  async setMonthlyBudget(userId, year, month, amount) {
+    try {
+      const budgetId = `${year}-${String(month).padStart(2, '0')}`;
+      const budgetRef = doc(db, 'monthly_budgets', budgetId);
+      const existingBudget = await firebaseUtils.getDocument('monthly_budgets', budgetId);
+      
+      const budgetData = {
+        userId,
+        year,
+        month,
+        amount: parseFloat(amount) || 0,
+        updatedAt: new Date().toISOString()
+      };
+      
+      if (existingBudget) {
+        await setDoc(budgetRef, budgetData, { merge: true });
+      } else {
+        budgetData.createdAt = new Date().toISOString();
+        await setDoc(budgetRef, budgetData);
+      }
+      
+      return budgetId;
+    } catch (error) {
+      console.error('Error setting monthly budget:', error);
+      throw error;
+    }
+  },
+
+  async getMonthlyBudget(userId, year, month) {
+    try {
+      const budgetId = `${year}-${String(month).padStart(2, '0')}`;
+      const budget = await firebaseUtils.getDocument('monthly_budgets', budgetId);
+      if (budget && budget.userId === userId) {
+        return budget.amount || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error getting monthly budget:', error);
+      return 0;
+    }
+  },
+
+  async getAllBudgets(userId) {
+    try {
+      const budgets = await firebaseUtils.getDocuments('monthly_budgets', [
+        queryBuilders.where('userId', '==', userId)
+      ]);
+      return budgets;
+    } catch (error) {
+      console.error('Error getting all budgets:', error);
+      return [];
+    }
   }
 }; 

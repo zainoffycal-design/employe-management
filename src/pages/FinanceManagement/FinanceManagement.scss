@@ -82,6 +82,10 @@
         background: linear-gradient(90deg, #f59e0b, #d97706);
       }
 
+      &.budget::before {
+        background: linear-gradient(90deg, #6366f1, #4f46e5);
+      }
+
       .summary-header {
         @include flex-center;
         justify-content: flex-start;
@@ -130,6 +134,11 @@
         background: rgba(245, 158, 11, 0.1);
       }
 
+      &.budget .summary-header svg {
+        color: #6366f1;
+        background: rgba(99, 102, 241, 0.1);
+      }
+
       .summary-amount {
         font-size: 2.5rem;
         font-weight: 700;
@@ -143,6 +152,70 @@
 
       &.estimated .summary-amount {
         color: #f59e0b;
+      }
+
+      &.budget .summary-amount {
+        color: #6366f1;
+      }
+
+    }
+  }
+
+  .budget-progress-card {
+    @include card-base;
+    padding: 1.5rem;
+    border: 1px solid var(--gray-200);
+    margin-bottom: 2rem;
+
+    .budget-progress-header {
+      @include flex-between;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      .budget-progress-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .budget-progress-percentage {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #15a970;
+      }
+    }
+
+    .payment-progress {
+      margin-bottom: 0;
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--gray-100);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+        position: relative;
+        min-height: 8px;
+
+        .progress-fill {
+          height: 100%;
+          min-height: 8px;
+          background: linear-gradient(90deg, #15a970, #10b981);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+          display: block;
+        }
+      }
+
+      .progress-stats {
+        @include flex-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 500;
       }
     }
   }

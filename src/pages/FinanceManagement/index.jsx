@@ -1,17 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiAlertCircle, FiClock, FiTrendingUp, FiCalendar } from 'react-icons/fi';
+import { FiDollarSign, FiAlertCircle, FiClock, FiTrendingUp, FiCalendar, FiSettings } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import PageTitle from '../../components/PageTitle';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import { calculateMonthlyFinance } from '../../utils/financeCalculations';
+import { budgetService } from '../../services/firebaseService';
+import toast from 'react-hot-toast';
 import './FinanceManagement.scss';
 
 const FinanceManagement = () => {
   const { currentUser } = useAuth();
   const { projects, tasks } = useTask();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [loadingBudget, setLoadingBudget] = useState(false);
 
   if (currentUser?.role !== 'super_manager') {
     return (
@@ -26,16 +34,69 @@ const FinanceManagement = () => {
   }
 
   const monthlyPayments = useMemo(() => {
-    return calculateMonthlyFinance(projects, tasks, selectedDate);
-  }, [projects, tasks, selectedDate]);
+    return calculateMonthlyFinance(projects, tasks, selectedDate, monthlyBudget);
+  }, [projects, tasks, selectedDate, monthlyBudget]);
 
   const currentMonth = format(selectedDate, 'MMMM yyyy');
+  const currentYear = selectedDate.getFullYear();
+  const currentMonthNum = selectedDate.getMonth() + 1;
+  
+  useEffect(() => {
+    const loadBudget = async () => {
+      if (currentUser?.uid) {
+        try {
+          const budget = await budgetService.getMonthlyBudget(currentUser.uid, currentYear, currentMonthNum);
+          setMonthlyBudget(budget);
+        } catch (error) {
+          console.error('Error loading budget:', error);
+        }
+      }
+    };
+    loadBudget();
+  }, [currentUser, currentYear, currentMonthNum]);
   
   const handleDateChange = (e) => {
     const dateValue = e.target.value;
     if (dateValue) {
       const [year, month] = dateValue.split('-');
       setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, 1));
+    }
+  };
+
+  const handleOpenBudgetModal = async () => {
+    if (currentUser?.uid) {
+      try {
+        const budget = await budgetService.getMonthlyBudget(currentUser.uid, currentYear, currentMonthNum);
+        setBudgetAmount(budget > 0 ? budget.toString() : '');
+        setShowBudgetModal(true);
+      } catch (error) {
+        console.error('Error loading budget:', error);
+        setBudgetAmount('');
+        setShowBudgetModal(true);
+      }
+    }
+  };
+
+  const handleSaveBudget = async () => {
+    if (!currentUser?.uid) return;
+    
+    const amount = parseFloat(budgetAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast.error('Please enter a valid budget amount');
+      return;
+    }
+
+    setLoadingBudget(true);
+    try {
+      await budgetService.setMonthlyBudget(currentUser.uid, currentYear, currentMonthNum, amount);
+      setMonthlyBudget(amount);
+      setShowBudgetModal(false);
+      toast.success('Budget saved successfully');
+    } catch (error) {
+      console.error('Error saving budget:', error);
+      toast.error('Failed to save budget');
+    } finally {
+      setLoadingBudget(false);
     }
   };
 
@@ -62,7 +123,44 @@ const FinanceManagement = () => {
             onChange={handleDateChange}
             className="month-input"
           />
+          <button
+            type="button"
+            className="btn btn--outline"
+            onClick={handleOpenBudgetModal}
+          >
+            <FiSettings size={16} />
+            Set Budget
+          </button>
         </div>
+        {monthlyBudget > 0 ? (
+          <motion.div 
+            className="budget-progress-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <div className="budget-progress-header">
+              <span className="budget-progress-label">Budget Progress</span>
+              <span className="budget-progress-percentage">
+                {monthlyBudget > 0 ? ((monthlyPayments.grandTotalReceived / monthlyBudget) * 100).toFixed(1) : 0}%
+              </span>
+            </div>
+            <div className="payment-progress">
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ 
+                    width: `${monthlyBudget > 0 ? Math.min((monthlyPayments.grandTotalReceived / monthlyBudget) * 100, 100) : 0}%` 
+                  }}
+                />
+              </div>
+              <div className="progress-stats">
+                <span>${monthlyPayments.grandTotalReceived.toFixed(2)} received</span>
+                <span>of ${monthlyBudget.toFixed(2)} budget</span>
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
         {monthlyPayments.hasThisMonthPayments && monthlyPayments.projectPayments.length > 0 ? (
           <>
             <div className="payments-summary">
@@ -92,10 +190,27 @@ const FinanceManagement = () => {
                     <FiTrendingUp size={24} />
                     <div className="summary-title">
                       <span className="summary-label">Total Estimated</span>
-                      <span className="summary-subtitle">This Month</span>
+                      <span className="summary-subtitle">From Projects</span>
                     </div>
                   </div>
                   <div className="summary-amount">${monthlyPayments.grandTotalEstimated.toFixed(2)}</div>
+                </motion.div>
+              )}
+              {monthlyBudget > 0 && (
+                <motion.div 
+                  className="summary-card budget"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="summary-header">
+                    <FiSettings size={24} />
+                    <div className="summary-title">
+                      <span className="summary-label">Total Budget</span>
+                      <span className="summary-subtitle">Set Budget</span>
+                    </div>
+                  </div>
+                  <div className="summary-amount">${monthlyBudget.toFixed(2)}</div>
                 </motion.div>
               )}
             </div>
@@ -218,6 +333,46 @@ const FinanceManagement = () => {
           </motion.div>
         )}
       </div>
+
+      <Modal
+        isOpen={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        title={`Set Budget for ${currentMonth}`}
+        size="small"
+      >
+        <form onSubmit={(e) => { e.preventDefault(); handleSaveBudget(); }}>
+          <div className="input-wrapper">
+            <FiDollarSign className="input-icon" />
+            <input
+              type="number"
+              value={budgetAmount}
+              onChange={(e) => setBudgetAmount(e.target.value)}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              autoFocus
+            />
+          </div>
+          <div className="modal-actions">
+            <Button
+              variant="secondary"
+              onClick={() => setShowBudgetModal(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveBudget}
+              loading={loadingBudget}
+              loadingText="Saving..."
+              type="button"
+            >
+              Save Budget
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 };

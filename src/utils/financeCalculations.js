@@ -1,6 +1,6 @@
 import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 
-export const calculateMonthlyFinance = (projects, tasks, selectedDate) => {
+export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBudget = 0) => {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
 
@@ -127,17 +127,31 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate) => {
   const grandTotalReceived = projectPayments.reduce((sum, p) => sum + (p.received || 0), 0);
   const grandTotalThisMonthReceived = projectsWithThisMonthPayments.reduce((sum, p) => sum + (p.thisMonthReceived || 0), 0);
   
-  const grandTotalEstimated = projectPayments.reduce((sum, p) => {
+  const monthlyCalculatedEstimated = projectsWithThisMonthPayments.reduce((sum, p) => {
     if (p.budgetType === 'fixed') {
       return sum + (p.totalBudget || 0);
+    } else {
+      const hourlyRate = p.hourlyRate || 0;
+      const projectTasks = tasks.filter(task => task.projectId === p.projectId);
+      const thisMonthHours = projectTasks.reduce((hoursSum, task) => {
+        if (!task.timeEntries || task.timeEntries.length === 0) return hoursSum;
+        const thisMonthEntries = task.timeEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return isWithinInterval(entryDate, { start: monthStart, end: monthEnd });
+        });
+        const taskHours = thisMonthEntries.reduce((entrySum, entry) => entrySum + (entry.hours || 0), 0);
+        return hoursSum + taskHours;
+      }, 0);
+      return sum + (thisMonthHours * hourlyRate);
     }
-    return sum + (p.estimatedBudget || 0);
   }, 0);
 
   return {
     projectPayments: hasThisMonthPayments ? projectsWithThisMonthPayments : projectPayments,
     grandTotalReceived: hasThisMonthPayments ? grandTotalThisMonthReceived : grandTotalReceived,
-    grandTotalEstimated,
+    grandTotalEstimated: monthlyCalculatedEstimated,
+    calculatedEstimated: monthlyCalculatedEstimated,
+    monthlyBudget,
     hasThisMonthPayments
   };
 };
