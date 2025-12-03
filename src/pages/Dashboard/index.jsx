@@ -14,13 +14,17 @@ import {
   FiUserPlus,
   FiUserCheck,
   FiCalendar,
-  FiPackage
+  FiPackage,
+  FiMessageSquare,
+  FiCheckCircle,
+  FiActivity
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { userManagementService } from '../../services/firebaseService';
 import { firebaseUtils } from '../../utils/firebaseUtils';
-import { getRoleDisplayName } from '../../utils/permissionUtils';
+import { getRoleDisplayName, permissionUtils } from '../../utils/permissionUtils';
+import { parseTextWithMentions } from '../../utils/uiUtils';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import ProjectCard from '../../components/ProjectCard';
@@ -62,7 +66,7 @@ const Dashboard = () => {
         console.error('Error loading all tasks:', error);
       }
     };
-    
+
     loadUsers();
     loadAllTasks();
 
@@ -129,61 +133,186 @@ const Dashboard = () => {
   const getProjectHours = useCallback(() => {
     const projectHours = projects.map(project => {
       const projectTasks = tasks.filter(task => task.projectId === project.id);
-      const totalHours = projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
+      
+      // Calculate actual hours from time entries
+      const actualHours = projectTasks.reduce((sum, task) => {
+        if (task.timeEntries && task.timeEntries.length > 0) {
+          const taskHours = task.timeEntries.reduce((entrySum, entry) => {
+            return entrySum + (parseFloat(entry.hours) || 0);
+          }, 0);
+          return sum + taskHours;
+        }
+        // Fallback to totalHours if no time entries
+        return sum + (parseFloat(task.totalHours) || 0);
+      }, 0);
+      
+      // Calculate estimated hours
+      const estimatedHours = projectTasks.reduce((sum, task) => {
+        const estimated = task.estimatedHours || task.estimatedTimeData?.hours || 0;
+        return sum + (parseFloat(estimated) || 0);
+      }, 0);
+      
       return {
         projectId: project.id,
         projectName: project.name,
-        totalHours,
+        totalHours: actualHours,
+        estimatedHours,
         taskCount: projectTasks.length
       };
     });
     
     const totalHours = projectHours.reduce((sum, p) => sum + p.totalHours, 0);
-    return { projectHours, totalHours };
+    const totalEstimatedHours = projectHours.reduce((sum, p) => sum + p.estimatedHours, 0);
+    return { projectHours, totalHours, totalEstimatedHours };
   }, [projects, tasks]);
 
-  const { projectHours, totalHours } = useMemo(() => getProjectHours(), [getProjectHours]);
+  const { totalHours, totalEstimatedHours } = useMemo(() => getProjectHours(), [getProjectHours]);
 
   const completedProjects = useMemo(() => 
     projects.filter(project => project.status === 'completed'), [projects]
   );
 
-  const stats = useMemo(() => [
-    {
-      title: 'Total Projects',
-      value: projects.length,
-      icon: FiFolder,
-      color: '#15A970',
-      trendUp: projects.length > 0,
-      trend: projects.length > 0 ? `${projects.length} active` : 'No projects'
-    },
-    {
-      title: 'Total Hours',
-      value: totalHours.toFixed(1),
-      icon: FiClock,
-      color: '#F59E0B',
-      trendUp: totalHours > 0,
-      trend: totalHours > 0 ? `${totalHours.toFixed(1)}h logged` : 'No time tracked'
-    },
-    {
-      title: 'Completed Projects',
-      value: completedProjects.length,
-      icon: FiUserCheck,
-      color: '#10B981',
-      trendUp: completedProjects.length > 0,
-      trend: completedProjects.length > 0 ? 
-        `${Math.round((completedProjects.length / projects.length) * 100)}% of projects` : 
-        'None completed'
-    },
-    {
-      title: 'Total Tasks',
-      value: tasks.length,
-      icon: FiLayout,
-      color: '#6366F1',
-      trendUp: tasks.length > 0,
-      trend: tasks.length > 0 ? `${tasks.length} tasks` : 'No tasks'
+  const activeTasks = useMemo(() => 
+    tasks.filter(task => task.status !== 'done'), [tasks]
+  );
+
+  const recentActivities = useMemo(() => {
+    if (!permissionUtils.isSuperManager(currentUser)) {
+      return [];
     }
-  ], [projects, totalHours, completedProjects, tasks]);
+
+    const activities = [];
+
+    const tasksWithProjects = tasks.map(task => {
+      const project = projects.find(p => p.id === task.projectId);
+      return {
+        ...task,
+        projectName: project?.name || 'Unknown Project'
+      };
+    });
+
+    tasksWithProjects.forEach(task => {
+      if (task.status !== 'done' && task.comments && task.comments.length > 0) {
+        task.comments.forEach(comment => {
+          activities.push({
+            type: 'comment',
+            id: `comment-${comment.id}-${task.id}`,
+            timestamp: comment.createdAt || comment.updatedAt,
+            taskId: task.id,
+            taskTitle: task.title,
+            projectId: task.projectId,
+            projectName: task.projectName,
+            authorId: comment.authorId,
+            authorName: comment.authorName,
+            authorAvatar: comment.authorAvatar,
+            text: comment.text
+          });
+        });
+      }
+    });
+
+    tasksWithProjects.forEach(task => {
+      if (task.createdAt) {
+        activities.push({
+          type: 'task_created',
+          id: `task-created-${task.id}`,
+          timestamp: task.createdAt,
+          taskId: task.id,
+          taskTitle: task.title,
+          projectId: task.projectId,
+          projectName: task.projectName,
+          creatorId: task.createdBy || task.creatorId,
+          status: task.status
+        });
+      }
+    });
+
+    tasksWithProjects.forEach(task => {
+      if (task.status === 'done' && task.updatedAt) {
+        activities.push({
+          type: 'task_completed',
+          id: `task-completed-${task.id}`,
+          timestamp: task.updatedAt,
+          taskId: task.id,
+          taskTitle: task.title,
+          projectId: task.projectId,
+          projectName: task.projectName,
+          completedBy: task.completedBy || task.updatedBy
+        });
+      }
+    });
+
+    projects.forEach(project => {
+      if (project.status === 'completed' && project.updatedAt) {
+        activities.push({
+          type: 'project_completed',
+          id: `project-completed-${project.id}`,
+          timestamp: project.updatedAt,
+          projectId: project.id,
+          projectName: project.name,
+          completedBy: project.completedBy || project.updatedBy
+        });
+      }
+    });
+
+    return activities
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 20);
+  }, [tasks, projects, currentUser]);
+
+  const stats = useMemo(() => {
+    const timeEstimateText = totalEstimatedHours > 0 
+      ? `${totalHours.toFixed(1)}h / ${totalEstimatedHours.toFixed(1)}h`
+      : totalHours > 0 
+        ? `${totalHours.toFixed(1)}h logged` 
+        : 'No time tracked';
+    
+    const timeEstimateTrend = totalEstimatedHours > 0
+      ? totalHours <= totalEstimatedHours 
+        ? 'On track' 
+        : 'Over estimate'
+      : 'No estimate';
+
+    return [
+      {
+        title: 'Total Projects',
+        value: projects.length,
+        icon: FiFolder,
+        color: '#15A970',
+        trendUp: projects.length > 0,
+        trend: projects.length > 0 ? `${projects.length} active` : 'No projects'
+      },
+      {
+        title: 'Time Estimate',
+        value: totalEstimatedHours > 0 ? totalEstimatedHours.toFixed(1) : '-',
+        icon: FiBarChart,
+        color: '#8B5CF6',
+        trendUp: totalEstimatedHours > 0 && totalHours <= totalEstimatedHours,
+        trend: timeEstimateText,
+        subtitle: timeEstimateTrend
+      },
+      {
+        title: 'Completed Projects',
+        value: completedProjects.length,
+        icon: FiUserCheck,
+        color: '#10B981',
+        trendUp: completedProjects.length > 0,
+        trend: completedProjects.length > 0 ? 
+          `${Math.round((completedProjects.length / projects.length) * 100)}% of projects` : 
+          'None completed'
+      },
+      {
+        title: 'Active Tasks',
+        value: activeTasks.length,
+        icon: FiLayout,
+        color: '#6366F1',
+        trendUp: activeTasks.length > 0,
+        trend: activeTasks.length > 0 
+          ? `${activeTasks.length} active` 
+          : 'No active tasks'
+      }
+    ];
+  }, [projects, totalHours, totalEstimatedHours, completedProjects, activeTasks]);
 
   const getQuickActions = useCallback(() => {
     const baseActions = [
@@ -314,6 +443,9 @@ const Dashboard = () => {
             <div className="stat-content">
               <h3 className="stat-value">{stat.value}</h3>
               <p className="stat-title">{stat.title}</p>
+              {stat.subtitle && (
+                <p className="stat-subtitle">{stat.subtitle}</p>
+              )}
               <div className={`stat-trend ${stat.trendUp ? 'up' : 'down'}`}>
                 {stat.trendUp ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
                 <span>{stat.trend}</span>
@@ -392,51 +524,6 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-      )}
-
-      {projectHours.length > 0 && totalHours > 0 && (
-        <div className="section-header">
-          <div className="section-title">
-            <FiClock className="section-icon" />
-            <h2>Project Hours</h2>
-          </div>
-        </div>
-      )}
-      {projectHours.length > 0 && totalHours > 0 && (
-        <div className="project-hours-section">
-          <div className="hours-grid">
-            {projectHours
-              .filter(p => p.totalHours > 0)
-              .sort((a, b) => b.totalHours - a.totalHours)
-              .slice(0, 4)
-              .map((project, index) => (
-              <motion.div
-                key={project.projectId}
-                className="hours-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div className="hours-header">
-                  <h4>{project.projectName}</h4>
-                  <span className="hours-badge">{project.totalHours.toFixed(1)}h</span>
-                </div>
-                <div className="hours-details">
-                  <span className="task-count">{project.taskCount} tasks</span>
-                  <div className="hours-bar">
-                    <div 
-                      className="hours-progress" 
-                      style={{ 
-                        width: `${Math.min((project.totalHours / Math.max(...projectHours.map(p => p.totalHours))) * 100, 100)}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-        
       )}
 
       <div className="side-by-side-sections">
@@ -593,6 +680,191 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {permissionUtils.isSuperManager(currentUser) && (
+        <div className="recent-activities-section">
+        <div className="section-header">
+          <div className="section-title">
+            <FiActivity className="section-icon" />
+            <h2>Recent Activities</h2>
+          </div>
+        </div>
+
+        <div className="activities-card">
+          <div className="activities-container">
+            {recentActivities.length > 0 ? (
+              <div className="activities-list">
+                {recentActivities.map((activity, index) => {
+                  const user = users.find(u => 
+                    u.id === activity.authorId || 
+                    u.id === activity.creatorId || 
+                    u.id === activity.completedBy ||
+                    u.uid === activity.authorId || 
+                    u.uid === activity.creatorId || 
+                    u.uid === activity.completedBy
+                  );
+                  const project = projects.find(p => p.id === activity.projectId);
+
+                  return (
+                    <motion.div
+                      key={activity.id}
+                      className="activity-item"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <div className="activity-icon">
+                        {activity.type === 'comment' && <FiMessageSquare size={16} />}
+                        {activity.type === 'task_created' && <FiPlus size={16} />}
+                        {activity.type === 'task_completed' && <FiCheckCircle size={16} />}
+                        {activity.type === 'project_completed' && <FiFolder size={16} />}
+                      </div>
+                      <div className="activity-content">
+                        <div className="activity-text">
+                          {activity.type === 'comment' && (
+                            <>
+                              <strong>{activity.authorName || user?.name || 'Someone'}</strong> commented on{' '}
+                              <strong>{activity.taskTitle}</strong> in <strong>{activity.projectName}</strong>
+                            </>
+                          )}
+                          {activity.type === 'task_created' && (
+                            <>
+                              <strong>{activity.taskTitle}</strong> was created in{' '}
+                              <strong>{activity.projectName}</strong>
+                            </>
+                          )}
+                          {activity.type === 'task_completed' && (
+                            <>
+                              <strong>{activity.taskTitle}</strong> was completed in{' '}
+                              <strong>{activity.projectName}</strong>
+                            </>
+                          )}
+                          {activity.type === 'project_completed' && (
+                            <>
+                              <strong>{activity.projectName}</strong> project was completed
+                            </>
+                          )}
+                        </div>
+                        <div className="activity-meta">
+                          <span className="activity-time">
+                            {new Date(activity.timestamp).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                          {activity.type === 'comment' && activity.text && (
+                            <div className="activity-preview">
+                              {(() => {
+                                // Parse mentions properly to handle names with spaces
+                                const parsedText = parseTextWithMentions(activity.text);
+                                const parts = [];
+                                
+                                parsedText.forEach((part, idx) => {
+                                  if (part.type === 'mention') {
+                                    parts.push(
+                                      <span key={idx} className="mention-tag">@{part.name}</span>
+                                    );
+                                  } else {
+                                    parts.push(part.content);
+                                  }
+                                });
+                                
+                                // Join all parts to get full text for truncation
+                                const fullText = parsedText.map(part => 
+                                  part.type === 'mention' ? `@${part.name}` : part.content
+                                ).join('');
+                                
+                                // Truncate if needed (but preserve mention structure)
+                                if (fullText.length > 100) {
+                                  // Find where to truncate while preserving mentions
+                                  let charCount = 0;
+                                  const truncatedParts = [];
+                                  
+                                  for (let i = 0; i < parsedText.length && charCount < 100; i++) {
+                                    const part = parsedText[i];
+                                    if (part.type === 'mention') {
+                                      const mentionText = `@${part.name}`;
+                                      if (charCount + mentionText.length <= 100) {
+                                        truncatedParts.push(
+                                          <span key={i} className="mention-tag">@{part.name}</span>
+                                        );
+                                        charCount += mentionText.length;
+                                      } else {
+                                        break;
+                                      }
+                                    } else {
+                                      const remainingChars = 100 - charCount;
+                                      if (part.content.length <= remainingChars) {
+                                        truncatedParts.push(part.content);
+                                        charCount += part.content.length;
+                                      } else {
+                                        truncatedParts.push(part.content.substring(0, remainingChars));
+                                        charCount = 100;
+                                        break;
+                                      }
+                                    }
+                                  }
+                                  
+                                  return (
+                                    <span className="comment-text">
+                                      {truncatedParts}
+                                      <span>...</span>
+                                    </span>
+                                  );
+                                }
+                                
+                                return (
+                                  <span className="comment-text">
+                                    {parts}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {(activity.type === 'task_created' || activity.type === 'task_completed' || activity.type === 'comment') && (
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => {
+                            const project = projects.find(p => p.id === activity.projectId);
+                            const isProjectCompleted = project?.status === 'completed';
+                            const canAccess = !isProjectCompleted || currentUser?.role === 'super_manager';
+                            if (canAccess) {
+                              navigate(`/project/${activity.projectId}/board`);
+                            }
+                          }}
+                          title={project?.status === 'completed' && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed projects." : "View Project Board"}
+                          disabled={project?.status === 'completed' && currentUser?.role !== 'super_manager'}
+                        >
+                          <FiLayout size={14} />
+                          View
+                        </Button>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <motion.div 
+                className="empty-state-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="empty-state-icon">
+                  <FiActivity size={48} />
+                </div>
+                <h3>No Recent Activities</h3>
+                <p>Recent comments, task creations, and completions will appear here.</p>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </div>
+      )}
 
     </div>
   );

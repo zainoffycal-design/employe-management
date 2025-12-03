@@ -204,39 +204,35 @@ const ProjectManagement = () => {
         }
       }
 
-      if (!isBdManager) {
-        if (formData.teamMembers.length === 0) {
-          setError('Please select at least one team member');
-          setLoading(false);
-          return;
-        }
+      if (formData.teamMembers.length === 0) {
+        setError('Please select at least one team member');
+        setLoading(false);
+        return;
       }
 
-      let projectData;
+      let projectData = {
+        ...formData,
+        teamMembers: formData.teamMembers.map(member => member.value)
+      };
       
-      if (isBdManager) {
+      // Include budget if user can view budget (BD Managers)
+      if (canViewBudget()) {
         if (formData.budget && formData.budget.type !== 'none') {
-          projectData = { budget: formData.budget };
+          projectData.budget = formData.budget;
         } else if (formData.budget && formData.budget.type === 'none') {
-          projectData = { budget: null };
-        } else {
-          projectData = {};
+          projectData.budget = null;
         }
       } else {
-        projectData = {
-          ...formData,
-          teamMembers: formData.teamMembers.map(member => member.value)
-        };
-        if (formData.budget.type === 'none') {
-          delete projectData.budget;
-        }
-        if (currentUser.role === 'super_manager' && formData.status) {
-          projectData.status = formData.status;
-          if (formData.status === 'active' && selectedProject?.status === 'completed') {
-            projectData.completedAt = null;
-          } else if (formData.status === 'completed' && selectedProject?.status !== 'completed') {
-            projectData.completedAt = new Date().toISOString();
-          }
+        // Non-BD Managers don't update budget
+        delete projectData.budget;
+      }
+      
+      if (currentUser.role === 'super_manager' && formData.status) {
+        projectData.status = formData.status;
+        if (formData.status === 'active' && selectedProject?.status === 'completed') {
+          projectData.completedAt = null;
+        } else if (formData.status === 'completed' && selectedProject?.status !== 'completed') {
+          projectData.completedAt = new Date().toISOString();
         }
       }
 
@@ -690,42 +686,38 @@ const ProjectManagement = () => {
           {error && (
             <div className="alert alert-danger">{error}</div>
           )}
-          {currentUser?.role !== 'bd' && (
-            <>
-              <div className="form-group">
-                <label>Project Name</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  className="form-control"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </div>
-              {renderTeamMemberSelect()}
-              {currentUser?.role === 'super_manager' && selectedProject && (
-                <div className="form-group">
-                  <label>Project Status</label>
-                  <select
-                    className="form-control"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  >
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              )}
-            </>
+          <div className="form-group">
+            <label>Project Name</label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              className="form-control"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+            />
+          </div>
+          {renderTeamMemberSelect()}
+          {currentUser?.role === 'super_manager' && selectedProject && (
+            <div className="form-group">
+              <label>Project Status</label>
+              <select
+                className="form-control"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              >
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
           )}
           {canViewBudget() && (
             <BudgetManager
@@ -760,9 +752,9 @@ const ProjectManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
-              loadingText={isBdManager ? "Updating Budget..." : "Updating Project..."}
+              loadingText="Updating Project..."
             >
-              {isBdManager ? "Update Budget" : "Update Project"}
+              Update Project
             </Button>
           </div>
         </form>
