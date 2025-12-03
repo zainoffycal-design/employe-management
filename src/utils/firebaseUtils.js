@@ -23,7 +23,8 @@ import {
   onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export const firebaseUtils = {
   async createDocument(collectionName, data) {
@@ -191,6 +192,42 @@ export const firebaseUtils = {
   onAuthStateChanged: (callback) => {
     const auth = getAuth();
     return onAuthStateChanged(auth, callback);
+  },
+
+  async uploadImage(file, path) {
+    const MAX_FILE_SIZE = 2 * 1024 * 1024;
+    const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('Image size must be less than 2MB');
+    }
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Only JPEG, PNG, GIF, and WebP images are allowed');
+    }
+
+    try {
+      const storageRef = ref(storage, path);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw new Error('Failed to upload image. Please try again.');
+    }
+  },
+
+  async deleteImage(path) {
+    try {
+      const storageRef = ref(storage, path);
+      await deleteObject(storageRef);
+    } catch (error) {
+      console.error('Error deleting image:', error);
+    }
   }
 };
 

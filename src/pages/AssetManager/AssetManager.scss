@@ -268,6 +268,22 @@
       box-shadow: var(--shadow-sm);
     }
 
+    .asset-image {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+      border: 2px solid var(--gray-200);
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
     .asset-info {
       flex: 1;
       min-width: 0;
@@ -589,6 +605,89 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+  }
+
+  .image-upload-container {
+    margin-top: 0.5rem;
+
+    .image-preview-wrapper {
+      position: relative;
+      display: inline-block;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      border: 2px solid var(--gray-200);
+
+      .image-preview {
+        display: block;
+        max-width: 300px;
+        max-height: 300px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .remove-image-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 32px;
+        height: 32px;
+        @include flex-center;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        cursor: pointer;
+        transition: var(--transition);
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.8);
+          transform: scale(1.1);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .image-upload-placeholder {
+      @include flex-center;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 2rem;
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--border-radius);
+      background: var(--gray-50);
+      cursor: pointer;
+      transition: var(--transition);
+
+      &:hover {
+        border-color: var(--primary-color);
+        background: var(--gray-100);
+      }
+
+      svg {
+        color: var(--gray-400);
+      }
+
+      span {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        text-align: center;
+
+        &.upload-hint {
+          font-size: 0.75rem;
+          color: var(--gray-500);
+        }
+      }
+    }
+  }
+
+  .upload-status {
+    font-size: 0.875rem;
+    font-weight: 500;
   }
 
   .assign-asset-info {

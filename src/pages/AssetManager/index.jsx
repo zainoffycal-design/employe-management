@@ -94,9 +94,15 @@ const AssetCard = ({ asset, onEdit, onDelete, onAssign, onUnassign, canManageAss
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
     >
-      <div className="asset-icon">
-        <AssetIcon />
-      </div>
+      {asset.imageUrl ? (
+        <div className="asset-image">
+          <img src={asset.imageUrl} alt={asset.name} />
+        </div>
+      ) : (
+        <div className="asset-icon">
+          <AssetIcon />
+        </div>
+      )}
       <div className="asset-info">
         <h3>{asset.name}</h3>
         <div className="asset-details">
@@ -226,6 +232,7 @@ const AssetManager = () => {
   const canManageAssets = canManageAssetsFromAuth();
   const canViewAllAssets = canViewAllAssetsFromAuth();
   const canAddAssets = true;
+  const isSuperManager = currentUser?.role === 'super_manager';
 
 
   useEffect(() => {
@@ -233,7 +240,7 @@ const AssetManager = () => {
     
     setLoading(true);
     
-    const unsubscribeAssets = canViewAllAssets 
+    const unsubscribeAssets = isSuperManager
       ? assetService.subscribeToAllAssets((assetsData) => {
           const sorted = assetsData.sort((a, b) => 
             new Date(b.createdAt || b.assignedAt) - new Date(a.createdAt || a.assignedAt)
@@ -272,7 +279,7 @@ const AssetManager = () => {
       unsubscribeUsers?.();
       unsubscribeRequests?.();
     };
-  }, [currentUser, canViewAllAssets, canManageAssets]);
+  }, [currentUser, isSuperManager, canManageAssets]);
 
   const handleAddAsset = async (formData) => {
     if (formData && formData.preventDefault) {
@@ -677,18 +684,20 @@ const AssetManager = () => {
       <div className="asset-content">
         {activeTab === 'assets' && (
           <div className="assets-section">
+            {isSuperManager && (
+              <AssetStats 
+                stats={{
+                  total: assets.length,
+                  assigned: assignedAssets.length,
+                  available: availableAssets.length,
+                  pendingRequests: assetRequests.filter(req => req.status === 'pending').length
+                }}
+                loading={loading}
+              />
+            )}
+
             {canViewAllAssets ? (
               <>
-                <AssetStats 
-                  stats={{
-                    total: assets.length,
-                    assigned: assignedAssets.length,
-                    available: availableAssets.length,
-                    pendingRequests: assetRequests.filter(req => req.status === 'pending').length
-                  }}
-                  loading={loading}
-                />
-
                 {filteredAssets.length > 0 ? (
                   <div className="assets-grid">
                     {filteredAssets.map((asset, index) => (

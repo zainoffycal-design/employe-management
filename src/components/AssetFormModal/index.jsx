@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { reactSelectStyles } from '../../utils/uiUtils';
+import { firebaseUtils } from '../../utils/firebaseUtils';
 import Modal from '../Modal';
 import Button from '../Button';
 import Avatar from '../Avatar';
 import Select from 'react-select';
+import { FiX, FiImage } from 'react-icons/fi';
 
 const AssetFormModal = ({ 
   isOpen, 
@@ -24,8 +26,14 @@ const AssetFormModal = ({
     assignTo: '',
     assignDate: '',
     description: '',
-    customType: ''
+    customType: '',
+    imageUrl: ''
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (mode === 'edit' && asset) {
@@ -37,8 +45,11 @@ const AssetFormModal = ({
         assignTo: asset.assignedTo || '',
         assignDate: asset.assignedAt ? new Date(asset.assignedAt).toISOString().split('T')[0] : '',
         description: asset.description || '',
-        customType: asset.customType || ''
+        customType: asset.customType || '',
+        imageUrl: asset.imageUrl || ''
       });
+      setImagePreview(asset.imageUrl || null);
+      setImageFile(null);
     } else {
       setFormData({
         name: '',
@@ -48,9 +59,13 @@ const AssetFormModal = ({
         assignTo: '',
         assignDate: new Date().toISOString().split('T')[0],
         description: '',
-        customType: ''
+        customType: '',
+        imageUrl: ''
       });
+      setImagePreview(null);
+      setImageFile(null);
     }
+    setImageError('');
   }, [mode, asset, isOpen]);
 
   const getAssetTypes = () => [
@@ -103,9 +118,65 @@ const AssetFormModal = ({
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError('');
+
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError('Image size must be less than 2MB');
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageError('Only JPEG, PNG, GIF, and WebP images are allowed');
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (mode === 'edit' && asset?.imageUrl) {
+      setFormData(prev => ({ ...prev, imageUrl: '' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    setImageError('');
+
+    let finalImageUrl = formData.imageUrl;
+
+    if (imageFile) {
+      setUploadingImage(true);
+      try {
+        const timestamp = Date.now();
+        const fileName = `assets/${timestamp}_${imageFile.name}`;
+        finalImageUrl = await firebaseUtils.uploadImage(imageFile, fileName);
+        setFormData(prev => ({ ...prev, imageUrl: finalImageUrl }));
+      } catch (error) {
+        setImageError(error.message || 'Failed to upload image');
+        setUploadingImage(false);
+        return;
+      }
+      setUploadingImage(false);
+    }
+
+    onSave({ ...formData, imageUrl: finalImageUrl });
   };
 
   const handleInputChange = (field, value) => {
@@ -243,6 +314,54 @@ const AssetFormModal = ({
           />
         </div>
 
+        <div className="form-group">
+          <label htmlFor="image">Asset Image (Optional)</label>
+          <div className="image-upload-container">
+            {imagePreview ? (
+              <div className="image-preview-wrapper">
+                <img src={imagePreview} alt="Preview" className="image-preview" />
+                <button
+                  type="button"
+                  className="remove-image-btn"
+                  onClick={handleRemoveImage}
+                  disabled={uploadingImage}
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+            ) : (
+              <div 
+                className="image-upload-placeholder"
+                onClick={() => !uploadingImage && fileInputRef.current?.click()}
+              >
+                <FiImage size={24} />
+                <span>Click to upload image</span>
+                <span className="upload-hint">Max size: 2MB (JPEG, PNG, GIF, WebP)</span>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="image"
+              name="image"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+              disabled={uploadingImage}
+            />
+          </div>
+          {imageError && (
+            <div className="error-message" style={{ marginTop: '0.5rem' }}>
+              <span>{imageError}</span>
+            </div>
+          )}
+          {uploadingImage && (
+            <div className="upload-status" style={{ marginTop: '0.5rem', color: '#6366F1' }}>
+              Uploading image...
+            </div>
+          )}
+        </div>
+
         <div className="modal-actions">
           <Button 
             variant="secondary"
@@ -253,8 +372,9 @@ const AssetFormModal = ({
           <Button 
             variant="primary"
             type="submit" 
-            loading={loading}
-            loadingText={mode === 'edit' ? 'Updating Asset...' : 'Creating Asset...'}
+            loading={loading || uploadingImage}
+            loadingText={uploadingImage ? 'Uploading Image...' : (mode === 'edit' ? 'Updating Asset...' : 'Creating Asset...')}
+            disabled={uploadingImage}
           >
             {mode === 'edit' ? 'Update Asset' : 'Create Asset'}
           </Button>
