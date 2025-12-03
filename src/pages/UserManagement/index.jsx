@@ -115,7 +115,7 @@ const UserManagement = () => {
     confirmPassword: '',
     role: 'designer',
     permissions: [],
-    managerType: ''
+    managerType: []
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -163,12 +163,23 @@ const UserManagement = () => {
 
   const customGroupedUsers = allUsersIncludingCurrent.reduce((acc, user) => {
     if (user.role === 'manager' && user.managerType) {
-      const teamRole = user.managerType;
-      if (!acc[teamRole]) {
-        acc[teamRole] = [];
+      const managerTypes = Array.isArray(user.managerType) ? user.managerType : [user.managerType];
+      if (managerTypes.length > 0) {
+        managerTypes.forEach(teamRole => {
+          if (teamRole) {
+            if (!acc[teamRole]) {
+              acc[teamRole] = [];
+            }
+            acc[teamRole].push({ ...user, isManager: true });
+          }
+        });
+      } else {
+        if (!acc['manager']) {
+          acc['manager'] = [];
+        }
+        acc['manager'].push(user);
       }
-      acc[teamRole].push({ ...user, isManager: true });
-    } else if (user.role === 'manager' && !user.managerType) {
+    } else if (user.role === 'manager' && (!user.managerType || (Array.isArray(user.managerType) && user.managerType.length === 0))) {
       if (!acc['manager']) {
         acc['manager'] = [];
       }
@@ -221,7 +232,9 @@ const UserManagement = () => {
       setUsers(allUsers);
       
       const managersWithoutType = allUsers.filter(user => 
-        user.role === 'manager' && (!user.managerType || user.managerType === '')
+        user.role === 'manager' && (!user.managerType || 
+        (Array.isArray(user.managerType) && user.managerType.length === 0) ||
+        user.managerType === '')
       );
       
       if (managersWithoutType.length > 0) {
@@ -246,8 +259,8 @@ const UserManagement = () => {
     setError('');
 
     try {
-      if (newUser.role === 'manager' && !newUser.managerType) {
-        setError('Please select a manager type for the manager.');
+      if (newUser.role === 'manager' && (!newUser.managerType || newUser.managerType.length === 0)) {
+        setError('Please select at least one manager type for the manager.');
         setLoading(false);
         return;
       }
@@ -290,7 +303,7 @@ const UserManagement = () => {
         permissions: permissions
       };
 
-      if (newUser.role === 'manager' && newUser.managerType) {
+      if (newUser.role === 'manager' && newUser.managerType && newUser.managerType.length > 0) {
         invitationData.managerType = newUser.managerType;
       }
 
@@ -303,7 +316,7 @@ const UserManagement = () => {
         confirmPassword: '',
         role: 'designer',
         permissions: [],
-        managerType: ''
+        managerType: []
       });
       setShowAddUser(false);
       
@@ -331,6 +344,12 @@ const UserManagement = () => {
           setLoading(false);
           return;
         }
+      }
+
+      if (editingUser.role === 'manager' && (!editingUser.managerType || editingUser.managerType.length === 0)) {
+        setError('Please select at least one manager type for the manager.');
+        setLoading(false);
+        return;
       }
 
       if (currentUser.role === 'manager') {
@@ -370,10 +389,12 @@ const UserManagement = () => {
         permissions: permissions
       };
 
-      if (editingUser.role === 'manager' && editingUser.managerType) {
+      if (editingUser.role === 'manager' && editingUser.managerType && editingUser.managerType.length > 0) {
         updateData.managerType = editingUser.managerType;
       } else if (editingUser.role !== 'manager') {
         updateData.managerType = null;
+      } else if (editingUser.role === 'manager') {
+        updateData.managerType = [];
       }
 
       await userManagementService.updateUserProfile(editingUser.id, updateData);
@@ -414,7 +435,7 @@ const UserManagement = () => {
   const openEditUserModal = (user) => {
     setEditingUser({
       ...user,
-      managerType: user.managerType || ''
+      managerType: Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : [])
     });
     setShowEditUser(true);
   };
@@ -447,9 +468,11 @@ const UserManagement = () => {
 
           const managersInRole = usersInRole.filter(user => {
             if (role === 'manager') {
-              return user.role === 'manager' && (!user.managerType || user.managerType === '');
+              const managerTypes = Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : []);
+              return user.role === 'manager' && managerTypes.length === 0;
             }
-            return user.isManager || (user.role === 'manager' && user.managerType === role);
+            const managerTypes = Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : []);
+            return user.isManager || (user.role === 'manager' && managerTypes.includes(role));
           });
           const regularUsersInRole = usersInRole.filter(user => {
             if (role === 'manager') {
@@ -584,7 +607,7 @@ const UserManagement = () => {
               id="role"
               name="role"
               value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value, managerType: e.target.value !== 'manager' ? '' : newUser.managerType })}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value, managerType: e.target.value !== 'manager' ? [] : newUser.managerType })}
               required
             >
               {getAvailableRoles().map(role => (
@@ -598,18 +621,29 @@ const UserManagement = () => {
           {currentUser.role === 'super_manager' && newUser.role === 'manager' && (
             <div className="form-group">
               <label htmlFor="managerType">Manager Type</label>
-              <select
-                id="managerType"
-                name="managerType"
-                value={newUser.managerType}
-                onChange={(e) => setNewUser({ ...newUser, managerType: e.target.value })}
-                required
-              >
-                <option value="">Select Manager Type</option>
-                <option value="designer">Designer Manager</option>
-                <option value="developer">Developer Manager</option>
-                <option value="bd">Business Developer Manager</option>
-              </select>
+              <div className="checkbox-group">
+                {[
+                  { value: 'designer', label: 'Designer Manager' },
+                  { value: 'developer', label: 'Developer Manager' },
+                  { value: 'bd', label: 'Business Developer Manager' }
+                ].map(option => (
+                  <label key={option.value} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      checked={newUser.managerType.includes(option.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewUser({ ...newUser, managerType: [...newUser.managerType, option.value] });
+                        } else {
+                          setNewUser({ ...newUser, managerType: newUser.managerType.filter(type => type !== option.value) });
+                        }
+                      }}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
@@ -676,7 +710,7 @@ const UserManagement = () => {
               id="editRole"
               name="role"
               value={editingUser?.role || ''}
-              onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value, managerType: e.target.value !== 'manager' ? '' : editingUser.managerType })}
+              onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value, managerType: e.target.value !== 'manager' ? [] : editingUser.managerType })}
               required
             >
               {getAvailableRoles().map(role => (
@@ -690,18 +724,30 @@ const UserManagement = () => {
           {currentUser.role === 'super_manager' && editingUser?.role === 'manager' && (
             <div className="form-group">
               <label htmlFor="editManagerType">Manager Type</label>
-              <select
-                id="editManagerType"
-                name="managerType"
-                value={editingUser?.managerType || ''}
-                onChange={(e) => setEditingUser({ ...editingUser, managerType: e.target.value })}
-                required
-              >
-                <option value="">Select Manager Type</option>
-                <option value="designer">Designer Manager</option>
-                <option value="developer">Developer Manager</option>
-                <option value="bd">Business Developer Manager</option>
-              </select>
+              <div className="checkbox-group">
+                {[
+                  { value: 'designer', label: 'Designer Manager' },
+                  { value: 'developer', label: 'Developer Manager' },
+                  { value: 'bd', label: 'Business Developer Manager' }
+                ].map(option => (
+                  <label key={option.value} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      checked={(editingUser?.managerType || []).includes(option.value)}
+                      onChange={(e) => {
+                        const currentTypes = editingUser.managerType || [];
+                        if (e.target.checked) {
+                          setEditingUser({ ...editingUser, managerType: [...currentTypes, option.value] });
+                        } else {
+                          setEditingUser({ ...editingUser, managerType: currentTypes.filter(type => type !== option.value) });
+                        }
+                      }}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 

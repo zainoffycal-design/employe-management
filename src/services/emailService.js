@@ -26,7 +26,8 @@ export const emailService = {
         createdAt: serverTimestamp()
       };
 
-      if (userData.role === 'manager' && userData.managerType) {
+      if (userData.role === 'manager' && userData.managerType && 
+          (Array.isArray(userData.managerType) ? userData.managerType.length > 0 : userData.managerType)) {
         userProfile.managerType = userData.managerType;
       }
 
@@ -144,6 +145,10 @@ export const emailService = {
         activatedAt: serverTimestamp(),
         createdAt: userData.createdAt || serverTimestamp()
       };
+
+      if (userData.managerType) {
+        newUserProfile.managerType = userData.managerType;
+      }
       
       await setDoc(doc(db, 'users', uid), newUserProfile);
       

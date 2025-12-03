@@ -100,7 +100,11 @@ export const userManagementService = {
     };
 
     if (userData.managerType !== undefined) {
-      updateData.managerType = userData.managerType || null;
+      if (Array.isArray(userData.managerType)) {
+        updateData.managerType = userData.managerType.length > 0 ? userData.managerType : null;
+      } else {
+        updateData.managerType = userData.managerType || null;
+      }
     }
 
     return firebaseUtils.updateDocument('users', userId, updateData);
