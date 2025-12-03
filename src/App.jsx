@@ -19,7 +19,7 @@ const ProjectBoard = lazy(() => import('./pages/ProjectBoard'));
 const ProjectManagement = lazy(() => import('./pages/ProjectManagement'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const AssetManager = lazy(() => import('./pages/AssetManager'));
-const Analytics = lazy(() => import('./pages/Analytics'));
+const EmployeePerformance = lazy(() => import('./pages/EmployeePerformance'));
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
 const Signup = lazy(() => import('./pages/Signup'));
 const SetupPassword = lazy(() => import('./pages/SetupPassword'));
@@ -120,10 +120,10 @@ const AppLayout = () => {
                     <AssetManager />
                   </ProtectedRoute>
                 } />
-                <Route path="/analytics" element={
+                <Route path="/employee-performance" element={
                   <ProtectedRoute>
-                    {permissionUtils.canViewAnalytics(currentUser) ? (
-                      <Analytics />
+                    {permissionUtils.isSuperManager(currentUser) ? (
+                      <EmployeePerformance />
                     ) : (
                       <Navigate to="/" replace />
                     )}

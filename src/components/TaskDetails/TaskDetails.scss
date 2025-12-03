@@ -124,6 +124,11 @@
           font-size: 0.875rem;
           color: #495057;
           font-weight: 400;
+
+          &.estimated {
+            color: #8b5cf6;
+            font-weight: 600;
+          }
         }
       }
     }

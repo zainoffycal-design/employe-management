@@ -852,6 +852,11 @@ const ProjectBoard = () => {
                             <FiClock size={12} />
                             {formatHours(task.totalHours)}
                           </span>
+                        ) : (task.estimatedHours || task.estimatedTimeData?.hours) ? (
+                          <span className="estimated-hours-indicator" title="Estimated Hours">
+                            <FiClock size={12} />
+                            Est: {formatHours(task.estimatedHours || task.estimatedTimeData?.hours || 0)}
+                          </span>
                         ) : null}
                         {task.status === 'done' && !task.reviews && !task.review && (
                           <span className="review-required-indicator" title="Add manager review">

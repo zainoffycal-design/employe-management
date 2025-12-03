@@ -684,7 +684,7 @@ const ProjectManagement = () => {
           });
           setError('');
         }}
-        title={isBdManager ? "Edit Project Budget" : "Edit Project"}
+        title="Edit Project"
       >
         <form onSubmit={handleEditProject}>
           {error && (

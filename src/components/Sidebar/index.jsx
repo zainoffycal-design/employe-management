@@ -29,8 +29,8 @@ const Sidebar = memo(({ sidebarOpen }) => {
       { path: '/users', icon: FiUserCheck, label: 'User Management' }
     ] : []),
     { path: '/assets', icon: FiPackage, label: 'Asset Manager' },
-    ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
-      { path: '/analytics', icon: FiBarChart2, label: 'Analytics' }
+    ...(currentUser?.role === 'super_manager' ? [
+      { path: '/employee-performance', icon: FiBarChart2, label: 'Employee Performance' }
     ] : []),
     ...(currentUser?.role === 'super_manager' ? [
       { path: '/payments', icon: FiDollarSign, label: 'Finance Management' }

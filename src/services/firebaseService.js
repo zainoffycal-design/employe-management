@@ -92,12 +92,20 @@ export const userManagementService = {
   },
 
   updateUserProfile: async (userId, userData) => {
-    const updateData = {
-      name: userData.name,
-      role: userData.role,
-      permissions: userData.permissions,
-      avatar: generateAvatarUrl(userData.name)
-    };
+    const updateData = {};
+
+    if (userData.name !== undefined) {
+      updateData.name = userData.name;
+      updateData.avatar = generateAvatarUrl(userData.name);
+    }
+
+    if (userData.role !== undefined) {
+      updateData.role = userData.role;
+    }
+
+    if (userData.permissions !== undefined) {
+      updateData.permissions = userData.permissions;
+    }
 
     if (userData.managerType !== undefined) {
       if (Array.isArray(userData.managerType)) {
@@ -105,6 +113,14 @@ export const userManagementService = {
       } else {
         updateData.managerType = userData.managerType || null;
       }
+    }
+
+    if (userData.monthlySalary !== undefined) {
+      updateData.monthlySalary = userData.monthlySalary;
+    }
+
+    if (userData.monthlyHours !== undefined) {
+      updateData.monthlyHours = userData.monthlyHours;
     }
 
     return firebaseUtils.updateDocument('users', userId, updateData);

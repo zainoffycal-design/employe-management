@@ -44,8 +44,11 @@ export const firebaseUtils = {
   async updateDocument(collectionName, docId, data) {
     try {
       const docRef = doc(db, collectionName, docId);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined)
+      );
       await updateDoc(docRef, {
-        ...data,
+        ...cleanData,
         updatedAt: new Date().toISOString()
       });
     } catch (error) {

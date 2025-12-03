@@ -208,9 +208,9 @@ const Dashboard = () => {
         ...baseActions,
         {
           icon: FiBarChart,
-          title: 'Analytics',
-          description: 'View performance metrics',
-          link: '/analytics',
+          title: 'Employee Performance',
+          description: 'Track employee costs and profitability',
+          link: '/employee-performance',
           color: '#6366F1'
         },
         {
@@ -226,13 +226,6 @@ const Dashboard = () => {
     if (currentUser?.role === 'manager') {
       return [
         ...baseActions,
-        {
-          icon: FiBarChart,
-          title: 'Analytics',
-          description: 'View performance metrics',
-          link: '/analytics',
-          color: '#6366F1'
-        },
         {
           icon: FiUserPlus,
           title: 'User Management',

@@ -19,7 +19,7 @@ import Avatar from '../Avatar';
 import RichTextViewer from '../RichTextViewer';
 import TimeTracker from '../TimeTracker';
 import TaskReview from '../TaskReview';
-import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate, extractMentionsFromText } from '../../utils/uiUtils';
+import { getPriorityColor, getStatusColor, getStatusDisplayName, formatRelativeTime, formatDate, extractMentionsFromText, formatHours } from '../../utils/uiUtils';
 import LinkifiedText from '../LinkifiedText';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
@@ -433,6 +433,14 @@ const TaskDetails = memo(({ task, onClose, onEdit, onDelete, users, project }) =
               <FiClock size={12} />
               <span className="info-label">Hours:</span>
               <span className="info-value">{currentTask.totalHours.toFixed(1)}h</span>
+            </div>
+          ) : (currentTask.estimatedHours || currentTask.estimatedTimeData?.hours) ? (
+            <div className="info-group">
+              <FiClock size={12} />
+              <span className="info-label">Estimated Hours:</span>
+              <span className="info-value estimated">
+                {formatHours(currentTask.estimatedHours || currentTask.estimatedTimeData?.hours || 0)}
+              </span>
             </div>
           ) : null}
         </div>

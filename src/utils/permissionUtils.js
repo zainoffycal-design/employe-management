@@ -195,7 +195,7 @@ export const permissionUtils = {
   canAccessRoute: (user, route) => {
     const routePermissions = {
       '/users': () => user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER,
-      '/analytics': () => user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER,
+      '/employee-performance': () => user?.role === ROLES.SUPER_MANAGER,
       '/payments': () => user?.role === ROLES.SUPER_MANAGER,
       '/assets': () => !!user,
       '/projects': () => !!user,

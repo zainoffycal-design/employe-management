@@ -1,0 +1,403 @@
+@use '../../styles/_shared.scss' as *;
+
+.employee-performance-page {
+  padding: 2rem;
+  background: var(--gray-50);
+  min-height: 100vh;
+
+  .employee-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+
+    .search-filter {
+      flex: 1;
+      min-width: 300px;
+      @include input-wrapper;
+
+      .search-icon {
+        @extend .input-icon;
+      }
+    }
+
+    .month-filter {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--white);
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--border-radius);
+      min-width: 250px;
+      transition: var(--transition);
+
+      &:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+      }
+
+      .calendar-icon {
+        color: var(--gray-400);
+        flex-shrink: 0;
+      }
+
+      .month-input {
+        border: none;
+        background: transparent;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        cursor: pointer;
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+
+        &:focus {
+          outline: none;
+        }
+
+        &::-webkit-calendar-picker-indicator {
+          cursor: pointer;
+          opacity: 0.6;
+          transition: opacity 0.2s ease;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+
+      .month-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .employee-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .category-section {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+
+    .category-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .count-badge {
+        background: var(--primary-color);
+        color: var(--white);
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .employees-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .employee-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    transition: var(--transition);
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--primary-color);
+    }
+
+    .employee-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--gray-200);
+
+      .employee-info {
+        flex: 1;
+
+        h3 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: var(--gray-800);
+          margin: 0 0 0.25rem 0;
+        }
+
+        .employee-role {
+          font-size: 0.875rem;
+          color: var(--gray-600);
+          margin: 0;
+        }
+      }
+
+      .edit-btn {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--gray-300);
+        background: var(--white);
+        border-radius: var(--border-radius);
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: var(--transition);
+
+        &:hover {
+          background: var(--primary-color);
+          border-color: var(--primary-color);
+          color: var(--white);
+        }
+      }
+    }
+
+    .employee-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+      }
+
+      .stat-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+
+        &.revenue {
+          color: #16a34a;
+        }
+
+        &.profit {
+          color: #16a34a;
+        }
+
+        &.loss {
+          color: #dc2626;
+        }
+
+        .margin {
+          font-size: 0.875rem;
+          font-weight: 400;
+          opacity: 0.8;
+        }
+      }
+    }
+
+    .project-breakdown {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-200);
+
+      h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin: 0 0 1rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+    }
+
+    .project-item {
+      background: var(--gray-50);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+
+        .project-name-section {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex: 1;
+          min-width: 0;
+
+          .project-name {
+            font-weight: 600;
+            color: var(--gray-800);
+            font-size: 0.9rem;
+          }
+
+          .project-budget-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            flex-shrink: 0;
+
+            &.fixed {
+              background: #fef3c7;
+              color: #d97706;
+              border: 1px solid #fcd34d;
+            }
+
+            &.hourly {
+              background: #dbeafe;
+              color: #2563eb;
+              border: 1px solid #93c5fd;
+            }
+          }
+        }
+
+        .project-hours {
+          font-size: 0.875rem;
+          color: var(--gray-600);
+          background: var(--white);
+          padding: 0.25rem 0.5rem;
+          border-radius: var(--border-radius);
+          flex-shrink: 0;
+        }
+      }
+
+      .project-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .project-detail {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+
+        span:first-child {
+          color: var(--gray-600);
+        }
+
+        span:last-child {
+          font-weight: 500;
+          color: var(--gray-800);
+
+          &.revenue {
+            color: #16a34a;
+          }
+
+          &.profit {
+            color: #16a34a;
+          }
+
+          &.loss {
+            color: #dc2626;
+          }
+
+          .margin {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-left: 0.25rem;
+          }
+        }
+      }
+    }
+  }
+
+  .access-denied {
+    @include flex-center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--gray-600);
+
+    svg {
+      color: var(--gray-400);
+    }
+
+    h3 {
+      margin: 0;
+      color: var(--gray-800);
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .employee-performance-page {
+    .employees-grid {
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-performance-page {
+    padding: 1rem;
+
+    .employee-filters {
+      flex-direction: column;
+
+      .search-filter {
+        min-width: 100%;
+      }
+
+      .month-filter {
+        min-width: 100%;
+      }
+    }
+
+    .category-section {
+      padding: 1.5rem;
+    }
+
+    .employees-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .employee-card {
+      .stat-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+}
+

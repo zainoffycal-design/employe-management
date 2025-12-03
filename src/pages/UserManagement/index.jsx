@@ -194,7 +194,9 @@ const UserManagement = () => {
   });
 
   const groupedUsers = customGroupedUsers;
-  const roleOrder = ['super_manager', 'designer', 'developer', 'bd', 'manager'];
+  const roleOrder = permissionUtils.isSuperManager(currentUser) 
+    ? ['super_manager', 'designer', 'developer', 'bd', 'manager']
+    : ['designer', 'developer', 'bd', 'manager'];
 
   if (!canManageUsers()) {
     return (

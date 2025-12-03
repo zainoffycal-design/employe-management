@@ -333,9 +333,23 @@ export const reactSelectStyles = {
   })
 };
 
-export const formatCurrency = (amount) => {
+export const formatCurrency = (amount, decimals = 0, showDecimalsOnlyWhenNeeded = false) => {
   if (amount === null || amount === undefined || isNaN(amount)) return '0';
-  const num = Math.round(parseFloat(amount));
-  return num.toLocaleString('en-US');
+  const num = parseFloat(amount);
+  
+  if (showDecimalsOnlyWhenNeeded && decimals > 0) {
+    // Check if the number has decimal places (with tolerance for floating point precision)
+    const rounded = Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    const hasDecimals = Math.abs(rounded % 1) > 0.0001;
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: hasDecimals ? decimals : 0,
+      maximumFractionDigits: decimals
+    });
+  }
+  
+  return num.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
 };
 
