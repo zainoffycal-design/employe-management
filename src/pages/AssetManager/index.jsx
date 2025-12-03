@@ -222,8 +222,9 @@ const AssetManager = () => {
   const [filterType, setFilterType] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
 
-  const canManageAssets = currentUser?.role === 'super_manager';
-  const canViewAllAssets = currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
+  const { canManageAssets: canManageAssetsFromAuth, canViewAllAssets: canViewAllAssetsFromAuth } = useAuth();
+  const canManageAssets = canManageAssetsFromAuth();
+  const canViewAllAssets = canViewAllAssetsFromAuth();
   const canAddAssets = true;
 
 

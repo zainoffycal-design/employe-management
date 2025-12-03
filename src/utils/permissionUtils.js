@@ -6,11 +6,30 @@ export const PERMISSIONS = {
   VIEW_ANALYTICS: 'view_analytics',
   ASSIGN_TASKS: 'assign_tasks',
   MANAGE_USERS: 'manage_users',
-  VIEW_OWN_TASKS: 'view_own_tasks'
+  VIEW_OWN_TASKS: 'view_own_tasks',
+  MANAGE_ASSETS: 'manage_assets',
+  VIEW_ALL_ASSETS: 'view_all_assets',
+  MANAGE_FINANCE: 'manage_finance',
+  VIEW_BUDGET: 'view_budget',
+  MANAGE_PROJECTS: 'manage_projects'
+};
+
+export const ROLES = {
+  SUPER_MANAGER: 'super_manager',
+  MANAGER: 'manager',
+  DESIGNER: 'designer',
+  DEVELOPER: 'developer',
+  BD: 'bd'
+};
+
+export const MANAGER_TYPES = {
+  DESIGNER: 'designer',
+  DEVELOPER: 'developer',
+  BD: 'bd'
 };
 
 const ROLE_PERMISSIONS = {
-  super_manager: [
+  [ROLES.SUPER_MANAGER]: [
     PERMISSIONS.EDIT_TASKS,
     PERMISSIONS.DELETE_TASKS,
     PERMISSIONS.MOVE_TASKS,
@@ -18,58 +37,71 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.ASSIGN_TASKS,
     PERMISSIONS.MANAGE_USERS,
-    PERMISSIONS.VIEW_OWN_TASKS
+    PERMISSIONS.VIEW_OWN_TASKS,
+    PERMISSIONS.MANAGE_ASSETS,
+    PERMISSIONS.VIEW_ALL_ASSETS,
+    PERMISSIONS.MANAGE_FINANCE,
+    PERMISSIONS.VIEW_BUDGET,
+    PERMISSIONS.MANAGE_PROJECTS
   ],
-  manager: [
+  [ROLES.MANAGER]: [
     PERMISSIONS.EDIT_TASKS,
     PERMISSIONS.DELETE_TASKS,
     PERMISSIONS.MOVE_TASKS,
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.ASSIGN_TASKS,
-    PERMISSIONS.MANAGE_USERS
+    PERMISSIONS.MANAGE_USERS,
+    PERMISSIONS.VIEW_ALL_ASSETS
   ],
-  designer: [
+  [ROLES.DESIGNER]: [
     PERMISSIONS.MOVE_TASKS,
     PERMISSIONS.VIEW_OWN_TASKS,
     PERMISSIONS.ASSIGN_TASKS
   ],
-  developer: [
+  [ROLES.DEVELOPER]: [
     PERMISSIONS.MOVE_TASKS,
     PERMISSIONS.VIEW_OWN_TASKS,
     PERMISSIONS.ASSIGN_TASKS
   ],
-  bd: [
+  [ROLES.BD]: [
     PERMISSIONS.MOVE_TASKS,
     PERMISSIONS.VIEW_OWN_TASKS,
-    PERMISSIONS.ASSIGN_TASKS
+    PERMISSIONS.ASSIGN_TASKS,
+    PERMISSIONS.VIEW_BUDGET
   ]
+};
+
+const isSuperManager = (user) => {
+  return user?.role === ROLES.SUPER_MANAGER;
+};
+
+const isManager = (user) => {
+  return user?.role === ROLES.MANAGER;
+};
+
+const isManagerOfType = (user, managerType) => {
+  if (!isManager(user)) return false;
+  const managerTypes = Array.isArray(user.managerType) 
+    ? user.managerType 
+    : (user.managerType ? [user.managerType] : []);
+  return managerTypes.includes(managerType);
+};
+
+const hasManagerType = (user) => {
+  if (!isManager(user)) return false;
+  const managerTypes = Array.isArray(user.managerType) 
+    ? user.managerType 
+    : (user.managerType ? [user.managerType] : []);
+  return managerTypes.length > 0;
 };
 
 export const permissionUtils = {
   hasPermission: (user, permission) => {
     if (!user || !user.role) return false;
-    
-    if (user.role === 'super_manager') return true;
-    
+    if (isSuperManager(user)) return true;
     const userPermissions = ROLE_PERMISSIONS[user.role] || [];
     return userPermissions.includes(permission);
-  },
-
-  canViewAllTasks: (user) => {
-    return user?.role === 'super_manager' || user?.role === 'manager';
-  },
-
-  canManageEmployees: (user) => {
-    return user?.role === 'super_manager' || user?.role === 'manager';
-  },
-
-  canManageUsers: (user) => {
-    return user?.role === 'super_manager' || user?.role === 'manager';
-  },
-
-  getRolePermissions: (role) => {
-    return ROLE_PERMISSIONS[role] || [];
   },
 
   hasAnyPermission: (user, permissions) => {
@@ -78,30 +110,157 @@ export const permissionUtils = {
 
   hasAllPermissions: (user, permissions) => {
     return permissions.every(permission => permissionUtils.hasPermission(user, permission));
+  },
+
+  getRolePermissions: (role) => {
+    return ROLE_PERMISSIONS[role] || [];
+  },
+
+  isSuperManager: (user) => user?.role === ROLES.SUPER_MANAGER,
+  isManager: (user) => user?.role === ROLES.MANAGER,
+  isDesigner: (user) => user?.role === ROLES.DESIGNER,
+  isDeveloper: (user) => user?.role === ROLES.DEVELOPER,
+  isBD: (user) => user?.role === ROLES.BD,
+
+  isManagerOfType: (user, managerType) => {
+    if (user?.role === ROLES.SUPER_MANAGER) return true;
+    if (!isManager(user)) return false;
+    const managerTypes = Array.isArray(user.managerType) 
+      ? user.managerType 
+      : (user.managerType ? [user.managerType] : []);
+    return managerTypes.includes(managerType);
+  },
+  hasManagerType: (user) => hasManagerType(user),
+
+  canViewAllTasks: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
+  },
+
+  canManageUsers: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
+  },
+
+  canManageEmployees: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
+  },
+
+  canManageAssets: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER;
+  },
+
+  canViewAllAssets: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
+  },
+
+  canManageFinance: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER;
+  },
+
+  canViewBudget: (user) => {
+    return isSuperManager(user) || permissionUtils.isManagerOfType(user, MANAGER_TYPES.BD);
+  },
+
+  canViewAnalytics: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.VIEW_ANALYTICS);
+  },
+
+  canManageProjects: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.MANAGE_PROJECTS);
+  },
+
+  canEditTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.EDIT_TASKS);
+  },
+
+  canDeleteTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.DELETE_TASKS);
+  },
+
+  canMoveTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.MOVE_TASKS);
+  },
+
+  canManageTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.MANAGE_TASKS);
+  },
+
+  canAssignTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.ASSIGN_TASKS);
+  },
+
+  canViewOwnTasks: (user) => {
+    return permissionUtils.hasPermission(user, PERMISSIONS.VIEW_OWN_TASKS);
+  },
+
+  canAccessRoute: (user, route) => {
+    const routePermissions = {
+      '/users': () => user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER,
+      '/analytics': () => user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER,
+      '/payments': () => user?.role === ROLES.SUPER_MANAGER,
+      '/assets': () => !!user,
+      '/projects': () => !!user,
+      '/': () => !!user
+    };
+
+    const checkPermission = routePermissions[route];
+    return checkPermission ? checkPermission() : !!user;
+  },
+
+  canEditUser: (currentUser, targetUser) => {
+    if (currentUser?.role === ROLES.SUPER_MANAGER) {
+      return targetUser?.role !== ROLES.SUPER_MANAGER || targetUser?.id === currentUser.uid;
+    }
+    if (currentUser?.role === ROLES.MANAGER) {
+      return targetUser?.role !== ROLES.SUPER_MANAGER && 
+             targetUser?.role !== ROLES.MANAGER;
+    }
+    return false;
+  },
+
+  canDeleteUser: (currentUser, targetUser) => {
+    if (currentUser?.role === ROLES.SUPER_MANAGER) {
+      return targetUser?.role !== ROLES.SUPER_MANAGER || targetUser?.id === currentUser.uid;
+    }
+    if (currentUser?.role === ROLES.MANAGER) {
+      return targetUser?.role !== ROLES.SUPER_MANAGER && 
+             targetUser?.role !== ROLES.MANAGER;
+    }
+    return false;
+  },
+
+  canCreateManager: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER;
+  },
+
+  canAssignManagerType: (user) => {
+    return user?.role === ROLES.SUPER_MANAGER;
   }
 };
 
 export const getRoleDisplayName = (role) => {
-  switch (role) {
-    case 'super_manager':
-      return 'Super Manager';
-    case 'manager':
-      return 'Manager';
-    case 'designer':
-      return 'Designer';
-    case 'developer':
-      return 'Developer';
-    case 'bd':
-      return 'Business Developer';
-    default:
-      return role;
-  }
+  const roleNames = {
+    [ROLES.SUPER_MANAGER]: 'Super Manager',
+    [ROLES.MANAGER]: 'Manager',
+    [ROLES.DESIGNER]: 'Designer',
+    [ROLES.DEVELOPER]: 'Developer',
+    [ROLES.BD]: 'Business Developer'
+  };
+  return roleNames[role] || role;
 };
 
-export const canEditTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.EDIT_TASKS);
-export const canDeleteTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.DELETE_TASKS);
-export const canMoveTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.MOVE_TASKS);
-export const canManageTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.MANAGE_TASKS);
-export const canViewAnalytics = (user) => permissionUtils.hasPermission(user, PERMISSIONS.VIEW_ANALYTICS);
-export const canAssignTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.ASSIGN_TASKS);
-export const canViewOwnTasks = (user) => permissionUtils.hasPermission(user, PERMISSIONS.VIEW_OWN_TASKS); 
+export const getManagerTypeDisplayName = (managerType) => {
+  const typeNames = {
+    [MANAGER_TYPES.DESIGNER]: 'Designer Manager',
+    [MANAGER_TYPES.DEVELOPER]: 'Developer Manager',
+    [MANAGER_TYPES.BD]: 'Business Developer Manager'
+  };
+  return typeNames[managerType] || managerType;
+};
+
+export const canEditTasks = (user) => permissionUtils.canEditTasks(user);
+export const canDeleteTasks = (user) => permissionUtils.canDeleteTasks(user);
+export const canMoveTasks = (user) => permissionUtils.canMoveTasks(user);
+export const canManageTasks = (user) => permissionUtils.canManageTasks(user);
+export const canViewAnalytics = (user) => permissionUtils.canViewAnalytics(user);
+export const canAssignTasks = (user) => permissionUtils.canAssignTasks(user);
+export const canViewOwnTasks = (user) => permissionUtils.canViewOwnTasks(user);

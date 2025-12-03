@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { permissionUtils } from "../../utils/permissionUtils";
 import { formatCurrency } from "../../utils/uiUtils";
 import SlideModal from "../SlideModal";
 import TaskDetails from "../TaskDetails";
@@ -107,8 +108,9 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     return null;
   }, [project.budget, totalProjectHours]);
 
-  const canViewBudget = currentUser?.role === 'super_manager' || currentUser?.role === 'bd';
-  const canAccessBoard = !isCompleted || currentUser?.role === 'super_manager';
+  const { canViewBudget: canViewBudgetFromAuth } = useAuth();
+  const canViewBudget = canViewBudgetFromAuth();
+  const canAccessBoard = !isCompleted || permissionUtils.isSuperManager(currentUser);
 
   const handleCardClickWithPermission = () => {
     if (!canAccessBoard) {

@@ -119,16 +119,21 @@ export const AuthProvider = ({ children }) => {
     return permissionUtils.hasPermission(currentUser, permission);
   }, [currentUser]);
   
-  const canEditTasks = useCallback(() => hasPermission(PERMISSIONS.EDIT_TASKS), [hasPermission]);
-  const canDeleteTasks = useCallback(() => hasPermission(PERMISSIONS.DELETE_TASKS), [hasPermission]);
-  const canMoveTasks = useCallback(() => hasPermission(PERMISSIONS.MOVE_TASKS), [hasPermission]);
-  const canManageTasks = useCallback(() => hasPermission(PERMISSIONS.MANAGE_TASKS), [hasPermission]);
+  const canEditTasks = useCallback(() => permissionUtils.canEditTasks(currentUser), [currentUser]);
+  const canDeleteTasks = useCallback(() => permissionUtils.canDeleteTasks(currentUser), [currentUser]);
+  const canMoveTasks = useCallback(() => permissionUtils.canMoveTasks(currentUser), [currentUser]);
+  const canManageTasks = useCallback(() => permissionUtils.canManageTasks(currentUser), [currentUser]);
   const canManageEmployees = useCallback(() => permissionUtils.canManageEmployees(currentUser), [currentUser]);
   const canManageUsers = useCallback(() => permissionUtils.canManageUsers(currentUser), [currentUser]);
-  const canViewAnalytics = useCallback(() => hasPermission(PERMISSIONS.VIEW_ANALYTICS), [hasPermission]);
-  const canAssignTasks = useCallback(() => hasPermission(PERMISSIONS.ASSIGN_TASKS), [hasPermission]);
-  const canViewOwnTasks = useCallback(() => hasPermission(PERMISSIONS.VIEW_OWN_TASKS), [hasPermission]);
+  const canViewAnalytics = useCallback(() => permissionUtils.canViewAnalytics(currentUser), [currentUser]);
+  const canAssignTasks = useCallback(() => permissionUtils.canAssignTasks(currentUser), [currentUser]);
+  const canViewOwnTasks = useCallback(() => permissionUtils.canViewOwnTasks(currentUser), [currentUser]);
   const canViewAllTasks = useCallback(() => permissionUtils.canViewAllTasks(currentUser), [currentUser]);
+  const canManageAssets = useCallback(() => permissionUtils.canManageAssets(currentUser), [currentUser]);
+  const canViewAllAssets = useCallback(() => permissionUtils.canViewAllAssets(currentUser), [currentUser]);
+  const canManageFinance = useCallback(() => permissionUtils.canManageFinance(currentUser), [currentUser]);
+  const canViewBudget = useCallback(() => permissionUtils.canViewBudget(currentUser), [currentUser]);
+  const canManageProjects = useCallback(() => permissionUtils.canManageProjects(currentUser), [currentUser]);
 
   const value = useMemo(() => ({
     isAuthenticated,
@@ -149,8 +154,13 @@ export const AuthProvider = ({ children }) => {
     canViewAnalytics,
     canAssignTasks,
     canViewOwnTasks,
-    canViewAllTasks
-  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, resetPassword, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks]);
+    canViewAllTasks,
+    canManageAssets,
+    canViewAllAssets,
+    canManageFinance,
+    canViewBudget,
+    canManageProjects
+  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, resetPassword, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks, canManageAssets, canViewAllAssets, canManageFinance, canViewBudget, canManageProjects]);
 
   return (
     <AuthContext.Provider value={value}>

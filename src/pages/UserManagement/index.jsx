@@ -2,28 +2,19 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FiPlus, 
-  FiEdit2, 
   FiTrash2, 
   FiMail, 
   FiUser,
   FiUsers,
   FiShield,
-  FiUserCheck,
-  FiUserX,
-  FiEye,
-  FiEyeOff,
   FiUserPlus,
   FiEdit3
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { emailService } from '../../services/emailService';
-import { getRoleDisplayName } from '../../utils/permissionUtils';
-import { getRoleBadgeColor, groupAndSortUsers } from '../../utils/uiUtils';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { getRoleDisplayName, permissionUtils, ROLES } from '../../utils/permissionUtils';
+import { getRoleBadgeColor } from '../../utils/uiUtils';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
@@ -130,11 +121,11 @@ const UserManagement = () => {
       { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
     ];
 
-    if (currentUser.role === 'super_manager') {
+    if (permissionUtils.canCreateManager(currentUser)) {
       roles.unshift(
         { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' }
       );
-    } else if (currentUser.role === 'manager') {
+    } else if (permissionUtils.isManager(currentUser)) {
       return roles;
     }
 
@@ -230,24 +221,6 @@ const UserManagement = () => {
     try {
       const allUsers = await userManagementService.getAllUsers();
       setUsers(allUsers);
-      
-      const managersWithoutType = allUsers.filter(user => 
-        user.role === 'manager' && (!user.managerType || 
-        (Array.isArray(user.managerType) && user.managerType.length === 0) ||
-        user.managerType === '')
-      );
-      
-      if (managersWithoutType.length > 0) {
-        console.log('⚠️ Managers without managerType assigned:', managersWithoutType.map(m => ({
-          id: m.id,
-          name: m.name,
-          email: m.email,
-          role: m.role,
-          managerType: m.managerType || 'NOT ASSIGNED'
-        })));
-      } else {
-        console.log('✅ All managers have managerType assigned');
-      }
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -335,9 +308,9 @@ const UserManagement = () => {
     setError('');
 
     try {
-      if (editingUser.role === 'super_manager') {
+      if (editingUser.role === ROLES.SUPER_MANAGER) {
         const existingSuperManager = users.find(user =>
-          user.role === 'super_manager' && user.id !== editingUser.id
+          user.role === ROLES.SUPER_MANAGER && user.id !== editingUser.id
         );
         if (existingSuperManager) {
           setError('A Super Manager already exists. Only one Super Manager is allowed.');
@@ -346,16 +319,16 @@ const UserManagement = () => {
         }
       }
 
-      if (editingUser.role === 'manager' && (!editingUser.managerType || editingUser.managerType.length === 0)) {
+      if (editingUser.role === ROLES.MANAGER && (!editingUser.managerType || editingUser.managerType.length === 0)) {
         setError('Please select at least one manager type for the manager.');
         setLoading(false);
         return;
       }
 
-      if (currentUser.role === 'manager') {
+      if (permissionUtils.isManager(currentUser) && !permissionUtils.isSuperManager(currentUser)) {
         const existingUser = users.find(user => user.id === editingUser.id);
-        if (existingUser.role === 'super_manager' || existingUser.role === 'manager' ||
-            editingUser.role === 'super_manager' || editingUser.role === 'manager') {
+        if (existingUser.role === ROLES.SUPER_MANAGER || existingUser.role === ROLES.MANAGER ||
+            editingUser.role === ROLES.SUPER_MANAGER || editingUser.role === ROLES.MANAGER) {
           setError('You do not have permission to modify manager or super manager roles.');
           setLoading(false);
           return;
@@ -502,7 +475,7 @@ const UserManagement = () => {
                       canManageUsers={canManageUsers}
                       isCurrentUser={user.id === currentUser.uid}
                       onResendInvitation={handleResendInvitation}
-                      isSuperManager={user.role === 'super_manager'}
+                      isSuperManager={permissionUtils.isSuperManager(user)}
                       currentUserRole={currentUser.role}
                       index={index}
                     />
@@ -521,7 +494,7 @@ const UserManagement = () => {
                           canManageUsers={canManageUsers}
                           isCurrentUser={user.id === currentUser.uid}
                           onResendInvitation={handleResendInvitation}
-                          isSuperManager={user.role === 'super_manager'}
+                          isSuperManager={permissionUtils.isSuperManager(user)}
                           currentUserRole={currentUser.role}
                           index={index}
                         />
@@ -540,7 +513,7 @@ const UserManagement = () => {
                           canManageUsers={canManageUsers}
                           isCurrentUser={user.id === currentUser.uid}
                           onResendInvitation={handleResendInvitation}
-                          isSuperManager={user.role === 'super_manager'}
+                          isSuperManager={permissionUtils.isSuperManager(user)}
                           currentUserRole={currentUser.role}
                           index={managersInRole.length + index}
                         />
@@ -618,7 +591,7 @@ const UserManagement = () => {
             </select>
           </div>
 
-          {currentUser.role === 'super_manager' && newUser.role === 'manager' && (
+          {permissionUtils.canAssignManagerType(currentUser) && newUser.role === ROLES.MANAGER && (
             <div className="form-group">
               <label htmlFor="managerType">Manager Type</label>
               <div className="checkbox-group">
@@ -721,7 +694,7 @@ const UserManagement = () => {
             </select>
           </div>
 
-          {currentUser.role === 'super_manager' && editingUser?.role === 'manager' && (
+          {permissionUtils.canAssignManagerType(currentUser) && editingUser?.role === ROLES.MANAGER && (
             <div className="form-group">
               <label htmlFor="editManagerType">Manager Type</label>
               <div className="checkbox-group">

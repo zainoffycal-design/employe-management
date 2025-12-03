@@ -22,7 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { notificationService } from '../../services/notificationService';
 import { getPriorityColor, getStatusDisplayName, getRemainingTime, formatCreatedTime, reactSelectStyles, formatHours } from '../../utils/uiUtils';
-import { canMoveTasks } from '../../utils/permissionUtils';
+import { canMoveTasks, permissionUtils, MANAGER_TYPES } from '../../utils/permissionUtils';
 import Modal from '../../components/Modal';
 import SlideModal from '../../components/SlideModal';
 import TaskDetails from '../../components/TaskDetails';
@@ -42,6 +42,12 @@ const ProjectBoard = () => {
   const navigate = useNavigate();
   const { projects, tasks, createTask, updateTask, deleteTask } = useTask();
   const { currentUser, loading: authLoading } = useAuth();
+  
+  const canViewEstimatedHours = useMemo(() => {
+    return permissionUtils.isSuperManager(currentUser) || 
+           permissionUtils.isManagerOfType(currentUser, MANAGER_TYPES.DESIGNER);
+  }, [currentUser]);
+  
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -953,21 +959,23 @@ const ProjectBoard = () => {
               </div>
             )}
             
-            <div className="form-row">
-              <div className="form-group col-12">
-                <EstimatedTimeSelector
-                  value={newTask.estimatedTimeData || newTask.estimatedHours}
-                  onChange={(data) => {
-                    setNewTask({
-                      ...newTask,
-                      estimatedTimeData: data,
-                      estimatedHours: data?.hours || null
-                    });
-                  }}
-                  disabled={loading}
-                />
+            {canViewEstimatedHours && (
+              <div className="form-row">
+                <div className="form-group col-12">
+                  <EstimatedTimeSelector
+                    value={newTask.estimatedTimeData || newTask.estimatedHours}
+                    onChange={(data) => {
+                      setNewTask({
+                        ...newTask,
+                        estimatedTimeData: data,
+                        estimatedHours: data?.hours || null
+                      });
+                    }}
+                    disabled={loading}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="form-row">
               <div className="form-group col-12">

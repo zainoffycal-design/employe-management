@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { permissionUtils, MANAGER_TYPES } from '../../utils/permissionUtils';
 import { userManagementService } from '../../services/firebaseService';
 import { reactSelectStyles } from '../../utils/uiUtils';
 import Select from 'react-select';
@@ -26,7 +27,10 @@ import './ProjectManagement.scss';
 const ProjectManagement = () => {
   const navigate = useNavigate();
   const { projects, createProject, updateProject, deleteProject, tasks } = useTask();
-  const { currentUser } = useAuth();
+  const { currentUser, canViewBudget } = useAuth();
+  const isBdManager = useMemo(() => {
+    return permissionUtils.isManagerOfType(currentUser, MANAGER_TYPES.BD);
+  }, [currentUser]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -200,9 +204,7 @@ const ProjectManagement = () => {
         }
       }
 
-      const isBdUser = currentUser.role === 'bd';
-      
-      if (!isBdUser) {
+      if (!isBdManager) {
         if (formData.teamMembers.length === 0) {
           setError('Please select at least one team member');
           setLoading(false);
@@ -212,7 +214,7 @@ const ProjectManagement = () => {
 
       let projectData;
       
-      if (isBdUser) {
+      if (isBdManager) {
         if (formData.budget && formData.budget.type !== 'none') {
           projectData = { budget: formData.budget };
         } else if (formData.budget && formData.budget.type === 'none') {
@@ -494,8 +496,8 @@ const ProjectManagement = () => {
                   project.teamMembers.includes(currentUser.uid);
                 
                 const canEdit = isCompleted 
-                  ? currentUser.role === 'super_manager'
-                  : (currentUser.role === 'super_manager' || isCreator || isManagerInProject || currentUser.role === 'bd');
+                  ? permissionUtils.isSuperManager(currentUser)
+                  : (permissionUtils.isSuperManager(currentUser) || isCreator || isManagerInProject || isBdManager);
                 const canDelete = isCompleted 
                   ? currentUser.role === 'super_manager' || isCreator
                   : (currentUser.role === 'super_manager' || isCreator);
@@ -624,7 +626,7 @@ const ProjectManagement = () => {
             />
           </div>
           {renderTeamMemberSelect()}
-          {(currentUser?.role === 'super_manager' || currentUser?.role === 'bd') && (
+          {canViewBudget() && (
             <BudgetManager
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
@@ -682,7 +684,7 @@ const ProjectManagement = () => {
           });
           setError('');
         }}
-        title={currentUser?.role === 'bd' ? "Edit Project Budget" : "Edit Project"}
+        title={isBdManager ? "Edit Project Budget" : "Edit Project"}
       >
         <form onSubmit={handleEditProject}>
           {error && (
@@ -725,7 +727,7 @@ const ProjectManagement = () => {
               )}
             </>
           )}
-          {(currentUser?.role === 'super_manager' || currentUser?.role === 'bd') && (
+          {canViewBudget() && (
             <BudgetManager
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
@@ -758,9 +760,9 @@ const ProjectManagement = () => {
               variant="primary"
               type="submit" 
               loading={loading}
-              loadingText={currentUser?.role === 'bd' ? "Updating Budget..." : "Updating Project..."}
+              loadingText={isBdManager ? "Updating Budget..." : "Updating Project..."}
             >
-              {currentUser?.role === 'bd' ? "Update Budget" : "Update Project"}
+              {isBdManager ? "Update Budget" : "Update Project"}
             </Button>
           </div>
         </form>

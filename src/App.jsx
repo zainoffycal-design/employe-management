@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { motion } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import { useTask } from './contexts/TaskContext';
+import { permissionUtils } from './utils/permissionUtils';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -107,7 +108,7 @@ const AppLayout = () => {
                 } />
                 <Route path="/users" element={
                   <ProtectedRoute>
-                    {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
+                    {permissionUtils.canManageUsers(currentUser) ? (
                       <UserManagement />
                     ) : (
                       <Navigate to="/" replace />
@@ -121,7 +122,7 @@ const AppLayout = () => {
                 } />
                 <Route path="/analytics" element={
                   <ProtectedRoute>
-                    {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') ? (
+                    {permissionUtils.canViewAnalytics(currentUser) ? (
                       <Analytics />
                     ) : (
                       <Navigate to="/" replace />
@@ -130,7 +131,7 @@ const AppLayout = () => {
                 } />
                 <Route path="/payments" element={
                   <ProtectedRoute>
-                    {currentUser?.role === 'super_manager' ? (
+                    {permissionUtils.canManageFinance(currentUser) ? (
                       <FinanceManagement />
                     ) : (
                       <Navigate to="/" replace />
