@@ -1,7 +1,7 @@
 export const getRoleBadgeColor = (role) => {
   switch (role) {
     case 'super_manager': return 'danger';
-    case 'manager': return 'warning';
+    case 'manager': return 'purple';
     case 'designer': return 'info';
     case 'developer': return 'primary';
     case 'bd': return 'success';
@@ -331,5 +331,11 @@ export const reactSelectStyles = {
     marginBottom: 0,
     backgroundColor: '#f8fafc'
   })
+};
+
+export const formatCurrency = (amount) => {
+  if (amount === null || amount === undefined || isNaN(amount)) return '0';
+  const num = Math.round(parseFloat(amount));
+  return num.toLocaleString('en-US');
 };
 

@@ -559,7 +559,15 @@ const Dashboard = () => {
                         <Button 
                           variant="primary" 
                           size="sm"
-                          onClick={() => navigate(`/project/${task.projectId}/board`)}
+                          onClick={() => {
+                            const isProjectCompleted = project?.status === 'completed';
+                            const canAccess = !isProjectCompleted || currentUser?.role === 'super_manager';
+                            if (canAccess) {
+                              navigate(`/project/${task.projectId}/board`);
+                            }
+                          }}
+                          title={project?.status === 'completed' && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed projects. Only super managers can access completed project boards." : ""}
+                          disabled={project?.status === 'completed' && currentUser?.role !== 'super_manager'}
                         >
                           <FiLayout size={14} />
                           View Board

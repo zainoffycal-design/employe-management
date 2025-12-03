@@ -26,6 +26,10 @@ export const emailService = {
         createdAt: serverTimestamp()
       };
 
+      if (userData.role === 'manager' && userData.managerType) {
+        userProfile.managerType = userData.managerType;
+      }
+
       const tempUid = `invite_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       
       await setDoc(doc(db, 'user_invitations', tempUid), {

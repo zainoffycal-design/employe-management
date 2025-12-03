@@ -40,6 +40,7 @@ const ProjectManagement = () => {
     name: '',
     description: '',
     teamMembers: [],
+    status: 'active',
     budget: {
       type: 'none',
       fixedBudget: '',
@@ -168,6 +169,7 @@ const ProjectManagement = () => {
         name: '', 
         description: '', 
         teamMembers: [],
+        status: 'active',
         budget: {
           type: 'none',
           fixedBudget: '',
@@ -191,7 +193,7 @@ const ProjectManagement = () => {
     try {
       if (selectedProject) {
         const isCompleted = isProjectCompleted(selectedProject);
-        if (isCompleted && currentUser.role !== 'super_manager' && currentUser.role !== 'bd') {
+        if (isCompleted && currentUser.role !== 'super_manager') {
           setError('Only super managers can edit completed projects');
           setLoading(false);
           return;
@@ -226,6 +228,14 @@ const ProjectManagement = () => {
         if (formData.budget.type === 'none') {
           delete projectData.budget;
         }
+        if (currentUser.role === 'super_manager' && formData.status) {
+          projectData.status = formData.status;
+          if (formData.status === 'active' && selectedProject?.status === 'completed') {
+            projectData.completedAt = null;
+          } else if (formData.status === 'completed' && selectedProject?.status !== 'completed') {
+            projectData.completedAt = new Date().toISOString();
+          }
+        }
       }
 
       await updateProject(selectedProject.id, projectData);
@@ -235,6 +245,7 @@ const ProjectManagement = () => {
         name: '', 
         description: '', 
         teamMembers: [],
+        status: 'active',
         budget: {
           type: 'none',
           fixedBudget: '',
@@ -483,7 +494,7 @@ const ProjectManagement = () => {
                   project.teamMembers.includes(currentUser.uid);
                 
                 const canEdit = isCompleted 
-                  ? currentUser.role === 'super_manager' || currentUser.role === 'bd'
+                  ? currentUser.role === 'super_manager'
                   : (currentUser.role === 'super_manager' || isCreator || isManagerInProject || currentUser.role === 'bd');
                 const canDelete = isCompleted 
                   ? currentUser.role === 'super_manager' || isCreator
@@ -514,6 +525,7 @@ const ProjectManagement = () => {
                               value: id,
                               label: users.find(user => user.id === id)?.name || 'Unknown User'
                             })),
+                            status: project.status || 'active',
                             budget: project.budget || {
                               type: 'none',
                               fixedBudget: '',
@@ -698,6 +710,19 @@ const ProjectManagement = () => {
                 />
               </div>
               {renderTeamMemberSelect()}
+              {currentUser?.role === 'super_manager' && selectedProject && (
+                <div className="form-group">
+                  <label>Project Status</label>
+                  <select
+                    className="form-control"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              )}
             </>
           )}
           {(currentUser?.role === 'super_manager' || currentUser?.role === 'bd') && (

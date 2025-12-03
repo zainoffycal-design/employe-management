@@ -115,6 +115,12 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 1.5rem;
+
+      &--managers {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--gray-200);
+      }
     }
   }
 
@@ -232,6 +238,12 @@
         text-transform: capitalize;
         letter-spacing: 0.025em;
 
+        .manager-type-badge {
+          font-weight: 500;
+          opacity: 0.85;
+          font-size: 0.7rem;
+        }
+
         &.danger {
           background: #fef2f2;
           color: #dc2626;
@@ -242,6 +254,12 @@
           background: #fffbeb;
           color: #d97706;
           border: 1px solid #fed7aa;
+        }
+
+        &.purple {
+          background: #f5f3ff;
+          color: #7c3aed;
+          border: 1px solid #ddd6fe;
         }
 
         &.info {

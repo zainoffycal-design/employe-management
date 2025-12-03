@@ -114,7 +114,8 @@ const UserManagement = () => {
     password: '',
     confirmPassword: '',
     role: 'designer',
-    permissions: []
+    permissions: [],
+    managerType: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -160,8 +161,38 @@ const UserManagement = () => {
     });
   }
 
-  const groupedUsers = groupAndSortUsers(allUsersIncludingCurrent);
-  const roleOrder = ['super_manager', 'manager', 'designer', 'developer', 'bd'];
+  const customGroupedUsers = allUsersIncludingCurrent.reduce((acc, user) => {
+    if (user.role === 'manager' && user.managerType) {
+      const teamRole = user.managerType;
+      if (!acc[teamRole]) {
+        acc[teamRole] = [];
+      }
+      acc[teamRole].push({ ...user, isManager: true });
+    } else if (user.role === 'manager' && !user.managerType) {
+      if (!acc['manager']) {
+        acc['manager'] = [];
+      }
+      acc['manager'].push(user);
+    } else {
+      const role = user.role || 'user';
+      if (!acc[role]) {
+        acc[role] = [];
+      }
+      acc[role].push(user);
+    }
+    return acc;
+  }, {});
+
+  Object.keys(customGroupedUsers).forEach(role => {
+    customGroupedUsers[role].sort((a, b) => {
+      if (a.isManager && !b.isManager) return -1;
+      if (!a.isManager && b.isManager) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  });
+
+  const groupedUsers = customGroupedUsers;
+  const roleOrder = ['super_manager', 'designer', 'developer', 'bd', 'manager'];
 
   if (!canManageUsers()) {
     return (
@@ -188,6 +219,22 @@ const UserManagement = () => {
     try {
       const allUsers = await userManagementService.getAllUsers();
       setUsers(allUsers);
+      
+      const managersWithoutType = allUsers.filter(user => 
+        user.role === 'manager' && (!user.managerType || user.managerType === '')
+      );
+      
+      if (managersWithoutType.length > 0) {
+        console.log('⚠️ Managers without managerType assigned:', managersWithoutType.map(m => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role,
+          managerType: m.managerType || 'NOT ASSIGNED'
+        })));
+      } else {
+        console.log('✅ All managers have managerType assigned');
+      }
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -199,6 +246,12 @@ const UserManagement = () => {
     setError('');
 
     try {
+      if (newUser.role === 'manager' && !newUser.managerType) {
+        setError('Please select a manager type for the manager.');
+        setLoading(false);
+        return;
+      }
+
       const emailExists = users.some(user => 
         user.email.toLowerCase() === newUser.email.toLowerCase() && user.isActive !== false
       );
@@ -230,12 +283,18 @@ const UserManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      await emailService.createUserInvitation({
+      const invitationData = {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
         permissions: permissions
-      });
+      };
+
+      if (newUser.role === 'manager' && newUser.managerType) {
+        invitationData.managerType = newUser.managerType;
+      }
+
+      await emailService.createUserInvitation(invitationData);
 
       setNewUser({
         name: '',
@@ -243,7 +302,8 @@ const UserManagement = () => {
         password: '',
         confirmPassword: '',
         role: 'designer',
-        permissions: []
+        permissions: [],
+        managerType: ''
       });
       setShowAddUser(false);
       
@@ -304,11 +364,19 @@ const UserManagement = () => {
           permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
       }
 
-      await userManagementService.updateUserProfile(editingUser.id, {
+      const updateData = {
         name: editingUser.name,
         role: editingUser.role,
         permissions: permissions
-      });
+      };
+
+      if (editingUser.role === 'manager' && editingUser.managerType) {
+        updateData.managerType = editingUser.managerType;
+      } else if (editingUser.role !== 'manager') {
+        updateData.managerType = null;
+      }
+
+      await userManagementService.updateUserProfile(editingUser.id, updateData);
       setEditingUser(null);
       setShowEditUser(false);
       await loadUsers();
@@ -344,7 +412,10 @@ const UserManagement = () => {
 
 
   const openEditUserModal = (user) => {
-    setEditingUser(user);
+    setEditingUser({
+      ...user,
+      managerType: user.managerType || ''
+    });
     setShowEditUser(true);
   };
 
@@ -374,6 +445,19 @@ const UserManagement = () => {
           
           if (usersInRole.length === 0) return null;
 
+          const managersInRole = usersInRole.filter(user => {
+            if (role === 'manager') {
+              return user.role === 'manager' && (!user.managerType || user.managerType === '');
+            }
+            return user.isManager || (user.role === 'manager' && user.managerType === role);
+          });
+          const regularUsersInRole = usersInRole.filter(user => {
+            if (role === 'manager') {
+              return false;
+            }
+            return !user.isManager && user.role !== 'manager';
+          });
+
           return (
             <motion.div 
               key={role} 
@@ -383,22 +467,65 @@ const UserManagement = () => {
               transition={{ duration: 0.3 }}
             >
               <h2 className="role-title">{getRoleDisplayName(role)}</h2>
-              <div className="users-list">
-                {usersInRole.map((user, index) => (
-                  <UserCard
-                    key={user.id}
-                    user={user}
-                    onEdit={openEditUserModal}
-                    onDelete={handleDeleteUser}
-                    canManageUsers={canManageUsers}
-                    isCurrentUser={user.id === currentUser.uid}
-                    onResendInvitation={handleResendInvitation}
-                    isSuperManager={user.role === 'super_manager'}
-                    currentUserRole={currentUser.role}
-                    index={index}
-                  />
-                ))}
-              </div>
+              
+              {role === 'manager' ? (
+                <div className="users-list">
+                  {usersInRole.map((user, index) => (
+                    <UserCard
+                      key={user.id}
+                      user={user}
+                      onEdit={openEditUserModal}
+                      onDelete={handleDeleteUser}
+                      canManageUsers={canManageUsers}
+                      isCurrentUser={user.id === currentUser.uid}
+                      onResendInvitation={handleResendInvitation}
+                      isSuperManager={user.role === 'super_manager'}
+                      currentUserRole={currentUser.role}
+                      index={index}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {managersInRole.length > 0 && (
+                    <div className="users-list users-list--managers">
+                      {managersInRole.map((user, index) => (
+                        <UserCard
+                          key={user.id}
+                          user={user}
+                          onEdit={openEditUserModal}
+                          onDelete={handleDeleteUser}
+                          canManageUsers={canManageUsers}
+                          isCurrentUser={user.id === currentUser.uid}
+                          onResendInvitation={handleResendInvitation}
+                          isSuperManager={user.role === 'super_manager'}
+                          currentUserRole={currentUser.role}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {regularUsersInRole.length > 0 && (
+                    <div className="users-list">
+                      {regularUsersInRole.map((user, index) => (
+                        <UserCard
+                          key={user.id}
+                          user={user}
+                          onEdit={openEditUserModal}
+                          onDelete={handleDeleteUser}
+                          canManageUsers={canManageUsers}
+                          isCurrentUser={user.id === currentUser.uid}
+                          onResendInvitation={handleResendInvitation}
+                          isSuperManager={user.role === 'super_manager'}
+                          currentUserRole={currentUser.role}
+                          index={managersInRole.length + index}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </motion.div>
           );
         })}
@@ -457,7 +584,7 @@ const UserManagement = () => {
               id="role"
               name="role"
               value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value, managerType: e.target.value !== 'manager' ? '' : newUser.managerType })}
               required
             >
               {getAvailableRoles().map(role => (
@@ -467,6 +594,24 @@ const UserManagement = () => {
               ))}
             </select>
           </div>
+
+          {currentUser.role === 'super_manager' && newUser.role === 'manager' && (
+            <div className="form-group">
+              <label htmlFor="managerType">Manager Type</label>
+              <select
+                id="managerType"
+                name="managerType"
+                value={newUser.managerType}
+                onChange={(e) => setNewUser({ ...newUser, managerType: e.target.value })}
+                required
+              >
+                <option value="">Select Manager Type</option>
+                <option value="designer">Designer Manager</option>
+                <option value="developer">Developer Manager</option>
+                <option value="bd">Business Developer Manager</option>
+              </select>
+            </div>
+          )}
 
           <div className="modal-actions">
             <Button 
@@ -531,7 +676,7 @@ const UserManagement = () => {
               id="editRole"
               name="role"
               value={editingUser?.role || ''}
-              onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+              onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value, managerType: e.target.value !== 'manager' ? '' : editingUser.managerType })}
               required
             >
               {getAvailableRoles().map(role => (
@@ -541,6 +686,24 @@ const UserManagement = () => {
               ))}
             </select>
           </div>
+
+          {currentUser.role === 'super_manager' && editingUser?.role === 'manager' && (
+            <div className="form-group">
+              <label htmlFor="editManagerType">Manager Type</label>
+              <select
+                id="editManagerType"
+                name="managerType"
+                value={editingUser?.managerType || ''}
+                onChange={(e) => setEditingUser({ ...editingUser, managerType: e.target.value })}
+                required
+              >
+                <option value="">Select Manager Type</option>
+                <option value="designer">Designer Manager</option>
+                <option value="developer">Developer Manager</option>
+                <option value="bd">Business Developer Manager</option>
+              </select>
+            </div>
+          )}
 
           <div className="modal-actions">
             <Button 

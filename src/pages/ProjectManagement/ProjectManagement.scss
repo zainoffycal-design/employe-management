@@ -115,7 +115,7 @@
                   gap: 0.5rem;
                   opacity: 0;
                   transition: var(--transition);
-                  z-index: 10;
+                  z-index: 2;
 
                   .action-btn {
                         @include flex-center;

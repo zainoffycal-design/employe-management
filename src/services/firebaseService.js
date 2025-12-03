@@ -92,12 +92,18 @@ export const userManagementService = {
   },
 
   updateUserProfile: async (userId, userData) => {
-    return firebaseUtils.updateDocument('users', userId, {
+    const updateData = {
       name: userData.name,
       role: userData.role,
       permissions: userData.permissions,
       avatar: generateAvatarUrl(userData.name)
-    });
+    };
+
+    if (userData.managerType !== undefined) {
+      updateData.managerType = userData.managerType || null;
+    }
+
+    return firebaseUtils.updateDocument('users', userId, updateData);
   },
 
   ensureUserUid: async (uid, email) => {

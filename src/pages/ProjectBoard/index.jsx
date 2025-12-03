@@ -169,6 +169,8 @@ const ProjectBoard = () => {
 
   const isLoading = authLoading || !projectsLoaded || !currentUser;
   const isProjectNotFound = !isLoading && !currentProject;
+  const isProjectCompleted = currentProject?.status === 'completed';
+  const canAccessCompletedProject = currentUser?.role === 'super_manager';
 
   useEffect(() => {
     if (isProjectNotFound) {
@@ -178,6 +180,12 @@ const ProjectBoard = () => {
       return () => clearTimeout(timer);
     }
   }, [isProjectNotFound, navigate]);
+
+  useEffect(() => {
+    if (!isLoading && currentProject && isProjectCompleted && !canAccessCompletedProject) {
+      navigate('/project-management');
+    }
+  }, [isLoading, currentProject, isProjectCompleted, canAccessCompletedProject, navigate]);
 
   const hasEditAccess = 
     currentUser.role === 'super_manager' || 
@@ -656,6 +664,24 @@ const ProjectBoard = () => {
           gap: '1rem'
         }}>
           <span>Project not found. Redirecting...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isProjectCompleted && !canAccessCompletedProject) {
+    return (
+      <div className="project-board">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '50vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <span>You don't have permission to access completed projects. Only super managers can access completed project boards.</span>
+          <span>Redirecting...</span>
         </div>
       </div>
     );

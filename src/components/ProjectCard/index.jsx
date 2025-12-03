@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { formatCurrency } from "../../utils/uiUtils";
 import SlideModal from "../SlideModal";
 import TaskDetails from "../TaskDetails";
 import "./ProjectCard.scss";
@@ -107,15 +108,24 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
   }, [project.budget, totalProjectHours]);
 
   const canViewBudget = currentUser?.role === 'super_manager' || currentUser?.role === 'bd';
+  const canAccessBoard = !isCompleted || currentUser?.role === 'super_manager';
+
+  const handleCardClickWithPermission = () => {
+    if (!canAccessBoard) {
+      return;
+    }
+    handleCardClick();
+  };
 
   return (
     <motion.div
-      className={`project-card ${variant === "dashboard" ? "dashboard-variant" : ""} ${isCompleted ? "completed" : ""}`}
+      className={`project-card ${variant === "dashboard" ? "dashboard-variant" : ""} ${isCompleted ? "completed" : ""} ${!canAccessBoard ? "no-access" : ""}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      onClick={handleCardClick}
-      style={{ cursor: "pointer" }}>
+      onClick={handleCardClickWithPermission}
+      style={{ cursor: canAccessBoard ? "pointer" : "not-allowed" }}
+      title={!canAccessBoard ? "You don't have permission to access completed projects. Only super managers can access completed project boards." : ""}>
       <div className="project-card-header">
         {variant !== "dashboard" && activeTasks.length > 0 && (
           <button className="expand-button" onClick={handleExpandClick} title={isExpanded ? "Collapse tasks" : "Expand tasks"}>
@@ -155,7 +165,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   <FiDollarSign size={14} />
                   <span>Budget</span>
                 </div>
-                <span className="info-total">${budgetStats.totalBudget.toFixed(2)}</span>
+                <span className="info-total">${formatCurrency(budgetStats.totalBudget)}</span>
               </div>
               <div className="info-progress-bar">
                 <div 
@@ -166,12 +176,12 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
               <div className="info-details">
                 <div className="info-item">
                   <span className="info-label">Received</span>
-                  <span className="info-value positive">${budgetStats.totalReceived.toFixed(2)}</span>
+                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
                   <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
-                    {budgetStats.remaining < 0 ? `+$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
+                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining))}` : `$${formatCurrency(budgetStats.remaining)}`}
                   </span>
                 </div>
               </div>
@@ -184,7 +194,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   <FiClock size={14} />
                   <span>Hour-Based Budget</span>
                 </div>
-                <span className="info-total">${budgetStats.hourlyRate.toFixed(2)}/hr</span>
+                <span className="info-total">${formatCurrency(budgetStats.hourlyRate)}/hr</span>
               </div>
               <div className="info-progress-bar">
                 <div 
@@ -195,16 +205,16 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
               <div className="info-details">
                 <div className="info-item">
                   <span className="info-label">Received</span>
-                  <span className="info-value positive">${budgetStats.totalReceived.toFixed(2)}</span>
+                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Estimated</span>
-                  <span className="info-value">${budgetStats.estimatedBudget.toFixed(2)}</span>
+                  <span className="info-value">${formatCurrency(budgetStats.estimatedBudget)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
                   <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
-                    {budgetStats.remaining < 0 ? `+$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
+                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining))}` : `$${formatCurrency(budgetStats.remaining)}`}
                   </span>
                 </div>
               </div>

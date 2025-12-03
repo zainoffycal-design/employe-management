@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiClock, FiPlus, FiTrash2, FiCalendar, FiEdit3 } from 'react-icons/fi';
+import { formatCurrency } from '../../utils/uiUtils';
 import './BudgetManager.scss';
 
 const BudgetManager = ({ value, onChange, disabled = false }) => {
@@ -181,16 +182,16 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
             <div className="budget-summary">
               <div className="summary-item">
                 <span className="summary-label">Total Budget:</span>
-                <span className="summary-value">${parseFloat(fixedBudget || 0).toFixed(2)}</span>
+                <span className="summary-value">${formatCurrency(parseFloat(fixedBudget || 0))}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">Received:</span>
-                <span className="summary-value received">${totalReceived.toFixed(2)}</span>
+                <span className="summary-value received">${formatCurrency(totalReceived)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">{remainingBudget < 0 ? 'Bonus:' : 'Remaining:'}</span>
                 <span className={`summary-value ${remainingBudget < 0 ? 'bonus' : ''}`}>
-                  {remainingBudget < 0 ? `+$${Math.abs(remainingBudget).toFixed(2)}` : `$${remainingBudget.toFixed(2)}`}
+                  {remainingBudget < 0 ? `+$${formatCurrency(Math.abs(remainingBudget))}` : `$${formatCurrency(remainingBudget)}`}
                 </span>
               </div>
             </div>
@@ -222,7 +223,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                         <div className="payment-summary">
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
-                            <span className="amount-value">${parseFloat(payment.amount || 0).toFixed(2)}</span>
+                            <span className="amount-value">${formatCurrency(parseFloat(payment.amount || 0))}</span>
                             {payment.receivedAt && (
                               <span className="payment-date">
                                 {new Date(payment.receivedAt).toLocaleDateString()}
@@ -357,7 +358,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                         <div className="payment-summary">
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
-                            <span className="amount-value">${parseFloat(payment.amount || 0).toFixed(2)}</span>
+                            <span className="amount-value">${formatCurrency(parseFloat(payment.amount || 0))}</span>
                             {payment.receivedAt && (
                               <span className="payment-date">
                                 {new Date(payment.receivedAt).toLocaleDateString()}

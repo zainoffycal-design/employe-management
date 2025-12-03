@@ -9,6 +9,7 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import { calculateMonthlyFinance } from '../../utils/financeCalculations';
 import { budgetService } from '../../services/firebaseService';
+import { formatCurrency } from '../../utils/uiUtils';
 import toast from 'react-hot-toast';
 import './FinanceManagement.scss';
 
@@ -155,8 +156,8 @@ const FinanceManagement = () => {
                 />
               </div>
               <div className="progress-stats">
-                <span>${monthlyPayments.grandTotalReceived.toFixed(2)} received</span>
-                <span>of ${monthlyBudget.toFixed(2)} budget</span>
+                <span>${formatCurrency(monthlyPayments.grandTotalReceived)} received</span>
+                <span>of ${formatCurrency(monthlyBudget)} budget</span>
               </div>
             </div>
           </motion.div>
@@ -177,7 +178,7 @@ const FinanceManagement = () => {
                     <span className="summary-subtitle">This Month</span>
                   </div>
                 </div>
-                <div className="summary-amount">${monthlyPayments.grandTotalReceived.toFixed(2)}</div>
+                <div className="summary-amount">${formatCurrency(monthlyPayments.grandTotalReceived)}</div>
               </motion.div>
               {monthlyPayments.grandTotalEstimated > 0 && (
                 <motion.div 
@@ -193,7 +194,7 @@ const FinanceManagement = () => {
                       <span className="summary-subtitle">From Projects</span>
                     </div>
                   </div>
-                  <div className="summary-amount">${monthlyPayments.grandTotalEstimated.toFixed(2)}</div>
+                  <div className="summary-amount">${formatCurrency(monthlyPayments.grandTotalEstimated)}</div>
                 </motion.div>
               )}
               {monthlyBudget > 0 && (
@@ -210,7 +211,7 @@ const FinanceManagement = () => {
                       <span className="summary-subtitle">Set Budget</span>
                     </div>
                   </div>
-                  <div className="summary-amount">${monthlyBudget.toFixed(2)}</div>
+                  <div className="summary-amount">${formatCurrency(monthlyBudget)}</div>
                 </motion.div>
               )}
             </div>
@@ -246,9 +247,9 @@ const FinanceManagement = () => {
                         )}
                       </div>
                       <div className="payment-amount-section">
-                        <div className="amount-received">${project.received.toFixed(2)}</div>
+                        <div className="amount-received">${formatCurrency(project.received)}</div>
                         {estimated > 0 && (
-                          <div className="amount-estimated">of ${estimated.toFixed(2)}</div>
+                          <div className="amount-estimated">of ${formatCurrency(estimated)}</div>
                         )}
                       </div>
                     </div>
@@ -265,7 +266,7 @@ const FinanceManagement = () => {
                           <span className="progress-percentage">{receivedPercentage.toFixed(1)}%</span>
                           {project.budgetType === 'hourly' && project.hourlyRate && (
                             <span className="hourly-rate">
-                              ${project.hourlyRate.toFixed(2)}/hr
+                              ${formatCurrency(project.hourlyRate)}/hr
                             </span>
                           )}
                         </div>
@@ -276,21 +277,21 @@ const FinanceManagement = () => {
                       <div className="detail-item">
                         <span className="detail-label">Received</span>
                         <span className="detail-value received">
-                          ${project.received.toFixed(2)}
+                          ${formatCurrency(project.received)}
                         </span>
                       </div>
                       {project.hasPreviousPayments && project.thisMonthReceived > 0 && (
                         <div className="detail-item">
                           <span className="detail-label">This Month</span>
                           <span className="detail-value received">
-                            +${project.thisMonthReceived.toFixed(2)}
+                            +${formatCurrency(project.thisMonthReceived)}
                           </span>
                         </div>
                       )}
                       {estimated > 0 && (
                         <div className="detail-item">
                           <span className="detail-label">{project.budgetType === 'fixed' ? 'Budget' : 'Estimated'}</span>
-                          <span className="detail-value estimated">${estimated.toFixed(2)}</span>
+                          <span className="detail-value estimated">${formatCurrency(estimated)}</span>
                         </div>
                       )}
                       {project.paymentCount > 0 && (
