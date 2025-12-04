@@ -964,6 +964,28 @@ const ProjectBoard = () => {
               </div>
             )}
             
+            <div className="form-group">
+              <label>Task Title</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Description</label>
+              <RichTextEditor
+                value={newTask.description}
+                onChange={(value) => setNewTask({ ...newTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
+              />
+            </div>
+            
             {canViewEstimatedHours && (
               <div className="form-row">
                 <div className="form-group col-12">
@@ -1056,28 +1078,6 @@ const ProjectBoard = () => {
                 />
               </div>
             </div>
-
-            <div className="form-group">
-              <label>Task Title</label>
-              <input
-                type="text"
-                className="form-control"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="Enter task title"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <RichTextEditor
-                value={newTask.description}
-                onChange={(value) => setNewTask({ ...newTask, description: value })}
-                placeholder="Enter task description"
-                height="250px"
-              />
-            </div>
           </div>
 
           <div className="modal-actions">
@@ -1129,6 +1129,28 @@ const ProjectBoard = () => {
                 {error}
               </div>
             )}
+            
+            <div className="form-group">
+              <label>Task Title</label>
+              <input
+                type="text"
+                className="form-control"
+                value={editingTask?.title || ''}
+                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Description</label>
+              <RichTextEditor
+                value={editingTask?.description || ''}
+                onChange={(value) => setEditingTask({ ...editingTask, description: value })}
+                placeholder="Enter task description"
+                height="250px"
+              />
+            </div>
             
             <div className="form-row">
               <div className="form-group col-12">
@@ -1219,28 +1241,6 @@ const ProjectBoard = () => {
                   components={{ Option: CustomOption }}
                 />
               </div>
-            </div>
-
-            <div className="form-group">
-              <label>Task Title</label>
-              <input
-                type="text"
-                className="form-control"
-                value={editingTask?.title || ''}
-                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                placeholder="Enter task title"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <RichTextEditor
-                value={editingTask?.description || ''}
-                onChange={(value) => setEditingTask({ ...editingTask, description: value })}
-                placeholder="Enter task description"
-                height="250px"
-              />
             </div>
 
             <div className="form-group">

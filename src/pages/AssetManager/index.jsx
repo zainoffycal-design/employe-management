@@ -156,41 +156,43 @@ const AssetCard = ({ asset, onEdit, onDelete, onAssign, onUnassign, canManageAss
           )}
         </div>
       </div>
-      {canManageAssets && (
-        <div className="asset-actions">
-          <button
-            className="action-btn edit"
-            onClick={() => onEdit(asset)}
-            title="Edit asset"
-          >
-            <FiEdit3 />
-          </button>
-          {asset.status === 'assigned' ? (
+      <div className="asset-actions">
+        <button
+          className="action-btn edit"
+          onClick={() => onEdit(asset)}
+          title="Edit asset"
+        >
+          <FiEdit3 />
+        </button>
+        {canManageAssets && (
+          <>
+            {asset.status === 'assigned' ? (
+              <button
+                className="action-btn unassign"
+                onClick={() => onUnassign(asset.id)}
+                title="Unassign asset"
+              >
+                <FiUserX />
+              </button>
+            ) : (
+              <button
+                className="action-btn assign"
+                onClick={() => onAssign(asset)}
+                title="Assign asset"
+              >
+                <FiUserCheck />
+              </button>
+            )}
             <button
-              className="action-btn unassign"
-              onClick={() => onUnassign(asset.id)}
-              title="Unassign asset"
+              className="action-btn delete"
+              onClick={() => onDelete(asset.id)}
+              title="Delete asset"
             >
-              <FiUserX />
+              <FiTrash2 />
             </button>
-          ) : (
-            <button
-              className="action-btn assign"
-              onClick={() => onAssign(asset)}
-              title="Assign asset"
-            >
-              <FiUserCheck />
-            </button>
-          )}
-          <button
-            className="action-btn delete"
-            onClick={() => onDelete(asset.id)}
-            title="Delete asset"
-          >
-            <FiTrash2 />
-          </button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </motion.div>
   );
 };
@@ -203,6 +205,7 @@ const AssetManager = () => {
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [showAssetRequest, setShowAssetRequest] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [editingRequest, setEditingRequest] = useState(null);
   const [assigningAsset, setAssigningAsset] = useState(null);
   const [approvingRequest, setApprovingRequest] = useState(null);
   const [newAsset, setNewAsset] = useState({
@@ -511,6 +514,29 @@ const AssetManager = () => {
     }
   };
 
+  const handleEditAssetRequest = async (requestData) => {
+    if (requestData && requestData.preventDefault) {
+      requestData.preventDefault();
+    }
+    setLoading(true);
+    setError('');
+
+    try {
+      const finalRequestData = {
+        ...requestData,
+        assetType: requestData.assetType === 'custom' ? requestData.customType : requestData.assetType
+      };
+      
+      await assetService.updateAssetRequest(editingRequest.id, finalRequestData);
+      setEditingRequest(null);
+    } catch (error) {
+      console.error('Error updating asset request:', error);
+      setError('Failed to update asset request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateAssetRequest = async (requestId, status) => {
     try {
       setLoading(true);
@@ -750,7 +776,11 @@ const AssetManager = () => {
                       <AssetCard
                         key={asset.id}
                         asset={asset}
-                        canManageAssets={false}
+                        onEdit={openEditAssetModal}
+                        onDelete={handleDeleteAsset}
+                        onAssign={openAssignAssetModal}
+                        onUnassign={handleUnassignAsset}
+                        canManageAssets={canManageAssets}
                         isCurrentUserAsset={true}
                         currentUser={currentUser}
                         users={users}
@@ -824,24 +854,37 @@ const AssetManager = () => {
                         <p><strong>Requested:</strong> {new Date(request.requestedAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    {canManageAssets && request.status === 'pending' && (
-                      <div className="request-actions">
+                    <div className="request-actions">
+                      {!canManageAssets && request.requestedBy === currentUser.uid && request.status === 'pending' && (
                         <Button
-                          variant="primary"
+                          variant="secondary"
                           size="small"
-                          onClick={() => setApprovingRequest(request)}
+                          onClick={() => setEditingRequest(request)}
+                          title="Edit request"
+                          className="icon-only-btn"
                         >
-                          <FiCheckCircle /> Approve
+                          <FiEdit2 />
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="small"
-                          onClick={() => handleUpdateAssetRequest(request.id, 'rejected')}
-                        >
-                          <FiXCircle /> Reject
-                        </Button>
-                      </div>
-                    )}
+                      )}
+                      {canManageAssets && request.status === 'pending' && (
+                        <>
+                          <Button
+                            variant="primary"
+                            size="small"
+                            onClick={() => setApprovingRequest(request)}
+                          >
+                            <FiCheckCircle /> Approve
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="small"
+                            onClick={() => handleUpdateAssetRequest(request.id, 'rejected')}
+                          >
+                            <FiXCircle /> Reject
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -879,6 +922,7 @@ const AssetManager = () => {
         isOpen={showAddAsset}
         mode="add"
         users={users}
+        assets={assets}
         canManageAssets={canManageAssets}
         onSave={handleAddAsset}
         onClose={() => setShowAddAsset(false)}
@@ -891,6 +935,7 @@ const AssetManager = () => {
         mode="edit"
         asset={editingAsset}
         users={users}
+        assets={assets}
         canManageAssets={canManageAssets}
         onSave={handleEditAsset}
         onClose={() => setEditingAsset(null)}
@@ -908,8 +953,22 @@ const AssetManager = () => {
 
       <AssetRequestModal
         isOpen={showAssetRequest}
+        mode="add"
         onSave={handleCreateAssetRequest}
         onClose={() => setShowAssetRequest(false)}
+        loading={loading}
+        error={error}
+      />
+
+      <AssetRequestModal
+        isOpen={!!editingRequest}
+        mode="edit"
+        request={editingRequest}
+        onSave={handleEditAssetRequest}
+        onClose={() => {
+          setEditingRequest(null);
+          setError('');
+        }}
         loading={loading}
         error={error}
       />

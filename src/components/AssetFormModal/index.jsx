@@ -12,6 +12,7 @@ const AssetFormModal = ({
   mode = 'add', 
   asset = null, 
   users = [], 
+  assets = [],
   canManageAssets = false,
   onSave, 
   onClose, 
@@ -68,17 +69,50 @@ const AssetFormModal = ({
     setImageError('');
   }, [mode, asset, isOpen]);
 
-  const getAssetTypes = () => [
-    { value: 'laptop', label: 'Laptop' },
-    { value: 'monitor', label: 'Monitor' },
-    { value: 'mouse', label: 'Mouse' },
-    { value: 'keyboard', label: 'Keyboard' },
-    { value: 'headphones', label: 'Headphones' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'router', label: 'Router' },
-    { value: 'storage', label: 'Storage Device' },
-    { value: 'custom', label: 'Custom' },
+  const getStandardTypes = () => [
+    'laptop',
+    'monitor',
+    'mouse',
+    'keyboard',
+    'headphones',
+    'phone',
+    'router',
+    'storage'
   ];
+
+  const getAssetTypes = () => {
+    const standardTypes = [
+      { value: 'laptop', label: 'Laptop' },
+      { value: 'monitor', label: 'Monitor' },
+      { value: 'mouse', label: 'Mouse' },
+      { value: 'keyboard', label: 'Keyboard' },
+      { value: 'headphones', label: 'Headphones' },
+      { value: 'phone', label: 'Phone' },
+      { value: 'router', label: 'Router' },
+      { value: 'storage', label: 'Storage Device' },
+    ];
+
+    const customTypes = assets
+      .map(asset => asset.type)
+      .filter((type, index, self) => 
+        type && 
+        !getStandardTypes().includes(type) && 
+        self.indexOf(type) === index
+      )
+      .map(type => ({
+        value: type,
+        label: type.charAt(0).toUpperCase() + type.slice(1)
+      }));
+
+    if (mode === 'edit' && asset?.type && !getStandardTypes().includes(asset.type) && !customTypes.find(ct => ct.value === asset.type)) {
+      customTypes.push({
+        value: asset.type,
+        label: asset.type.charAt(0).toUpperCase() + asset.type.slice(1)
+      });
+    }
+
+    return [...standardTypes, ...customTypes, { value: 'custom', label: 'Custom (New)' }];
+  };
 
   const userOptions = users
     .filter(user => user.isActive !== false)
@@ -159,6 +193,11 @@ const AssetFormModal = ({
     e.preventDefault();
     setImageError('');
 
+    if (formData.type === 'custom' && !formData.customType?.trim()) {
+      setImageError('Please enter a custom asset type');
+      return;
+    }
+
     let finalImageUrl = formData.imageUrl;
 
     if (imageFile) {
@@ -208,7 +247,7 @@ const AssetFormModal = ({
             name="name"
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
-            placeholder="Enter asset name"
+            placeholder="Macbook Pro 15-Inch, 2018"
             required
           />
         </div>
@@ -269,7 +308,6 @@ const AssetFormModal = ({
             value={formData.serialNumber}
             onChange={(e) => handleInputChange('serialNumber', e.target.value)}
             placeholder="Enter serial number"
-            required
           />
         </div>
 

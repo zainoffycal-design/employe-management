@@ -539,6 +539,28 @@
       .request-actions {
         @include flex-center;
         gap: 0.75rem;
+
+        .icon-only-btn {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          min-width: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .btn-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+          }
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+        }
       }
 
       .badge--priority {

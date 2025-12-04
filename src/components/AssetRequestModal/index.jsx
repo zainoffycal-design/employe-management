@@ -4,6 +4,8 @@ import Button from '../Button';
 
 const AssetRequestModal = ({
   isOpen,
+  mode = 'add',
+  request = null,
   onSave,
   onClose,
   loading = false,
@@ -17,7 +19,18 @@ const AssetRequestModal = ({
   });
 
   useEffect(() => {
-    if (!isOpen) {
+    if (mode === 'edit' && request) {
+      const assetType = request.assetType && !['laptop', 'monitor', 'mouse', 'keyboard', 'headphones', 'phone', 'router', 'storage'].includes(request.assetType)
+        ? 'custom'
+        : request.assetType || '';
+      
+      setFormData({
+        assetType: assetType,
+        customType: assetType === 'custom' ? request.assetType : '',
+        description: request.description || '',
+        priority: request.priority || 'medium'
+      });
+    } else if (!isOpen) {
       setFormData({
         assetType: '',
         customType: '',
@@ -25,7 +38,7 @@ const AssetRequestModal = ({
         priority: 'medium'
       });
     }
-  }, [isOpen]);
+  }, [isOpen, mode, request]);
 
   const getAssetTypes = () => [
     { value: 'laptop', label: 'Laptop' },
@@ -61,7 +74,7 @@ const AssetRequestModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Request Asset"
+      title={mode === 'edit' ? 'Edit Asset Request' : 'Request Asset'}
       size="medium"
     >
       <form onSubmit={handleSubmit}>
@@ -144,9 +157,9 @@ const AssetRequestModal = ({
             variant="primary"
             type="submit" 
             loading={loading}
-            loadingText="Submitting Request..."
+            loadingText={mode === 'edit' ? 'Updating Request...' : 'Submitting Request...'}
           >
-            Submit Request
+            {mode === 'edit' ? 'Update Request' : 'Submit Request'}
           </Button>
         </div>
       </form>
