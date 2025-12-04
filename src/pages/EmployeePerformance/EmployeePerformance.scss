@@ -5,21 +5,24 @@
   background: var(--gray-50);
   min-height: 100vh;
 
-  .employee-filters {
-    display: flex;
+  .filters-container {
+    @include flex-center;
+    justify-content: flex-end;
     gap: 1rem;
-    margin-bottom: 2rem;
     flex-wrap: wrap;
-    align-items: center;
+    margin-bottom: 2rem;
 
-    .search-filter {
+    .project-filter {
+      width: 240px;
       flex: 1;
-      min-width: 300px;
-      @include input-wrapper;
 
-      .search-icon {
-        @extend .input-icon;
+      div {
+        min-height: unset;
       }
+    }
+
+    .search-box {
+      width: 240px;
     }
 
     .month-filter {
@@ -73,6 +76,97 @@
         font-weight: 500;
         color: var(--gray-700);
         white-space: nowrap;
+      }
+    }
+  }
+
+  .project-stats-section {
+    margin-bottom: 2rem;
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+
+    .project-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+
+      .project-stat-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-200);
+        transition: var(--transition);
+
+        &:hover {
+          box-shadow: var(--shadow-sm);
+          border-color: var(--gray-300);
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--border-radius);
+          flex-shrink: 0;
+
+          &.budget {
+            background: #dbeafe;
+            color: #2563eb;
+          }
+
+          &.cost {
+            background: #fef3c7;
+            color: #d97706;
+          }
+
+          &.hours {
+            background: #d1fae5;
+            color: #059669;
+          }
+
+          &.remaining {
+            background: #fce7f3;
+            color: #db2777;
+          }
+        }
+
+        .stat-content {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          flex: 1;
+          min-width: 0;
+
+          .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+          }
+
+          .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-800);
+
+            &.positive {
+              color: #16a34a;
+            }
+
+            &.negative {
+              color: #dc2626;
+            }
+          }
+        }
       }
     }
   }
@@ -373,15 +467,25 @@
   .employee-performance-page {
     padding: 1rem;
 
-    .employee-filters {
+    .filters-container {
       flex-direction: column;
 
-      .search-filter {
-        min-width: 100%;
+      .project-filter {
+        width: 100%;
+      }
+
+      .search-box {
+        width: 100%;
       }
 
       .month-filter {
         min-width: 100%;
+      }
+    }
+
+    .project-stats-section {
+      .project-stats-grid {
+        grid-template-columns: 1fr;
       }
     }
 

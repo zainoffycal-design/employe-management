@@ -20,7 +20,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { permissionUtils } from '../../utils/permissionUtils';
 import { userManagementService } from '../../services/firebaseService';
 import { getRoleDisplayName } from '../../utils/permissionUtils';
-import { formatCurrency } from '../../utils/uiUtils';
+import { formatCurrency, reactSelectStyles } from '../../utils/uiUtils';
+import Select from 'react-select';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
 import Modal from '../../components/Modal';
@@ -41,6 +42,8 @@ const EmployeePerformance = () => {
   const [exchangeRate, setExchangeRate] = useState(DEFAULT_EXCHANGE_RATE);
   const [showExchangeRateModal, setShowExchangeRateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [projectSearchTerm, setProjectSearchTerm] = useState('');
+  const [selectedProject, setSelectedProject] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return format(now, 'yyyy-MM');
@@ -92,14 +95,56 @@ const EmployeePerformance = () => {
     };
   }, [selectedMonth]);
 
+  const projectOptions = useMemo(() => {
+    return projects
+      .filter(project => {
+        if (!projectSearchTerm.trim()) return true;
+        const searchLower = projectSearchTerm.toLowerCase();
+        return project.name.toLowerCase().includes(searchLower) ||
+               project.description?.toLowerCase().includes(searchLower);
+      })
+      .map(project => ({
+        value: project.id,
+        label: project.name,
+        project: project
+      }));
+  }, [projects, projectSearchTerm]);
+
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const query = searchQuery.toLowerCase().trim();
-    return users.filter(user => 
-      user.name?.toLowerCase().includes(query) ||
-      user.email?.toLowerCase().includes(query)
-    );
-  }, [users, searchQuery]);
+    let filtered = users;
+
+    if (selectedProject) {
+      const project = projects.find(p => p.id === selectedProject.value);
+      if (project) {
+        const projectTeamMembers = project.teamMembers || [];
+        const projectTaskAssignees = tasks
+          .filter(task => task.projectId === project.id)
+          .flatMap(task => {
+            const assignees = Array.isArray(task.assignee) ? task.assignee : [task.assignee];
+            return assignees.filter(Boolean);
+          });
+        
+        const allProjectUserIds = new Set([
+          ...projectTeamMembers,
+          ...projectTaskAssignees
+        ]);
+
+        filtered = filtered.filter(user => 
+          allProjectUserIds.has(user.id) || allProjectUserIds.has(user.uid)
+        );
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(user => 
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [users, searchQuery, selectedProject, projects, tasks]);
 
   const groupedUsers = useMemo(() => {
     const groups = {
@@ -127,7 +172,7 @@ const EmployeePerformance = () => {
     return groups;
   }, [filteredUsers]);
 
-  const calculateEmployeeStats = useCallback((user) => {
+  const calculateEmployeeStats = useCallback((user, filterByProject = null) => {
     const monthlySalary = parseFloat(user.monthlySalary || 0);
     const monthlyHours = parseFloat(user.monthlyHours || DEFAULT_MONTHLY_HOURS);
     const hourlyRatePKR = monthlyHours > 0 ? monthlySalary / monthlyHours : 0;
@@ -138,7 +183,11 @@ const EmployeePerformance = () => {
       return assignees.includes(user.id) || assignees.includes(user.uid);
     });
 
-    const projectStats = projects.map(project => {
+    const projectsToProcess = filterByProject 
+      ? projects.filter(p => p.id === filterByProject.value)
+      : projects;
+
+    const projectStats = projectsToProcess.map(project => {
       const projectTasks = userTasks.filter(task => task.projectId === project.id);
       
       let projectHours = 0;
@@ -245,6 +294,67 @@ const EmployeePerformance = () => {
     };
   }, [tasks, projects, exchangeRate, monthRange]);
 
+  const projectStats = useMemo(() => {
+    if (!selectedProject) return null;
+
+    const project = projects.find(p => p.id === selectedProject.value);
+    if (!project) return null;
+
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    
+    let totalSpentHours = 0;
+    projectTasks.forEach(task => {
+      const allTimeEntries = (task.timeEntries || []).filter(entry => {
+        if (entry.date) {
+          const entryDate = new Date(entry.date);
+          return isWithinInterval(entryDate, { start: monthRange.start, end: monthRange.end });
+        }
+        return true;
+      });
+      const taskHours = allTimeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
+      totalSpentHours += taskHours;
+    });
+
+    let totalProjectBudget = 0;
+    if (project.budget && project.budget.type === 'fixed') {
+      totalProjectBudget = parseFloat(project.budget.fixedBudget || 0);
+    } else if (project.budget && project.budget.type === 'hourly') {
+      const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
+      totalProjectBudget = totalSpentHours * hourlyRate;
+    }
+
+    let totalCost = 0;
+    const projectTeamMembers = project.teamMembers || [];
+    const projectTaskAssignees = projectTasks
+      .flatMap(task => {
+        const assignees = Array.isArray(task.assignee) ? task.assignee : [task.assignee];
+        return assignees.filter(Boolean);
+      });
+    
+    const allProjectUserIds = new Set([
+      ...projectTeamMembers,
+      ...projectTaskAssignees
+    ]);
+
+    const projectUsers = users.filter(user => 
+      allProjectUserIds.has(user.id) || allProjectUserIds.has(user.uid)
+    );
+
+    projectUsers.forEach(user => {
+      const stats = calculateEmployeeStats(user, selectedProject);
+      totalCost += stats.totalCostUSD;
+    });
+
+    const remaining = totalProjectBudget - totalCost;
+
+    return {
+      totalProjectBudget,
+      totalCost,
+      totalSpentHours,
+      remaining
+    };
+  }, [selectedProject, projects, tasks, monthRange, users, calculateEmployeeStats]);
+
   const handleEditUser = (user) => {
     setEditingUser(user);
     setFormData({
@@ -286,7 +396,7 @@ const EmployeePerformance = () => {
   };
 
   const renderUserCard = (user) => {
-    const stats = calculateEmployeeStats(user);
+    const stats = calculateEmployeeStats(user, selectedProject);
     
     return (
       <motion.div
@@ -480,16 +590,42 @@ const EmployeePerformance = () => {
         }
       />
 
-      <div className="employee-filters">
-        <div className="search-filter">
-          <FiSearch className="search-icon" />
+      <div className="filters-container">
+        <div className="project-filter">
+          <Select
+            options={projectOptions}
+            value={selectedProject}
+            onChange={setSelectedProject}
+            onInputChange={setProjectSearchTerm}
+            placeholder="Search and select a project..."
+            isClearable
+            isSearchable
+            styles={reactSelectStyles}
+          />
+        </div>
+        <div className={`search-box ${searchQuery.trim() ? 'search-active' : ''}`}>
+          <FiSearch size={16} />
           <input
             type="text"
             placeholder="Search employees by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
           />
+          {searchQuery.trim() && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer',
+                color: 'var(--gray-500)',
+                padding: '2px'
+              }}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
         </div>
         <div className="month-filter">
           <FiCalendar className="calendar-icon" />
@@ -504,6 +640,51 @@ const EmployeePerformance = () => {
           </span>
         </div>
       </div>
+
+      {selectedProject && projectStats && (
+        <div className="project-stats-section">
+          <div className="project-stats-grid">
+            <div className="project-stat-card">
+              <div className="stat-icon budget">
+                <FiDollarSign size={24} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Total Project Budget</span>
+                <span className="stat-value">${formatCurrency(projectStats.totalProjectBudget, 2, true)}</span>
+              </div>
+            </div>
+            <div className="project-stat-card">
+              <div className="stat-icon cost">
+                <FiDollarSign size={24} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Total Cost</span>
+                <span className="stat-value">${formatCurrency(projectStats.totalCost, 2, true)}</span>
+              </div>
+            </div>
+            <div className="project-stat-card">
+              <div className="stat-icon hours">
+                <FiClock size={24} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Total Spent Hours</span>
+                <span className="stat-value">{projectStats.totalSpentHours.toFixed(2)}h</span>
+              </div>
+            </div>
+            <div className="project-stat-card">
+              <div className="stat-icon remaining">
+                <FiDollarSign size={24} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Remaining</span>
+                <span className={`stat-value ${projectStats.remaining >= 0 ? 'positive' : 'negative'}`}>
+                  ${formatCurrency(projectStats.remaining, 2, true)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="employee-categories">
         {['designer', 'developer', 'bd', 'manager'].map(category => {
