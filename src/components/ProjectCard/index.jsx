@@ -147,6 +147,24 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
           <p className="project-description">{project.description}</p>
         </div>
       </div>
+      {(project.projectType || project.priority) && (
+        <div className="project-badges">
+          {project.projectType && (
+            <span className={`project-badge project-badge--type project-badge--${project.projectType}`}>
+              {project.projectType === 'long-term' ? 'Long Term' : 
+               project.projectType === 'short-term' ? 'Short Term' : 
+               project.projectType === 'other' ? 'Other' : project.projectType}
+            </span>
+          )}
+          {project.priority && (
+            <span className={`project-badge project-badge--priority project-badge--${project.priority}`}>
+              {project.priority === 'high' ? 'High' : 
+               project.priority === 'medium' ? 'Medium' : 
+               project.priority === 'low' ? 'Low' : project.priority}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="project-progress">
         <div className="progress-info">

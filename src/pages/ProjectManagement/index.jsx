@@ -45,6 +45,8 @@ const ProjectManagement = () => {
     description: '',
     teamMembers: [],
     status: 'active',
+    projectType: '',
+    priority: '',
     budget: {
       type: 'none',
       fixedBudget: '',
@@ -57,6 +59,8 @@ const ProjectManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedManager, setSelectedManager] = useState(null);
   const [projectFilter, setProjectFilter] = useState('active');
+  const [selectedProjectType, setSelectedProjectType] = useState(null);
+  const [selectedPriority, setSelectedPriority] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -113,6 +117,18 @@ const ProjectManagement = () => {
     { value: 'all', label: 'All Projects' },
     { value: 'active', label: 'Active Projects' },
     { value: 'completed', label: 'Completed Projects' }
+  ];
+
+  const projectTypeOptions = [
+    { value: 'long-term', label: 'Long Term' },
+    { value: 'short-term', label: 'Short Term' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  const priorityOptions = [
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' }
   ];
 
   const CustomOption = ({ children, ...props }) => {
@@ -174,6 +190,8 @@ const ProjectManagement = () => {
         description: '', 
         teamMembers: [],
         status: 'active',
+        projectType: '',
+        priority: '',
         budget: {
           type: 'none',
           fixedBudget: '',
@@ -244,6 +262,8 @@ const ProjectManagement = () => {
         description: '', 
         teamMembers: [],
         status: 'active',
+        projectType: '',
+        priority: '',
         budget: {
           type: 'none',
           fixedBudget: '',
@@ -364,14 +384,20 @@ const ProjectManagement = () => {
           project.managerId === selectedManager.value || 
           project.createdBy === selectedManager.value;
 
-        return matchesSearch && matchesManager;
+        const matchesProjectType = !selectedProjectType || 
+          project.projectType === selectedProjectType.value;
+
+        const matchesPriority = !selectedPriority || 
+          project.priority === selectedPriority.value;
+
+        return matchesSearch && matchesManager && matchesProjectType && matchesPriority;
       })
       ?.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
         return dateB - dateA;
       });
-  }, [projects, projectFilter, activeProjects, completedProjects, searchTerm, selectedManager, allUsers]);
+  }, [projects, projectFilter, activeProjects, completedProjects, searchTerm, selectedManager, selectedProjectType, selectedPriority, allUsers]);
 
   const renderTeamMemberSelect = () => (
     <div className="form-group">
@@ -461,14 +487,36 @@ const ProjectManagement = () => {
 
       <div className="projects-grid">
         <div className="projects-grid-header">
-          <div className="project-filter-dropdown">
-            <Select
-              options={projectFilterOptions}
-              value={projectFilterOptions.find(option => option.value === projectFilter)}
-              onChange={(selected) => setProjectFilter(selected.value)}
-              styles={reactSelectStyles}
-              placeholder="Filter projects"
-            />
+          <div className="project-filters-row">
+            <div className="project-filter-dropdown">
+              <Select
+                options={projectFilterOptions}
+                value={projectFilterOptions.find(option => option.value === projectFilter)}
+                onChange={(selected) => setProjectFilter(selected.value)}
+                styles={reactSelectStyles}
+                placeholder="Filter projects"
+              />
+            </div>
+            <div className="project-filter-dropdown">
+              <Select
+                options={projectTypeOptions}
+                value={selectedProjectType}
+                onChange={setSelectedProjectType}
+                isClearable
+                styles={reactSelectStyles}
+                placeholder="Project Type"
+              />
+            </div>
+            <div className="project-filter-dropdown">
+              <Select
+                options={priorityOptions}
+                value={selectedPriority}
+                onChange={setSelectedPriority}
+                isClearable
+                styles={reactSelectStyles}
+                placeholder="Priority"
+              />
+            </div>
           </div>
         </div>
         <div className="projects-grid-list">
@@ -524,6 +572,8 @@ const ProjectManagement = () => {
                               label: users.find(user => user.id === id)?.name || 'Unknown User'
                             })),
                             status: project.status || 'active',
+                            projectType: project.projectType || '',
+                            priority: project.priority || '',
                             budget: project.budget || {
                               type: 'none',
                               fixedBudget: '',
@@ -559,12 +609,12 @@ const ProjectManagement = () => {
             </div>
             <h3>No Projects Found</h3>
             <p>
-              {searchTerm.trim() || selectedManager 
+              {searchTerm.trim() || selectedManager || selectedProjectType || selectedPriority
                 ? "No projects match your current filters. Try adjusting your search or filter criteria."
                 : "Get started by creating your first project to organize your team's work."
               }
             </p>
-            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && !searchTerm.trim() && !selectedManager && (
+            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && !searchTerm.trim() && !selectedManager && !selectedProjectType && !selectedPriority && (
               <Button 
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
@@ -587,6 +637,8 @@ const ProjectManagement = () => {
             name: '', 
             description: '', 
             teamMembers: [],
+            projectType: '',
+            priority: '',
             budget: {
               type: 'none',
               fixedBudget: '',
@@ -621,6 +673,30 @@ const ProjectManagement = () => {
               required
             />
           </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Project Type</label>
+              <Select
+                options={projectTypeOptions}
+                value={projectTypeOptions.find(option => option.value === formData.projectType)}
+                onChange={(selected) => setFormData({ ...formData, projectType: selected?.value || '' })}
+                styles={reactSelectStyles}
+                placeholder="Select project type..."
+                isClearable
+              />
+            </div>
+            <div className="form-group">
+              <label>Priority</label>
+              <Select
+                options={priorityOptions}
+                value={priorityOptions.find(option => option.value === formData.priority)}
+                onChange={(selected) => setFormData({ ...formData, priority: selected?.value || '' })}
+                styles={reactSelectStyles}
+                placeholder="Select priority..."
+                isClearable
+              />
+            </div>
+          </div>
           {renderTeamMemberSelect()}
           {canViewBudget() && (
             <BudgetManager
@@ -638,6 +714,8 @@ const ProjectManagement = () => {
                   name: '', 
                   description: '', 
                   teamMembers: [],
+                  projectType: '',
+                  priority: '',
                   budget: {
                     type: 'none',
                     fixedBudget: '',
@@ -671,6 +749,8 @@ const ProjectManagement = () => {
             name: '', 
             description: '', 
             teamMembers: [],
+            projectType: '',
+            priority: '',
             budget: {
               type: 'none',
               fixedBudget: '',
@@ -705,6 +785,30 @@ const ProjectManagement = () => {
               required
             />
           </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Project Type</label>
+              <Select
+                options={projectTypeOptions}
+                value={projectTypeOptions.find(option => option.value === formData.projectType)}
+                onChange={(selected) => setFormData({ ...formData, projectType: selected?.value || '' })}
+                styles={reactSelectStyles}
+                placeholder="Select project type..."
+                isClearable
+              />
+            </div>
+            <div className="form-group">
+              <label>Priority</label>
+              <Select
+                options={priorityOptions}
+                value={priorityOptions.find(option => option.value === formData.priority)}
+                onChange={(selected) => setFormData({ ...formData, priority: selected?.value || '' })}
+                styles={reactSelectStyles}
+                placeholder="Select priority..."
+                isClearable
+              />
+            </div>
+          </div>
           {renderTeamMemberSelect()}
           {currentUser?.role === 'super_manager' && selectedProject && (
             <div className="form-group">
@@ -736,6 +840,8 @@ const ProjectManagement = () => {
                   name: '', 
                   description: '', 
                   teamMembers: [],
+                  projectType: '',
+                  priority: '',
                   budget: {
                     type: 'none',
                     fixedBudget: '',
