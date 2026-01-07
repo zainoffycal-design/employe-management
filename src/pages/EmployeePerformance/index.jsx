@@ -40,7 +40,7 @@ const EmployeePerformance = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(DEFAULT_EXCHANGE_RATE);
-  const [showExchangeRateModal, setShowExchangeRateModal] = useState(false);
+  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
@@ -53,6 +53,29 @@ const EmployeePerformance = () => {
     monthlyHours: DEFAULT_MONTHLY_HOURS
   });
 
+  const fetchExchangeRate = async () => {
+    try {
+      setExchangeRateLoading(true);
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      const data = await response.json();
+      
+      if (data.rates && data.rates.PKR) {
+        const rate = data.rates.PKR;
+        setExchangeRate(rate);
+        localStorage.setItem('pkrToUsdRate', rate.toString());
+        localStorage.setItem('pkrToUsdRateLastUpdate', new Date().toISOString());
+      }
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+      const savedRate = localStorage.getItem('pkrToUsdRate');
+      if (savedRate) {
+        setExchangeRate(parseFloat(savedRate));
+      }
+    } finally {
+      setExchangeRateLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -61,8 +84,19 @@ const EmployeePerformance = () => {
         const activeUsers = allUsers.filter(user => user.isActive !== false && user.status !== 'inactive');
         setUsers(activeUsers);
         
+        const lastUpdate = localStorage.getItem('pkrToUsdRateLastUpdate');
         const savedRate = localStorage.getItem('pkrToUsdRate');
+        
         if (savedRate) {
+          setExchangeRate(parseFloat(savedRate));
+        }
+        
+        const shouldFetch = !lastUpdate || 
+          (new Date().getTime() - new Date(lastUpdate).getTime()) > 24 * 60 * 60 * 1000;
+        
+        if (shouldFetch) {
+          await fetchExchangeRate();
+        } else if (savedRate) {
           setExchangeRate(parseFloat(savedRate));
         }
       } catch (error) {
@@ -397,8 +431,9 @@ const EmployeePerformance = () => {
       totalCost += stats.totalCostUSD;
     });
 
-    const profit = totalRevenue - totalCost;
+    const profit = totalReceived - totalCost;
     const totalProjectBudgetPKR = totalProjectBudget * exchangeRate;
+    const totalReceivedPKR = totalReceived * exchangeRate;
     const totalRevenuePKR = totalRevenue * exchangeRate;
     const totalCostPKR = totalCost * exchangeRate;
     const profitPKR = profit * exchangeRate;
@@ -407,6 +442,7 @@ const EmployeePerformance = () => {
       totalProjectBudget,
       totalProjectBudgetPKR,
       totalReceived,
+      totalReceivedPKR,
       bonus,
       totalRevenue,
       totalRevenuePKR,
@@ -453,10 +489,6 @@ const EmployeePerformance = () => {
     }
   };
 
-  const handleSaveExchangeRate = () => {
-    localStorage.setItem('pkrToUsdRate', exchangeRate.toString());
-    setShowExchangeRateModal(false);
-  };
 
   const renderUserCard = (user) => {
     const stats = calculateEmployeeStats(user, selectedProject);
@@ -646,9 +678,12 @@ const EmployeePerformance = () => {
         actions={
           <Button
             variant="secondary"
-            onClick={() => setShowExchangeRateModal(true)}
+            onClick={fetchExchangeRate}
+            loading={exchangeRateLoading}
+            loadingText="Updating..."
+            title="Click to refresh exchange rate"
           >
-            <FiSettings /> Exchange Rate: {exchangeRate} PKR/USD
+            Exchange Rate: {exchangeRate.toFixed(2)} PKR/USD
           </Button>
         }
       />
@@ -715,6 +750,19 @@ const EmployeePerformance = () => {
                 <span className="stat-label">Total Project Budget</span>
                 <span className="stat-value">${formatCurrency(projectStats.totalProjectBudget, 2, true)}</span>
                 <span className="stat-value-pkr">PKR {formatCurrency(projectStats.totalProjectBudgetPKR, 2, true)}</span>
+              </div>
+            </div>
+            <div className="project-stat-card">
+              <div className="stat-icon received">
+                <FiDollarSign size={24} />
+              </div>
+              <div className="stat-content">
+                <span className="stat-label">Total Received</span>
+                <span className="stat-value positive">${formatCurrency(projectStats.totalReceived, 2, true)}</span>
+                <span className="stat-value-pkr positive">PKR {formatCurrency(projectStats.totalReceivedPKR, 2, true)}</span>
+                {projectStats.bonus > 0 && (
+                  <span className="stat-bonus">+${formatCurrency(projectStats.bonus, 2, true)} bonus</span>
+                )}
               </div>
             </div>
             <div className="project-stat-card">
@@ -826,38 +874,6 @@ const EmployeePerformance = () => {
         </form>
       </Modal>
 
-      <Modal
-        isOpen={showExchangeRateModal}
-        onClose={() => setShowExchangeRateModal(false)}
-        title="Set Exchange Rate"
-        size="small"
-      >
-        <form onSubmit={(e) => { e.preventDefault(); handleSaveExchangeRate(); }}>
-          <div className="form-group">
-            <label>PKR to USD Exchange Rate</label>
-            <input
-              type="number"
-              value={exchangeRate}
-              onChange={(e) => setExchangeRate(parseFloat(e.target.value) || DEFAULT_EXCHANGE_RATE)}
-              placeholder="Enter exchange rate"
-              min="1"
-              step="0.01"
-            />
-            <small>Current rate: {exchangeRate} PKR = 1 USD</small>
-          </div>
-          <div className="modal-actions">
-            <Button
-              variant="secondary"
-              onClick={() => setShowExchangeRateModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              <FiSave /> Save
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </motion.div>
   );
 };
