@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPlus, 
@@ -226,6 +227,7 @@ const AssetManager = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('assets');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -237,6 +239,12 @@ const AssetManager = () => {
   const canAddAssets = true;
   const isSuperManager = currentUser?.role === 'super_manager';
 
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'requests' || tabParam === 'assets') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -317,12 +325,12 @@ const AssetManager = () => {
             approvedAssetId: createdAsset.id 
           });
           
-          // Send notification to the user who requested the asset
           await notificationService.createNotification({
             userId: formData.assignTo,
             title: 'Asset Request Approved',
             message: `Your request for ${relatedRequest.assetType === 'custom' ? relatedRequest.customType : relatedRequest.assetType} has been approved and a new asset has been assigned to you`,
             type: 'success',
+            actionUrl: '/assets',
             data: { assetId: createdAsset.id, assetName: createdAsset.name }
           });
         }
@@ -491,8 +499,9 @@ const AssetManager = () => {
           title: 'New Asset Request',
           message: `${currentUser.name} has requested a ${requestData.assetType}`,
           type: 'asset_request',
+          actionUrl: '/assets?tab=requests',
           data: {
-            requestId: null, // Will be updated after request is created
+            requestId: null,
             requestedBy: currentUser.uid,
             assetType: requestData.assetType
           }
@@ -558,6 +567,7 @@ const AssetManager = () => {
             title: 'Asset Request Approved',
             message: `Your request for ${assetType} has been approved and an asset has been assigned to you`,
             type: 'success',
+            actionUrl: '/assets',
             data: { requestId, assetType }
           });
           
@@ -584,6 +594,7 @@ const AssetManager = () => {
             title: 'Asset Request Rejected',
             message: `Your request for ${assetType} has been rejected`,
             type: 'error',
+            actionUrl: '/assets',
             data: { requestId, assetType }
           });
         }
@@ -687,13 +698,19 @@ const AssetManager = () => {
       <div className="asset-tabs">
         <button 
           className={`tab-button ${activeTab === 'assets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('assets')}
+          onClick={() => {
+            setActiveTab('assets');
+            setSearchParams({ tab: 'assets' });
+          }}
         >
           <FiPackage /> Assets
         </button>
         <button 
           className={`tab-button ${activeTab === 'requests' ? 'active' : ''}`}
-          onClick={() => setActiveTab('requests')}
+          onClick={() => {
+            setActiveTab('requests');
+            setSearchParams({ tab: 'requests' });
+          }}
         >
           <FiLayers /> {canManageAssets ? `Requests (${pendingRequests.length})` : 'My Requests'}
         </button>

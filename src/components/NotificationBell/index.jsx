@@ -10,7 +10,8 @@ import {
   FiFolder, 
   FiRefreshCw, 
   FiAlertTriangle,
-  FiCheckCircle
+  FiCheckCircle,
+  FiPackage
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -78,6 +79,8 @@ const NotificationBell = memo(() => {
         return <FiCheckCircle size={16} />;
       case 'comment_mention':
         return <FiUsers size={16} />;
+      case 'asset_request':
+        return <FiPackage size={16} />;
       default:
         return <FiBell size={16} />;
     }
@@ -93,6 +96,8 @@ const NotificationBell = memo(() => {
         return '#059669';
       case 'comment_mention':
         return '#15A970';
+      case 'asset_request':
+        return '#f59e0b';
       default:
         return 'var(--gray-600)';
     }
