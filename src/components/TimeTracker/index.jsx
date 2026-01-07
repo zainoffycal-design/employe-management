@@ -6,15 +6,75 @@ import './TimeTracker.scss';
 const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users = [] }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempHours, setTempHours] = useState('');
+  const [timeUnit, setTimeUnit] = useState('hours');
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [filterUser, setFilterUser] = useState('all');
 
   const totalHours = task?.totalHours || 0;
 
-  const addManualHours = async () => {
-    if (disabled || !tempHours || parseFloat(tempHours) <= 0) return;
+  const parseTimeInput = (input, unit) => {
+    if (!input || input.trim() === '') return 0;
     
-    const hoursToAdd = parseFloat(tempHours);
+    if (unit === 'minutes') {
+      return parseFloat(input) || 0;
+    }
+    
+    const inputStr = input.trim().toLowerCase();
+    
+    const colonMatch = inputStr.match(/^(\d+):(\d+)$/);
+    if (colonMatch) {
+      const hours = parseInt(colonMatch[1]) || 0;
+      const minutes = parseInt(colonMatch[2]) || 0;
+      return hours + (minutes / 60);
+    }
+    
+    const hMMatch = inputStr.match(/(\d+)\s*h\s*(\d+)\s*m/i);
+    if (hMMatch) {
+      const hours = parseInt(hMMatch[1]) || 0;
+      const minutes = parseInt(hMMatch[2]) || 0;
+      return hours + (minutes / 60);
+    }
+    
+    const hMatch = inputStr.match(/(\d+)\s*h/i);
+    const mMatch = inputStr.match(/(\d+)\s*m/i);
+    if (hMatch || mMatch) {
+      const hours = hMatch ? parseInt(hMatch[1]) || 0 : 0;
+      const minutes = mMatch ? parseInt(mMatch[1]) || 0 : 0;
+      return hours + (minutes / 60);
+    }
+    
+    const decimalMatch = parseFloat(inputStr);
+    if (!isNaN(decimalMatch)) {
+      return decimalMatch;
+    }
+    
+    return 0;
+  };
+
+  const formatTimeForDisplay = (hours) => {
+    if (!hours || hours === 0) return '';
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    
+    if (wholeHours === 0) {
+      return `${minutes}m`;
+    }
+    if (minutes === 0) {
+      return `${wholeHours}h`;
+    }
+    return `${wholeHours}h ${minutes}m`;
+  };
+
+  const addManualHours = async () => {
+    if (disabled || !tempHours || tempHours.trim() === '') return;
+    
+    let hoursToAdd = parseTimeInput(tempHours, timeUnit);
+    if (timeUnit === 'minutes') {
+      hoursToAdd = hoursToAdd / 60;
+    }
+    
+    if (hoursToAdd <= 0) return;
+    
     const newTotalHours = (task?.totalHours || 0) + hoursToAdd;
     
     if (onUpdate) {
@@ -41,16 +101,23 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
   const editTimeEntry = (entryId) => {
     const entry = task?.timeEntries?.find(e => e.id === entryId);
     if (entry) {
-      setTempHours(entry.hours.toString());
+      setTimeUnit('hours');
+      setTempHours(formatTimeForDisplay(entry.hours));
       setEditingEntryId(entryId);
       setIsEditing(true);
     }
   };
 
   const updateTimeEntry = async () => {
-    if (disabled || !tempHours || parseFloat(tempHours) <= 0 || !editingEntryId) return;
+    if (disabled || !tempHours || tempHours.trim() === '' || !editingEntryId) return;
     
-    const newHours = parseFloat(tempHours);
+    let newHours = parseTimeInput(tempHours, timeUnit);
+    if (timeUnit === 'minutes') {
+      newHours = newHours / 60;
+    }
+    
+    if (newHours <= 0) return;
+    
     const entry = task?.timeEntries?.find(e => e.id === editingEntryId);
     const oldHours = entry?.hours || 0;
     const hoursDifference = newHours - oldHours;
@@ -116,20 +183,38 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
           </button>
         ) : (
           <div className="manual-input">
-            <input
-              type="number"
-              value={tempHours}
-              onChange={(e) => setTempHours(e.target.value)}
-              placeholder="Hours"
-              min="0"
-              step="0.25"
-              className="hours-input"
-            />
+            <div className="time-input-wrapper">
+              <input
+                type={timeUnit === 'hours' ? 'text' : 'number'}
+                value={tempHours}
+                onChange={(e) => setTempHours(e.target.value)}
+                placeholder={timeUnit === 'hours' ? 'e.g., 1h 30m or 1:30' : 'Minutes'}
+                min="0"
+                step={timeUnit === 'minutes' ? '1' : undefined}
+                className="hours-input"
+              />
+              <div className="time-unit-selector">
+                <button
+                  type="button"
+                  className={`unit-btn ${timeUnit === 'hours' ? 'active' : ''}`}
+                  onClick={() => setTimeUnit('hours')}
+                >
+                  H
+                </button>
+                <button
+                  type="button"
+                  className={`unit-btn ${timeUnit === 'minutes' ? 'active' : ''}`}
+                  onClick={() => setTimeUnit('minutes')}
+                >
+                  M
+                </button>
+              </div>
+            </div>
             <div className="input-actions">
               <button
                 className="save-btn"
                 onClick={editingEntryId ? updateTimeEntry : addManualHours}
-                disabled={!tempHours || parseFloat(tempHours) <= 0}
+                disabled={!tempHours || tempHours.trim() === '' || parseTimeInput(tempHours, timeUnit) <= 0}
               >
                 {editingEntryId ? 'Update' : 'Add'}
               </button>
@@ -139,6 +224,7 @@ const TimeTracker = memo(({ task, onUpdate, disabled = false, currentUser, users
                   setTempHours('');
                   setIsEditing(false);
                   setEditingEntryId(null);
+                  setTimeUnit('hours');
                 }}
               >
                 Cancel
