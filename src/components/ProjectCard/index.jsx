@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiClock, FiCheckCircle, FiTrendingUp, FiUser, FiChevronDown, FiChevronUp, FiMessageSquare, FiCalendar, FiDollarSign } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { permissionUtils } from "../../utils/permissionUtils";
 import { formatCurrency } from "../../utils/uiUtils";
@@ -11,12 +11,16 @@ import "./ProjectCard.scss";
 
 const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], variant = "full", users = [], isCompleted = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showTaskDetails, setShowTaskDetails] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
   const handleCardClick = () => {
+    if (location.pathname === '/projects') {
+      sessionStorage.setItem('projectManagement_fromProjectBoard', 'true');
+    }
     navigate(`/project/${project.id}/board`);
   };
 
@@ -271,9 +275,9 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   </span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Remaining</span>
+                  <span className="info-label">{timeStats.remaining < 0 ? 'Overdue Time' : 'Remaining'}</span>
                   <span className={`info-value ${timeStats.remaining < 0 ? 'negative' : ''}`}>
-                    {timeStats.remaining >= 0 ? `+${timeStats.remaining.toFixed(1)}h` : `${timeStats.remaining.toFixed(1)}h`}
+                    {timeStats.remaining >= 0 ? `+${timeStats.remaining.toFixed(1)}h` : `${Math.abs(timeStats.remaining).toFixed(1)}h`}
                   </span>
                 </div>
               </div>

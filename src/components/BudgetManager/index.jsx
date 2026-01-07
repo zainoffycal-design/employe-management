@@ -14,7 +14,18 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
     if (value) {
       setBudgetType(value.type || 'none');
       setFixedBudget(value.fixedBudget || '');
-      setHourlyRate(value.hourlyRate || '');
+      const hourlyRateValue = value.hourlyRate;
+      if (hourlyRateValue !== undefined && hourlyRateValue !== null && hourlyRateValue !== '') {
+        const num = parseFloat(hourlyRateValue);
+        if (!isNaN(num)) {
+          const rounded = Math.round(num * 100) / 100;
+          setHourlyRate(rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2));
+        } else {
+          setHourlyRate('');
+        }
+      } else {
+        setHourlyRate('');
+      }
       setPayments(value.payments || []);
     }
   }, [value]);
@@ -31,7 +42,14 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
   };
 
   const handleFixedBudgetChange = (e) => {
-    const val = e.target.value;
+    let val = e.target.value;
+    
+    if (val && !isNaN(parseFloat(val))) {
+      const num = parseFloat(val);
+      const rounded = Math.round(num * 100) / 100;
+      val = rounded.toString();
+    }
+    
     setFixedBudget(val);
     onChange({
       type: budgetType,
@@ -40,16 +58,72 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       payments
     });
   };
+  
+  const handleFixedBudgetBlur = (e) => {
+    let val = e.target.value;
+    
+    if (val && !isNaN(parseFloat(val))) {
+      const num = parseFloat(val);
+      const rounded = Math.round(num * 100) / 100;
+      val = rounded.toFixed(2);
+      setFixedBudget(val);
+      onChange({
+        type: budgetType,
+        fixedBudget: val,
+        hourlyRate,
+        payments
+      });
+    }
+  };
 
   const handleHourlyRateChange = (e) => {
-    const val = e.target.value;
+    let val = e.target.value;
     setHourlyRate(val);
-    onChange({
-      type: budgetType,
-      fixedBudget,
-      hourlyRate: val,
-      payments
-    });
+    
+    if (val && !isNaN(parseFloat(val))) {
+      const num = parseFloat(val);
+      const rounded = Math.round(num * 100) / 100;
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: rounded.toString(),
+        payments
+      });
+    } else {
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: val,
+        payments
+      });
+    }
+  };
+  
+  const handleHourlyRateBlur = (e) => {
+    let val = e.target.value;
+    
+    if (val && val.trim() !== '') {
+      if (!isNaN(parseFloat(val))) {
+        const num = parseFloat(val);
+        const rounded = Math.round(num * 100) / 100;
+        const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+        setHourlyRate(formatted);
+        onChange({
+          type: budgetType,
+          fixedBudget,
+          hourlyRate: formatted,
+          payments
+        });
+      } else {
+        setHourlyRate('');
+        onChange({
+          type: budgetType,
+          fixedBudget,
+          hourlyRate: '',
+          payments
+        });
+      }
+    }
   };
 
   const handleAddPayment = () => {
@@ -170,6 +244,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                 className="form-control"
                 value={fixedBudget}
                 onChange={handleFixedBudgetChange}
+                onBlur={handleFixedBudgetBlur}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -321,6 +396,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                 className="form-control"
                 value={hourlyRate}
                 onChange={handleHourlyRateChange}
+                onBlur={handleHourlyRateBlur}
                 placeholder="0.00"
                 min="0"
                 step="0.01"

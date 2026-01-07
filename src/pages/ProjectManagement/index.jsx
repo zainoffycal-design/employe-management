@@ -56,11 +56,56 @@ const ProjectManagement = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedManager, setSelectedManager] = useState(null);
-  const [projectFilter, setProjectFilter] = useState('active');
-  const [selectedProjectType, setSelectedProjectType] = useState(null);
-  const [selectedPriority, setSelectedPriority] = useState(null);
+  const FILTER_STORAGE_KEY = 'projectManagement_filters';
+  const NAV_FLAG_KEY = 'projectManagement_fromProjectBoard';
+
+  const getDefaultFilters = () => ({
+    searchTerm: '',
+    selectedManager: null,
+    projectFilter: 'active',
+    selectedProjectType: { value: 'short-term', label: 'Short Term' },
+    selectedPriority: { value: 'high', label: 'High' }
+  });
+
+  const loadSavedFilters = () => {
+    const isFromProjectBoard = sessionStorage.getItem(NAV_FLAG_KEY) === 'true';
+    
+    if (!isFromProjectBoard) {
+      sessionStorage.removeItem(FILTER_STORAGE_KEY);
+      return getDefaultFilters();
+    }
+
+    try {
+      const saved = sessionStorage.getItem(FILTER_STORAGE_KEY);
+      if (saved) {
+        const filters = JSON.parse(saved);
+        return {
+          searchTerm: filters.searchTerm !== undefined ? filters.searchTerm : '',
+          selectedManager: filters.selectedManager !== undefined ? filters.selectedManager : null,
+          projectFilter: filters.projectFilter !== undefined ? filters.projectFilter : 'active',
+          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'short-term', label: 'Short Term' },
+          selectedPriority: filters.selectedPriority !== undefined ? filters.selectedPriority : { value: 'high', label: 'High' }
+        };
+      }
+    } catch (error) {
+      console.error('Error loading saved filters:', error);
+    }
+    
+    sessionStorage.removeItem(NAV_FLAG_KEY);
+    return getDefaultFilters();
+  };
+
+  const savedFilters = loadSavedFilters();
+
+  const [searchTerm, setSearchTerm] = useState(savedFilters.searchTerm);
+  const [selectedManager, setSelectedManager] = useState(savedFilters.selectedManager);
+  const [projectFilter, setProjectFilter] = useState(savedFilters.projectFilter);
+  const [selectedProjectType, setSelectedProjectType] = useState(savedFilters.selectedProjectType);
+  const [selectedPriority, setSelectedPriority] = useState(savedFilters.selectedPriority);
+
+  useEffect(() => {
+    sessionStorage.removeItem(NAV_FLAG_KEY);
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -71,6 +116,18 @@ const ProjectManagement = () => {
           user.isActive && user.id !== currentUser.uid
         );
         setUsers(activeUsers);
+
+        if (savedFilters.selectedManager && savedFilters.selectedManager.value && allUsersData.length > 0) {
+          const manager = allUsersData.find(u => u.id === savedFilters.selectedManager.value);
+          if (manager && manager.isActive) {
+            setSelectedManager({
+              value: manager.id,
+              label: manager.name,
+              role: manager.role === 'super_manager' ? 'Super Manager' : 'Manager',
+              avatar: manager.avatar
+            });
+          }
+        }
       } catch (error) {
         console.error('Error fetching users:', error);
         setError('Failed to load users');
@@ -78,6 +135,36 @@ const ProjectManagement = () => {
     };
     fetchUsers();
   }, [currentUser.uid]);
+
+  useEffect(() => {
+    const saveFilters = () => {
+      try {
+        const filters = {
+          searchTerm,
+          selectedManager: selectedManager ? {
+            value: selectedManager.value,
+            label: selectedManager.label,
+            role: selectedManager.role,
+            avatar: selectedManager.avatar
+          } : null,
+          projectFilter,
+          selectedProjectType: selectedProjectType ? {
+            value: selectedProjectType.value,
+            label: selectedProjectType.label
+          } : null,
+          selectedPriority: selectedPriority ? {
+            value: selectedPriority.value,
+            label: selectedPriority.label
+          } : null
+        };
+        sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+      } catch (error) {
+        console.error('Error saving filters:', error);
+      }
+    };
+
+    saveFilters();
+  }, [searchTerm, selectedManager, projectFilter, selectedProjectType, selectedPriority]);
 
   const groupedOptions = Object.entries(
     users.reduce((acc, user) => {
@@ -385,7 +472,9 @@ const ProjectManagement = () => {
           project.createdBy === selectedManager.value;
 
         const matchesProjectType = !selectedProjectType || 
-          project.projectType === selectedProjectType.value;
+          (selectedProjectType.value === 'other' 
+            ? !project.projectType || (typeof project.projectType === 'string' && project.projectType.trim() === '')
+            : project.projectType === selectedProjectType.value);
 
         const matchesPriority = !selectedPriority || 
           project.priority === selectedPriority.value;

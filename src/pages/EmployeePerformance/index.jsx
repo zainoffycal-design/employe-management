@@ -215,14 +215,52 @@ const EmployeePerformance = () => {
       let profitUSD = 0;
       let profitPKR = 0;
       let profitMargin = 0;
+      let bonusUSD = 0;
+
+      const totalReceived = (project.budget?.payments || []).reduce((sum, payment) => {
+        return sum + (parseFloat(payment.amount) || 0);
+      }, 0);
 
       if (project.budget && project.budget.type === 'hourly') {
         const projectHourlyRate = parseFloat(project.budget.hourlyRate || 0);
-        projectRevenueUSD = projectHours * projectHourlyRate;
-        projectRevenuePKR = projectRevenueUSD * exchangeRate;
-        profitUSD = projectRevenueUSD - projectCostUSD;
-        profitPKR = projectRevenuePKR - projectCostPKR;
-        profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
+        const budgetRevenueUSD = projectHours * projectHourlyRate;
+        const allProjectTasks = tasks.filter(t => t.projectId === project.id);
+        let totalProjectHours = 0;
+        
+        allProjectTasks.forEach(task => {
+          const allTimeEntries = (task.timeEntries || []).filter(entry => {
+            if (entry.date) {
+              const entryDate = new Date(entry.date);
+              return isWithinInterval(entryDate, { start: monthRange.start, end: monthRange.end });
+            }
+            return true;
+          });
+          const taskTotalHours = allTimeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
+          totalProjectHours += taskTotalHours;
+        });
+        
+        if (totalProjectHours > 0) {
+          const estimatedBudget = totalProjectHours * projectHourlyRate;
+          const userShare = projectHours / totalProjectHours;
+          const userBudgetShare = budgetRevenueUSD;
+          const userReceivedShare = totalReceived * userShare;
+          
+          if (userReceivedShare > userBudgetShare) {
+            bonusUSD = userReceivedShare - userBudgetShare;
+          }
+          
+          projectRevenueUSD = userBudgetShare + bonusUSD;
+          projectRevenuePKR = projectRevenueUSD * exchangeRate;
+          profitUSD = projectRevenueUSD - projectCostUSD;
+          profitPKR = projectRevenuePKR - projectCostPKR;
+          profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
+        } else {
+          projectRevenueUSD = budgetRevenueUSD;
+          projectRevenuePKR = projectRevenueUSD * exchangeRate;
+          profitUSD = projectRevenueUSD - projectCostUSD;
+          profitPKR = projectRevenuePKR - projectCostPKR;
+          profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
+        }
       } else if (project.budget && project.budget.type === 'fixed') {
         const allProjectTasks = tasks.filter(t => t.projectId === project.id);
         let totalProjectHours = 0;
@@ -233,7 +271,7 @@ const EmployeePerformance = () => {
               const entryDate = new Date(entry.date);
               return isWithinInterval(entryDate, { start: monthRange.start, end: monthRange.end });
             }
-            return true; // If no date, include it (backward compatibility)
+            return true;
           });
           const taskTotalHours = allTimeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
           totalProjectHours += taskTotalHours;
@@ -242,7 +280,14 @@ const EmployeePerformance = () => {
         if (totalProjectHours > 0) {
           const fixedBudget = parseFloat(project.budget.fixedBudget || 0);
           const userShare = projectHours / totalProjectHours;
-          projectRevenueUSD = fixedBudget * userShare;
+          const userBudgetShare = fixedBudget * userShare;
+          const userReceivedShare = totalReceived * userShare;
+          
+          if (userReceivedShare > userBudgetShare) {
+            bonusUSD = userReceivedShare - userBudgetShare;
+          }
+          
+          projectRevenueUSD = userBudgetShare + bonusUSD;
           projectRevenuePKR = projectRevenueUSD * exchangeRate;
           profitUSD = projectRevenueUSD - projectCostUSD;
           profitPKR = projectRevenuePKR - projectCostPKR;
@@ -323,6 +368,13 @@ const EmployeePerformance = () => {
       totalProjectBudget = totalSpentHours * hourlyRate;
     }
 
+    const totalReceived = (project.budget?.payments || []).reduce((sum, payment) => {
+      return sum + (parseFloat(payment.amount) || 0);
+    }, 0);
+
+    const bonus = totalReceived > totalProjectBudget ? totalReceived - totalProjectBudget : 0;
+    const totalRevenue = totalProjectBudget + bonus;
+
     let totalCost = 0;
     const projectTeamMembers = project.teamMembers || [];
     const projectTaskAssignees = projectTasks
@@ -345,15 +397,26 @@ const EmployeePerformance = () => {
       totalCost += stats.totalCostUSD;
     });
 
-    const remaining = totalProjectBudget - totalCost;
+    const profit = totalRevenue - totalCost;
+    const totalProjectBudgetPKR = totalProjectBudget * exchangeRate;
+    const totalRevenuePKR = totalRevenue * exchangeRate;
+    const totalCostPKR = totalCost * exchangeRate;
+    const profitPKR = profit * exchangeRate;
 
     return {
       totalProjectBudget,
+      totalProjectBudgetPKR,
+      totalReceived,
+      bonus,
+      totalRevenue,
+      totalRevenuePKR,
       totalCost,
+      totalCostPKR,
       totalSpentHours,
-      remaining
+      profit,
+      profitPKR
     };
-  }, [selectedProject, projects, tasks, monthRange, users, calculateEmployeeStats]);
+  }, [selectedProject, projects, tasks, monthRange, users, calculateEmployeeStats, exchangeRate]);
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -651,6 +714,7 @@ const EmployeePerformance = () => {
               <div className="stat-content">
                 <span className="stat-label">Total Project Budget</span>
                 <span className="stat-value">${formatCurrency(projectStats.totalProjectBudget, 2, true)}</span>
+                <span className="stat-value-pkr">PKR {formatCurrency(projectStats.totalProjectBudgetPKR, 2, true)}</span>
               </div>
             </div>
             <div className="project-stat-card">
@@ -660,6 +724,7 @@ const EmployeePerformance = () => {
               <div className="stat-content">
                 <span className="stat-label">Total Cost</span>
                 <span className="stat-value">${formatCurrency(projectStats.totalCost, 2, true)}</span>
+                <span className="stat-value-pkr">PKR {formatCurrency(projectStats.totalCostPKR, 2, true)}</span>
               </div>
             </div>
             <div className="project-stat-card">
@@ -672,14 +737,20 @@ const EmployeePerformance = () => {
               </div>
             </div>
             <div className="project-stat-card">
-              <div className="stat-icon remaining">
+              <div className="stat-icon profit">
                 <FiDollarSign size={24} />
               </div>
               <div className="stat-content">
-                <span className="stat-label">Remaining</span>
-                <span className={`stat-value ${projectStats.remaining >= 0 ? 'positive' : 'negative'}`}>
-                  ${formatCurrency(projectStats.remaining, 2, true)}
+                <span className="stat-label">Profit</span>
+                <span className={`stat-value ${projectStats.profit >= 0 ? 'positive' : 'negative'}`}>
+                  ${formatCurrency(projectStats.profit, 2, true)}
                 </span>
+                <span className={`stat-value-pkr ${projectStats.profit >= 0 ? 'positive' : 'negative'}`}>
+                  PKR {formatCurrency(projectStats.profitPKR, 2, true)}
+                </span>
+                {projectStats.bonus > 0 && (
+                  <span className="stat-bonus">+${formatCurrency(projectStats.bonus, 2, true)} bonus included</span>
+                )}
               </div>
             </div>
           </div>
