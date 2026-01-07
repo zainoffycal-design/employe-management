@@ -12,6 +12,7 @@
       flex-direction: column;
       position: relative;
       overflow: hidden;
+      --card-accent: var(--gray-200);
 
       &::before {
             content: '';
@@ -20,15 +21,14 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            background: linear-gradient(90deg, var(--gray-400), var(--gray-200));
+            pointer-events: none;
       }
 
       &.completed {
-            border-color: #10b981;
-            background: linear-gradient(to bottom, rgba(16, 185, 129, 0.02), white);
-
+            border: 1px solid var(--primary-color);
             &::before {
-                  background: linear-gradient(90deg, #10b981, #34d399);
+                  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
             }
       }
 
