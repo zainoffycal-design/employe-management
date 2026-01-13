@@ -1,0 +1,365 @@
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { FiFileText, FiAlertCircle, FiPlus, FiTrash2, FiDownload } from 'react-icons/fi';
+import { useAuth } from '../../contexts/AuthContext';
+import { permissionUtils } from '../../utils/permissionUtils';
+import PageTitle from '../../components/PageTitle';
+import Button from '../../components/Button';
+import { exportProjectCalculator } from '../../utils/excelExport';
+import './ProjectCalculator.scss';
+
+const ProjectCalculator = () => {
+  const { currentUser } = useAuth();
+  const [projectTitle, setProjectTitle] = useState('');
+  const [type, setType] = useState('W2');
+  const [costType, setCostType] = useState('hourly');
+  const [costAmount, setCostAmount] = useState('');
+  const [monthlyHours, setMonthlyHours] = useState('');
+  const [expenses, setExpenses] = useState([
+    { id: 1, title: 'Tax', amount: '' }
+  ]);
+
+  if (!permissionUtils.isSuperManager(currentUser)) {
+    return (
+      <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="access-denied">
+          <FiAlertCircle size={48} />
+          <h3>Access Denied</h3>
+          <p>Only Super Managers can access Project Calculator.</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const roundCurrency = (value) => {
+    if (isNaN(value) || !isFinite(value)) return 0;
+    return Math.round(value * 100) / 100;
+  };
+
+  const parseNumber = (value) => {
+    if (!value || value === '') return 0;
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const totalAmount = useMemo(() => {
+    const cost = parseNumber(costAmount);
+    const hours = parseNumber(monthlyHours);
+    
+    if (costType === 'hourly') {
+      const result = cost * hours;
+      return roundCurrency(result);
+    } else {
+      return roundCurrency(cost);
+    }
+  }, [costAmount, monthlyHours, costType]);
+
+  const totalExpenses = useMemo(() => {
+    const sum = expenses.reduce((acc, expense) => {
+      const amount = parseNumber(expense.amount);
+      return acc + amount;
+    }, 0);
+    return roundCurrency(sum);
+  }, [expenses]);
+
+  const grandTotal = useMemo(() => {
+    return roundCurrency(totalAmount - totalExpenses);
+  }, [totalAmount, totalExpenses]);
+
+  const handleAddExpense = () => {
+    const newId = expenses.length > 0 ? Math.max(...expenses.map(e => e.id)) + 1 : 1;
+    setExpenses([...expenses, { id: newId, title: '', amount: '' }]);
+  };
+
+  const handleRemoveExpense = (id) => {
+    if (expenses.length > 1) {
+      setExpenses(expenses.filter(expense => expense.id !== id));
+    }
+  };
+
+  const handleExpenseChange = (id, field, value) => {
+    setExpenses(expenses.map(expense => 
+      expense.id === id ? { ...expense, [field]: value } : expense
+    ));
+  };
+
+  const handleCostAmountChange = (e) => {
+    setCostAmount(e.target.value);
+  };
+
+  const handleMonthlyHoursChange = (e) => {
+    setMonthlyHours(e.target.value);
+  };
+
+  const handleExpenseAmountChange = (id, value) => {
+    handleExpenseChange(id, 'amount', value);
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const handleExportToExcel = () => {
+    if (!projectTitle.trim()) {
+      alert('Please enter a Project Title before exporting.');
+      return;
+    }
+
+    exportProjectCalculator({
+      projectTitle,
+      type,
+      costType,
+      costAmount,
+      monthlyHours,
+      totalAmount,
+      expenses,
+      totalExpenses,
+      grandTotal
+    });
+  };
+
+  return (
+    <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <PageTitle 
+        title="Project Calculator"
+        subtitle="Calculate project costs and expenses"
+        icon={FiFileText}
+        showBackButton={true}
+        backTo="/"
+        actions={
+          <Button
+            variant="primary"
+            onClick={handleExportToExcel}
+            disabled={!projectTitle.trim()}
+          >
+            <FiDownload size={16} />
+            Export to Excel
+          </Button>
+        }
+      />
+
+      <div className="project-calculator-page">
+        <div className="calculator-form">
+          <div className="form-section">
+            <h3 className="section-title">Project Information</h3>
+            
+            <div className="form-group">
+              <label htmlFor="projectTitle">Project Title</label>
+              <input
+                type="text"
+                id="projectTitle"
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                placeholder="Enter project title"
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="type">Type</label>
+              <select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="form-select"
+              >
+                <option value="W2">W2</option>
+                <option value="C2C">C2C</option>
+                <option value="1099">1099</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3 className="section-title">Cost Information</h3>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="costType">Cost Type</label>
+                <select
+                  id="costType"
+                  value={costType}
+                  onChange={(e) => setCostType(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="hourly">Hourly</option>
+                  <option value="fixed">Fixed</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="costAmount">Cost Amount</label>
+                <div className="input-with-prefix">
+                  <span className="input-prefix">$</span>
+                  <input
+                    type="text"
+                    id="costAmount"
+                    value={costAmount}
+                    onChange={handleCostAmountChange}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      if (val === '') {
+                        setCostAmount('');
+                        return;
+                      }
+                      const num = parseFloat(val);
+                      if (!isNaN(num) && isFinite(num) && num >= 0) {
+                        if (Number.isInteger(num)) {
+                          setCostAmount(num.toString());
+                        } else {
+                          const rounded = roundCurrency(num);
+                          setCostAmount(rounded.toString());
+                        }
+                      }
+                    }}
+                    placeholder="0.00"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="monthlyHours">Monthly Hours</label>
+              <input
+                type="text"
+                id="monthlyHours"
+                value={monthlyHours}
+                onChange={handleMonthlyHoursChange}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val === '') {
+                    setMonthlyHours('');
+                    return;
+                  }
+                  const num = parseFloat(val);
+                  if (!isNaN(num) && isFinite(num) && num >= 0) {
+                    if (Number.isInteger(num)) {
+                      setMonthlyHours(num.toString());
+                    } else {
+                      const rounded = roundCurrency(num);
+                      setMonthlyHours(rounded.toString());
+                    }
+                  }
+                }}
+                placeholder="0"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                className="form-input"
+                disabled={costType === 'fixed'}
+              />
+            </div>
+
+            <div className="calculated-field">
+              <label>Total Amount</label>
+              <div className="calculated-value">
+                ${formatCurrency(totalAmount)}
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="section-header">
+              <h3 className="section-title">Expenses</h3>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleAddExpense}
+              >
+                <FiPlus size={14} />
+                Add Expense
+              </Button>
+            </div>
+
+            <div className="expenses-list">
+              {expenses.map((expense, index) => (
+                <motion.div
+                  key={expense.id}
+                  className="expense-item"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="expense-number">Expense {String(index + 1).padStart(2, '0')}</div>
+                  <div className="expense-fields">
+                    <div className="form-group">
+                      <input
+                        type="text"
+                        value={expense.title}
+                        onChange={(e) => handleExpenseChange(expense.id, 'title', e.target.value)}
+                        placeholder="Expense title"
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <div className="input-with-prefix">
+                        <span className="input-prefix">$</span>
+                        <input
+                          type="text"
+                          value={expense.amount}
+                          onChange={(e) => handleExpenseAmountChange(expense.id, e.target.value)}
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val === '') {
+                              handleExpenseChange(expense.id, 'amount', '');
+                              return;
+                            }
+                            const num = parseFloat(val);
+                            if (!isNaN(num) && isFinite(num) && num >= 0) {
+                              if (Number.isInteger(num)) {
+                                handleExpenseChange(expense.id, 'amount', num.toString());
+                              } else {
+                                const rounded = roundCurrency(num);
+                                handleExpenseChange(expense.id, 'amount', rounded.toString());
+                              }
+                            }
+                          }}
+                          placeholder="0.00"
+                          inputMode="decimal"
+                          pattern="[0-9]*\.?[0-9]*"
+                          className="form-input"
+                        />
+                      </div>
+                    </div>
+                    {expenses.length > 1 && (
+                      <button
+                        type="button"
+                        className="remove-expense-btn"
+                        onClick={() => handleRemoveExpense(expense.id)}
+                        title="Remove expense"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-section summary-section">
+            <div className="summary-row">
+              <span className="summary-label">Total Amount:</span>
+              <span className="summary-value">${formatCurrency(totalAmount)}</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Total Expenses:</span>
+              <span className="summary-value expense">-${formatCurrency(totalExpenses)}</span>
+            </div>
+            <div className="summary-row grand-total">
+              <span className="summary-label">Grand Total:</span>
+              <span className="summary-value grand">${formatCurrency(grandTotal)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default ProjectCalculator;

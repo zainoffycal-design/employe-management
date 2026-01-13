@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   FiTrash2, 
   FiMail, 
@@ -13,13 +12,64 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
 import { emailService } from '../../services/emailService';
-import { getRoleDisplayName, permissionUtils, ROLES } from '../../utils/permissionUtils';
+import { getRoleDisplayName, permissionUtils, ROLES, PERMISSIONS } from '../../utils/permissionUtils';
 import { getRoleBadgeColor } from '../../utils/uiUtils';
 import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
 import './UserManagement.scss';
+
+const STATUS_DISPLAY = {
+  active: 'Active',
+  invited: 'Invited',
+  inactive: 'Inactive'
+};
+
+const MANAGER_TYPE_OPTIONS = [
+  { value: 'designer', label: 'Designer Manager' },
+  { value: 'developer', label: 'Developer Manager' },
+  { value: 'bd', label: 'Business Developer Manager' }
+];
+
+const ROLE_OPTIONS = [
+  { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },
+  { value: 'developer', label: 'Developer', description: 'Can manage development tasks and assign to team' },
+  { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
+];
+
+const getPermissionsForRole = (role) => {
+  const permissionMap = {
+    [ROLES.SUPER_MANAGER]: ['all'],
+    [ROLES.MANAGER]: [
+      PERMISSIONS.EDIT_TASKS,
+      PERMISSIONS.DELETE_TASKS,
+      PERMISSIONS.MOVE_TASKS,
+      PERMISSIONS.MANAGE_TASKS,
+      PERMISSIONS.ASSIGN_TASKS
+    ],
+    [ROLES.DESIGNER]: [
+      PERMISSIONS.MOVE_TASKS,
+      PERMISSIONS.VIEW_OWN_TASKS,
+      PERMISSIONS.ASSIGN_TASKS
+    ],
+    [ROLES.DEVELOPER]: [
+      PERMISSIONS.MOVE_TASKS,
+      PERMISSIONS.VIEW_OWN_TASKS,
+      PERMISSIONS.ASSIGN_TASKS
+    ],
+    [ROLES.BD]: [
+      PERMISSIONS.MOVE_TASKS,
+      PERMISSIONS.VIEW_OWN_TASKS,
+      PERMISSIONS.ASSIGN_TASKS
+    ]
+  };
+  return permissionMap[role] || permissionMap[ROLES.DESIGNER];
+};
+
+const normalizeManagerType = (managerType) => {
+  return Array.isArray(managerType) ? managerType : (managerType ? [managerType] : []);
+};
 
 
 
@@ -51,9 +101,7 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
             {getRoleDisplayName(user.role)}
           </div>
           <span className={`badge badge--status ${user.status}`}>
-            {user.status === 'active' ? 'Active' : 
-             user.status === 'invited' ? 'Invited' : 
-             user.status === 'inactive' ? 'Inactive' : 'Unknown'}
+            {STATUS_DISPLAY[user.status] || 'Unknown'}
           </span>
         </div>
       </div>
@@ -94,7 +142,6 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
 };
 
 const UserManagement = () => {
-  const navigate = useNavigate();
   const { currentUser, canManageUsers } = useAuth();
   const [users, setUsers] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -108,95 +155,94 @@ const UserManagement = () => {
     permissions: [],
     managerType: []
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEditUser, setShowEditUser] = useState(false);
 
-  const getAvailableRoles = () => {
-    const roles = [
-      { value: 'designer', label: 'Designer', description: 'Can manage design tasks and assign to team' },
-      { value: 'developer', label: 'Developer', description: 'Can manage development tasks and assign to team' },
-      { value: 'bd', label: 'Business Developer', description: 'Can manage business tasks and assign to team' }
-    ];
-
+  const availableRoles = useMemo(() => {
+    const roles = [...ROLE_OPTIONS];
     if (permissionUtils.canCreateManager(currentUser)) {
-      roles.unshift(
-        { value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' }
-      );
-    } else if (permissionUtils.isManager(currentUser)) {
-      return roles;
+      roles.unshift({ value: 'manager', label: 'Manager', description: 'Can edit, delete, and manage all tasks' });
     }
-
     return roles;
-  };
+  }, [currentUser]);
 
-  const activeUsers = users.filter(user => user.isActive !== false || user.status === 'invited');
-  const allUsersIncludingCurrent = [...activeUsers];
-  const currentUserExists = activeUsers.some(user => 
-    user.id === currentUser.uid || 
-    user.email === currentUser.email ||
-    (user.uid && user.uid === currentUser.uid)
+  const activeUsers = useMemo(() => 
+    users.filter(user => user.isActive !== false || user.status === 'invited'),
+    [users]
   );
-  
-  if (!currentUserExists) {
-    allUsersIncludingCurrent.push({
-      id: currentUser.uid,
-      name: currentUser.name,
-      email: currentUser.email,
-      role: currentUser.role,
-      avatar: currentUser.avatar,
-      isActive: true,
-      permissions: currentUser.permissions || []
-    });
-  }
 
-  const customGroupedUsers = allUsersIncludingCurrent.reduce((acc, user) => {
-    if (user.role === 'manager' && user.managerType) {
-      const managerTypes = Array.isArray(user.managerType) ? user.managerType : [user.managerType];
-      if (managerTypes.length > 0) {
-        managerTypes.forEach(teamRole => {
-          if (teamRole) {
-            if (!acc[teamRole]) {
-              acc[teamRole] = [];
-            }
-            acc[teamRole].push({ ...user, isManager: true });
-          }
-        });
-      } else {
-        if (!acc['manager']) {
-          acc['manager'] = [];
-        }
-        acc['manager'].push(user);
-      }
-    } else if (user.role === 'manager' && (!user.managerType || (Array.isArray(user.managerType) && user.managerType.length === 0))) {
-      if (!acc['manager']) {
-        acc['manager'] = [];
-      }
-      acc['manager'].push(user);
-    } else {
-      const role = user.role || 'user';
-      if (!acc[role]) {
-        acc[role] = [];
-      }
-      acc[role].push(user);
+  const allUsersIncludingCurrent = useMemo(() => {
+    const currentUserExists = activeUsers.some(user => 
+      user.id === currentUser.uid || 
+      user.email === currentUser.email ||
+      (user.uid && user.uid === currentUser.uid)
+    );
+    
+    if (currentUserExists) {
+      return activeUsers;
     }
-    return acc;
-  }, {});
+    
+    return [
+      ...activeUsers,
+      {
+        id: currentUser.uid,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatar: currentUser.avatar,
+        isActive: true,
+        permissions: currentUser.permissions || []
+      }
+    ];
+  }, [activeUsers, currentUser]);
 
-  Object.keys(customGroupedUsers).forEach(role => {
-    customGroupedUsers[role].sort((a, b) => {
-      if (a.isManager && !b.isManager) return -1;
-      if (!a.isManager && b.isManager) return 1;
-      return a.name.localeCompare(b.name);
+  const groupedUsers = useMemo(() => {
+    const grouped = allUsersIncludingCurrent.reduce((acc, user) => {
+      if (user.role === ROLES.MANAGER) {
+        const managerTypes = normalizeManagerType(user.managerType);
+        if (managerTypes.length > 0) {
+          managerTypes.forEach(teamRole => {
+            if (teamRole) {
+              if (!acc[teamRole]) {
+                acc[teamRole] = [];
+              }
+              acc[teamRole].push({ ...user, isManager: true });
+            }
+          });
+        } else {
+          if (!acc[ROLES.MANAGER]) {
+            acc[ROLES.MANAGER] = [];
+          }
+          acc[ROLES.MANAGER].push(user);
+        }
+      } else {
+        const role = user.role || 'user';
+        if (!acc[role]) {
+          acc[role] = [];
+        }
+        acc[role].push(user);
+      }
+      return acc;
+    }, {});
+
+    Object.keys(grouped).forEach(role => {
+      grouped[role].sort((a, b) => {
+        if (a.isManager && !b.isManager) return -1;
+        if (!a.isManager && b.isManager) return 1;
+        return a.name.localeCompare(b.name);
+      });
     });
-  });
 
-  const groupedUsers = customGroupedUsers;
-  const roleOrder = permissionUtils.isSuperManager(currentUser) 
-    ? ['super_manager', 'designer', 'developer', 'bd', 'manager']
-    : ['designer', 'developer', 'bd', 'manager'];
+    return grouped;
+  }, [allUsersIncludingCurrent]);
+
+  const roleOrder = useMemo(() => 
+    permissionUtils.isSuperManager(currentUser) 
+      ? ['super_manager', 'designer', 'developer', 'bd', 'manager']
+      : ['designer', 'developer', 'bd', 'manager'],
+    [currentUser]
+  );
 
   if (!canManageUsers()) {
     return (
@@ -215,18 +261,18 @@ const UserManagement = () => {
     );
   }
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const allUsers = await userManagementService.getAllUsers();
       setUsers(allUsers);
     } catch (error) {
       console.error('Error loading users:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -250,26 +296,7 @@ const UserManagement = () => {
         return;
       }
 
-      let permissions = [];
-      switch (newUser.role) {
-        case 'super_manager':
-          permissions = ['all'];
-          break;
-        case 'manager':
-          permissions = ['edit_tasks', 'delete_tasks', 'move_tasks', 'manage_tasks', 'assign_tasks'];
-          break;
-        case 'designer':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        case 'developer':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        case 'bd':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        default:
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-      }
+      const permissions = getPermissionsForRole(newUser.role);
 
       const invitationData = {
         name: newUser.name,
@@ -337,26 +364,7 @@ const UserManagement = () => {
         }
       }
 
-      let permissions = [];
-      switch (editingUser.role) {
-        case 'super_manager':
-          permissions = ['all'];
-          break;
-        case 'manager':
-          permissions = ['edit_tasks', 'delete_tasks', 'move_tasks', 'manage_tasks', 'assign_tasks'];
-          break;
-        case 'designer':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        case 'developer':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        case 'bd':
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-          break;
-        default:
-          permissions = ['move_tasks', 'view_own_tasks', 'assign_tasks'];
-      }
+      const permissions = getPermissionsForRole(editingUser.role);
 
       const updateData = {
         name: editingUser.name,
@@ -407,13 +415,13 @@ const UserManagement = () => {
   };
 
 
-  const openEditUserModal = (user) => {
+  const openEditUserModal = useCallback((user) => {
     setEditingUser({
       ...user,
-      managerType: Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : [])
+      managerType: normalizeManagerType(user.managerType)
     });
     setShowEditUser(true);
-  };
+  }, []);
 
   return (
     <div className="user-management">
@@ -441,20 +449,23 @@ const UserManagement = () => {
           
           if (usersInRole.length === 0) return null;
 
-          const managersInRole = usersInRole.filter(user => {
-            if (role === 'manager') {
-              const managerTypes = Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : []);
-              return user.role === 'manager' && managerTypes.length === 0;
-            }
-            const managerTypes = Array.isArray(user.managerType) ? user.managerType : (user.managerType ? [user.managerType] : []);
-            return user.isManager || (user.role === 'manager' && managerTypes.includes(role));
-          });
-          const regularUsersInRole = usersInRole.filter(user => {
-            if (role === 'manager') {
-              return false;
-            }
-            return !user.isManager && user.role !== 'manager';
-          });
+          const managersInRole = role === 'manager' 
+            ? usersInRole.filter(user => {
+                const managerTypes = normalizeManagerType(user.managerType);
+                return user.role === ROLES.MANAGER && managerTypes.length === 0;
+              })
+            : usersInRole.filter(user => {
+                if (user.isManager) return true;
+                if (user.role === ROLES.MANAGER) {
+                  const managerTypes = normalizeManagerType(user.managerType);
+                  return managerTypes.includes(role);
+                }
+                return false;
+              });
+          
+          const regularUsersInRole = role === 'manager' 
+            ? []
+            : usersInRole.filter(user => !user.isManager && user.role !== ROLES.MANAGER);
 
           return (
             <motion.div 
@@ -529,7 +540,6 @@ const UserManagement = () => {
         })}
       </div>
 
-      {}
       <Modal
         isOpen={showAddUser}
         onClose={() => setShowAddUser(false)}
@@ -585,7 +595,7 @@ const UserManagement = () => {
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value, managerType: e.target.value !== 'manager' ? [] : newUser.managerType })}
               required
             >
-              {getAvailableRoles().map(role => (
+              {availableRoles.map(role => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>
@@ -597,11 +607,7 @@ const UserManagement = () => {
             <div className="form-group">
               <label htmlFor="managerType">Manager Type</label>
               <div className="checkbox-group">
-                {[
-                  { value: 'designer', label: 'Designer Manager' },
-                  { value: 'developer', label: 'Developer Manager' },
-                  { value: 'bd', label: 'Business Developer Manager' }
-                ].map(option => (
+                {MANAGER_TYPE_OPTIONS.map(option => (
                   <label key={option.value} className="checkbox-label">
                     <input
                       type="checkbox"
@@ -641,7 +647,6 @@ const UserManagement = () => {
         </form>
       </Modal>
 
-      {}
       <Modal
         isOpen={showEditUser}
         onClose={() => setShowEditUser(false)}
@@ -688,7 +693,7 @@ const UserManagement = () => {
               onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value, managerType: e.target.value !== 'manager' ? [] : editingUser.managerType })}
               required
             >
-              {getAvailableRoles().map(role => (
+              {availableRoles.map(role => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>
@@ -700,11 +705,7 @@ const UserManagement = () => {
             <div className="form-group">
               <label htmlFor="editManagerType">Manager Type</label>
               <div className="checkbox-group">
-                {[
-                  { value: 'designer', label: 'Designer Manager' },
-                  { value: 'developer', label: 'Developer Manager' },
-                  { value: 'bd', label: 'Business Developer Manager' }
-                ].map(option => (
+                {MANAGER_TYPE_OPTIONS.map(option => (
                   <label key={option.value} className="checkbox-label">
                     <input
                       type="checkbox"

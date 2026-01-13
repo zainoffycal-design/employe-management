@@ -27,7 +27,9 @@
     "react-icons": "^4.8.0",
     "react-router-dom": "^6.8.1",
     "react-select": "^5.8.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",

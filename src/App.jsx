@@ -21,6 +21,7 @@ const UserManagement = lazy(() => import('./pages/UserManagement'));
 const AssetManager = lazy(() => import('./pages/AssetManager'));
 const EmployeePerformance = lazy(() => import('./pages/EmployeePerformance'));
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
+const ProjectCalculator = lazy(() => import('./pages/ProjectCalculator'));
 const Signup = lazy(() => import('./pages/Signup'));
 const SetupPassword = lazy(() => import('./pages/SetupPassword'));
 
@@ -133,6 +134,15 @@ const AppLayout = () => {
                   <ProtectedRoute>
                     {permissionUtils.canManageFinance(currentUser) ? (
                       <FinanceManagement />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/calculator" element={
+                  <ProtectedRoute>
+                    {permissionUtils.isSuperManager(currentUser) ? (
+                      <ProjectCalculator />
                     ) : (
                       <Navigate to="/" replace />
                     )}

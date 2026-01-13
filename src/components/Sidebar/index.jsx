@@ -7,7 +7,8 @@ import {
   FiBarChart2,
   FiFolder,
   FiPackage,
-  FiDollarSign
+  FiDollarSign,
+  FiFileText
 } from 'react-icons/fi';
 import { useTask } from '../../contexts/TaskContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +35,9 @@ const Sidebar = memo(({ sidebarOpen }) => {
     ] : []),
     ...(currentUser?.role === 'super_manager' ? [
       { path: '/payments', icon: FiDollarSign, label: 'Finance Management' }
+    ] : []),
+    ...(currentUser?.role === 'super_manager' ? [
+      { path: '/calculator', icon: FiFileText, label: 'Project Calculator' }
     ] : [])
   ], [currentUser]);
 
