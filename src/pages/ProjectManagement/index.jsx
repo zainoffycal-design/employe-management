@@ -63,7 +63,7 @@ const ProjectManagement = () => {
     searchTerm: '',
     selectedManager: null,
     projectFilter: 'active',
-    selectedProjectType: { value: 'short-term', label: 'Short Term' },
+    selectedProjectType: { value: 'contract', label: 'Contract' },
     selectedPriority: { value: 'high', label: 'High' }
   });
 
@@ -83,7 +83,7 @@ const ProjectManagement = () => {
           searchTerm: filters.searchTerm !== undefined ? filters.searchTerm : '',
           selectedManager: filters.selectedManager !== undefined ? filters.selectedManager : null,
           projectFilter: filters.projectFilter !== undefined ? filters.projectFilter : 'active',
-          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'short-term', label: 'Short Term' },
+          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'contract', label: 'Contract' },
           selectedPriority: filters.selectedPriority !== undefined ? filters.selectedPriority : { value: 'high', label: 'High' }
         };
       }
@@ -207,9 +207,10 @@ const ProjectManagement = () => {
   ];
 
   const projectTypeOptions = [
-    { value: 'long-term', label: 'Long Term' },
-    { value: 'short-term', label: 'Short Term' },
-    { value: 'other', label: 'Other' }
+    { value: 'contract', label: 'Contract' },
+    { value: 'full-time', label: 'Full Time' },
+    { value: '1099', label: '1099' },
+    { value: 'freelance', label: 'Freelance' }
   ];
 
   const priorityOptions = [
@@ -472,9 +473,7 @@ const ProjectManagement = () => {
           project.createdBy === selectedManager.value;
 
         const matchesProjectType = !selectedProjectType || 
-          (selectedProjectType.value === 'other' 
-            ? !project.projectType || (typeof project.projectType === 'string' && project.projectType.trim() === '')
-            : project.projectType === selectedProjectType.value);
+          project.projectType === selectedProjectType.value;
 
         const matchesPriority = !selectedPriority || 
           project.priority === selectedPriority.value;

@@ -2,22 +2,130 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiFileText, FiAlertCircle, FiPlus, FiTrash2, FiDownload } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTask } from '../../contexts/TaskContext';
 import { permissionUtils } from '../../utils/permissionUtils';
+import { reactSelectStyles } from '../../utils/uiUtils';
+import Select from 'react-select';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import { exportProjectCalculator } from '../../utils/excelExport';
 import './ProjectCalculator.scss';
 
+const fixedSelectStyles = {
+  ...reactSelectStyles,
+  control: (base, state) => ({
+    ...base,
+    minHeight: '48px',
+    backgroundColor: 'white',
+    borderColor: '#d1d5db',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    boxShadow: 'none',
+    opacity: 1,
+    cursor: 'default'
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: '#334155'
+  })
+};
+
+const PROJECT_TYPE_OPTIONS = [
+  { value: 'contract', label: 'Contract' },
+  { value: 'full-time', label: 'Full Time' },
+  { value: '1099', label: '1099' },
+  { value: 'freelance', label: 'Freelance' }
+];
+
 const ProjectCalculator = () => {
   const { currentUser } = useAuth();
+  const { projects } = useTask();
+  const [selectedProject, setSelectedProject] = useState(null);
   const [projectTitle, setProjectTitle] = useState('');
-  const [type, setType] = useState('W2');
+  const [type, setType] = useState('');
   const [costType, setCostType] = useState('hourly');
   const [costAmount, setCostAmount] = useState('');
   const [monthlyHours, setMonthlyHours] = useState('');
   const [expenses, setExpenses] = useState([
     { id: 1, title: 'Tax', amount: '' }
   ]);
+
+  const projectOptions = useMemo(() => {
+    return projects.map(project => ({
+      value: project.id,
+      label: project.name
+    }));
+  }, [projects]);
+
+  const handleProjectChange = (selectedOption) => {
+    setSelectedProject(selectedOption);
+    if (selectedOption) {
+      const project = projects.find(p => p.id === selectedOption.value);
+      if (project) {
+        setProjectTitle(project.name);
+        if (project.projectType) {
+          setType(project.projectType);
+        }
+        const budgetType = project.budget?.type;
+        if (budgetType === 'hourly' || budgetType === 'fixed') {
+          setCostType(budgetType);
+          if (budgetType === 'hourly' && project.budget?.hourlyRate !== undefined && project.budget?.hourlyRate !== null && project.budget?.hourlyRate !== '') {
+            const hourlyRateValue = project.budget.hourlyRate;
+            if (typeof hourlyRateValue === 'string') {
+              const num = parseFloat(hourlyRateValue);
+              if (!isNaN(num) && isFinite(num)) {
+                const rounded = Math.round(num);
+                setCostAmount(rounded.toFixed(2));
+              } else {
+                setCostAmount(hourlyRateValue);
+              }
+            } else {
+              const num = parseFloat(hourlyRateValue);
+              if (!isNaN(num) && isFinite(num)) {
+                const rounded = Math.round(num);
+                setCostAmount(rounded.toFixed(2));
+              }
+            }
+          } else if (budgetType === 'fixed' && project.budget?.fixedBudget !== undefined && project.budget?.fixedBudget !== null && project.budget?.fixedBudget !== '') {
+            const fixedBudgetValue = project.budget.fixedBudget;
+            if (typeof fixedBudgetValue === 'string') {
+              const num = parseFloat(fixedBudgetValue);
+              if (!isNaN(num) && isFinite(num)) {
+                const rounded = Math.round(num);
+                setCostAmount(rounded.toFixed(2));
+              } else {
+                setCostAmount(fixedBudgetValue);
+              }
+            } else {
+              const num = parseFloat(fixedBudgetValue);
+              if (!isNaN(num) && isFinite(num)) {
+                const rounded = Math.round(num);
+                setCostAmount(rounded.toFixed(2));
+              }
+            }
+          }
+        }
+      }
+    } else {
+      setProjectTitle('');
+      setType('');
+      setCostType('hourly');
+      setCostAmount('');
+      setMonthlyHours('');
+    }
+  };
+
+  const selectedProjectData = useMemo(() => {
+    if (!selectedProject) return null;
+    return projects.find(p => p.id === selectedProject.value);
+  }, [selectedProject, projects]);
+
+  const isProjectTypeFixed = selectedProjectData?.projectType ? true : false;
+  const isCostTypeFixed = selectedProjectData?.budget?.type === 'hourly' || selectedProjectData?.budget?.type === 'fixed';
+  const isCostAmountFixed = isCostTypeFixed && (
+    (selectedProjectData?.budget?.type === 'hourly' && selectedProjectData?.budget?.hourlyRate) ||
+    (selectedProjectData?.budget?.type === 'fixed' && selectedProjectData?.budget?.fixedBudget)
+  );
 
   if (!permissionUtils.isSuperManager(currentUser)) {
     return (
@@ -84,6 +192,7 @@ const ProjectCalculator = () => {
   };
 
   const handleCostAmountChange = (e) => {
+    if (isCostAmountFixed) return;
     setCostAmount(e.target.value);
   };
 
@@ -148,28 +257,28 @@ const ProjectCalculator = () => {
             
             <div className="form-group">
               <label htmlFor="projectTitle">Project Title</label>
-              <input
-                type="text"
-                id="projectTitle"
-                value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                placeholder="Enter project title"
-                className="form-input"
+              <Select
+                options={projectOptions}
+                value={selectedProject}
+                onChange={handleProjectChange}
+                styles={reactSelectStyles}
+                placeholder="Select a project..."
+                isClearable
+                isSearchable
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="type">Type</label>
-              <select
-                id="type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="form-select"
-              >
-                <option value="W2">W2</option>
-                <option value="C2C">C2C</option>
-                <option value="1099">1099</option>
-              </select>
+              <label htmlFor="type">Project Type</label>
+              <Select
+                options={PROJECT_TYPE_OPTIONS}
+                value={PROJECT_TYPE_OPTIONS.find(option => option.value === type)}
+                onChange={(selected) => setType(selected?.value || '')}
+                styles={isProjectTypeFixed ? fixedSelectStyles : reactSelectStyles}
+                placeholder="Select project type..."
+                isClearable
+                isDisabled={isProjectTypeFixed}
+              />
             </div>
           </div>
 
@@ -184,6 +293,7 @@ const ProjectCalculator = () => {
                   value={costType}
                   onChange={(e) => setCostType(e.target.value)}
                   className="form-select"
+                  disabled={isCostTypeFixed}
                 >
                   <option value="hourly">Hourly</option>
                   <option value="fixed">Fixed</option>
@@ -200,6 +310,7 @@ const ProjectCalculator = () => {
                     value={costAmount}
                     onChange={handleCostAmountChange}
                     onBlur={(e) => {
+                      if (isCostAmountFixed) return;
                       const val = e.target.value.trim();
                       if (val === '') {
                         setCostAmount('');
@@ -219,41 +330,44 @@ const ProjectCalculator = () => {
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     className="form-input"
+                    disabled={isCostAmountFixed}
+                    readOnly={isCostAmountFixed}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="monthlyHours">Monthly Hours</label>
-              <input
-                type="text"
-                id="monthlyHours"
-                value={monthlyHours}
-                onChange={handleMonthlyHoursChange}
-                onBlur={(e) => {
-                  const val = e.target.value.trim();
-                  if (val === '') {
-                    setMonthlyHours('');
-                    return;
-                  }
-                  const num = parseFloat(val);
-                  if (!isNaN(num) && isFinite(num) && num >= 0) {
-                    if (Number.isInteger(num)) {
-                      setMonthlyHours(num.toString());
-                    } else {
-                      const rounded = roundCurrency(num);
-                      setMonthlyHours(rounded.toString());
+            {costType === 'hourly' && (
+              <div className="form-group">
+                <label htmlFor="monthlyHours">Monthly Hours</label>
+                <input
+                  type="text"
+                  id="monthlyHours"
+                  value={monthlyHours}
+                  onChange={handleMonthlyHoursChange}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    if (val === '') {
+                      setMonthlyHours('');
+                      return;
                     }
-                  }
-                }}
-                placeholder="0"
-                inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
-                className="form-input"
-                disabled={costType === 'fixed'}
-              />
-            </div>
+                    const num = parseFloat(val);
+                    if (!isNaN(num) && isFinite(num) && num >= 0) {
+                      if (Number.isInteger(num)) {
+                        setMonthlyHours(num.toString());
+                      } else {
+                        const rounded = roundCurrency(num);
+                        setMonthlyHours(rounded.toString());
+                      }
+                    }
+                  }}
+                  placeholder="0"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className="form-input"
+                />
+              </div>
+            )}
 
             <div className="calculated-field">
               <label>Total Amount</label>

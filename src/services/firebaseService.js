@@ -1,5 +1,5 @@
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
-import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc, writeBatch, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
@@ -24,6 +24,58 @@ export const projectService = {
 
   async getProjectsByTeamMember(userId) {
     return firebaseUtils.getDocuments('projects', queryBuilders.byTeamMember(userId));
+  },
+
+  async clearProjectTypeFromAllProjects() {
+    try {
+      const projectsRef = collection(db, 'projects');
+      const snapshot = await getDocs(projectsRef);
+      
+      if (snapshot.empty) {
+        toast.success('No projects found');
+        return { success: true, count: 0 };
+      }
+
+      const projectsToUpdate = snapshot.docs.filter(docSnapshot => 
+        docSnapshot.data().projectType !== undefined
+      );
+
+      if (projectsToUpdate.length === 0) {
+        toast.success('No projects with projectType found');
+        return { success: true, count: 0 };
+      }
+
+      const BATCH_LIMIT = 500;
+      const batches = [];
+      let currentBatch = writeBatch(db);
+      let currentCount = 0;
+
+      projectsToUpdate.forEach((docSnapshot) => {
+        currentBatch.update(docSnapshot.ref, {
+          projectType: deleteField()
+        });
+        currentCount++;
+
+        if (currentCount >= BATCH_LIMIT) {
+          batches.push(currentBatch);
+          currentBatch = writeBatch(db);
+          currentCount = 0;
+        }
+      });
+
+      if (currentCount > 0) {
+        batches.push(currentBatch);
+      }
+
+      await Promise.all(batches.map(b => b.commit()));
+      toast.success(`Cleared projectType from ${projectsToUpdate.length} project(s)`);
+
+      return { success: true, count: projectsToUpdate.length };
+    } catch (error) {
+      console.error('Error clearing projectType from projects:', error);
+      toast.error('Failed to clear projectType from projects');
+      throw error;
+    }
   }
 };
 

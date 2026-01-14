@@ -63,19 +63,24 @@
             flex-shrink: 0;
 
             &--type {
-                  &.project-badge--long-term {
+                  &.project-badge--contract {
                         background: #dbeafe;
                         color: #1e40af;
                   }
 
-                  &.project-badge--short-term {
+                  &.project-badge--full-time {
+                        background: #dcfce7;
+                        color: #166534;
+                  }
+
+                  &.project-badge--1099 {
                         background: #fef3c7;
                         color: #92400e;
                   }
 
-                  &.project-badge--other {
-                        background: #e5e7eb;
-                        color: #374151;
+                  &.project-badge--freelance {
+                        background: #fce7f3;
+                        color: #9f1239;
                   }
             }
 

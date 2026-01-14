@@ -9,6 +9,19 @@ import SlideModal from "../SlideModal";
 import TaskDetails from "../TaskDetails";
 import "./ProjectCard.scss";
 
+const PROJECT_TYPE_LABELS = {
+  'contract': 'Contract',
+  'full-time': 'Full Time',
+  '1099': '1099',
+  'freelance': 'Freelance'
+};
+
+const PRIORITY_LABELS = {
+  'high': 'High',
+  'medium': 'Medium',
+  'low': 'Low'
+};
+
 const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], variant = "full", users = [], isCompleted = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -155,16 +168,12 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
         <div className="project-badges">
           {project.projectType && (
             <span className={`project-badge project-badge--type project-badge--${project.projectType}`}>
-              {project.projectType === 'long-term' ? 'Long Term' : 
-               project.projectType === 'short-term' ? 'Short Term' : 
-               project.projectType === 'other' ? 'Other' : project.projectType}
+              {PROJECT_TYPE_LABELS[project.projectType] || project.projectType}
             </span>
           )}
           {project.priority && (
             <span className={`project-badge project-badge--priority project-badge--${project.priority}`}>
-              {project.priority === 'high' ? 'High' : 
-               project.priority === 'medium' ? 'Medium' : 
-               project.priority === 'low' ? 'Low' : project.priority}
+              {PRIORITY_LABELS[project.priority] || project.priority}
             </span>
           )}
         </div>
