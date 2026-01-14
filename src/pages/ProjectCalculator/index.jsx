@@ -86,6 +86,11 @@ const ProjectCalculator = () => {
                 setCostAmount(rounded.toFixed(2));
               }
             }
+            if (project.budget?.monthlyHours !== undefined && project.budget?.monthlyHours !== null && project.budget?.monthlyHours !== '') {
+              setMonthlyHours(project.budget.monthlyHours.toString());
+            } else {
+              setMonthlyHours('');
+            }
           } else if (budgetType === 'fixed' && project.budget?.fixedBudget !== undefined && project.budget?.fixedBudget !== null && project.budget?.fixedBudget !== '') {
             const fixedBudgetValue = project.budget.fixedBudget;
             if (typeof fixedBudgetValue === 'string') {
@@ -103,7 +108,12 @@ const ProjectCalculator = () => {
                 setCostAmount(rounded.toFixed(2));
               }
             }
+            setMonthlyHours('');
+          } else {
+            setMonthlyHours('');
           }
+        } else {
+          setMonthlyHours('');
         }
       }
     } else {

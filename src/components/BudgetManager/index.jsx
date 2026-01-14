@@ -7,24 +7,42 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
   const [budgetType, setBudgetType] = useState(value?.type || 'none');
   const [fixedBudget, setFixedBudget] = useState(value?.fixedBudget || '');
   const [hourlyRate, setHourlyRate] = useState(value?.hourlyRate || '');
+  const [monthlyHours, setMonthlyHours] = useState(value?.monthlyHours || '');
   const [payments, setPayments] = useState(value?.payments || []);
   const [editingPaymentId, setEditingPaymentId] = useState(null);
 
   useEffect(() => {
     if (value) {
       setBudgetType(value.type || 'none');
-      setFixedBudget(value.fixedBudget || '');
+      const fixedBudgetValue = value.fixedBudget;
+      if (fixedBudgetValue !== undefined && fixedBudgetValue !== null && fixedBudgetValue !== '') {
+        const num = parseFloat(fixedBudgetValue);
+        if (!isNaN(num)) {
+          const rounded = Math.round(num);
+          setFixedBudget(rounded.toFixed(2));
+        } else {
+          setFixedBudget('');
+        }
+      } else {
+        setFixedBudget('');
+      }
       const hourlyRateValue = value.hourlyRate;
       if (hourlyRateValue !== undefined && hourlyRateValue !== null && hourlyRateValue !== '') {
         const num = parseFloat(hourlyRateValue);
         if (!isNaN(num)) {
-          const rounded = Math.round(num * 100) / 100;
-          setHourlyRate(rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2));
+          const rounded = Math.round(num);
+          setHourlyRate(rounded.toFixed(2));
         } else {
           setHourlyRate('');
         }
       } else {
         setHourlyRate('');
+      }
+      const monthlyHoursValue = value.monthlyHours;
+      if (monthlyHoursValue !== undefined && monthlyHoursValue !== null && monthlyHoursValue !== '') {
+        setMonthlyHours(monthlyHoursValue.toString());
+      } else {
+        setMonthlyHours('');
       }
       setPayments(value.payments || []);
     }
@@ -36,6 +54,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type,
       fixedBudget: type === 'fixed' ? fixedBudget : '',
       hourlyRate: type === 'hourly' ? hourlyRate : '',
+      monthlyHours: type === 'hourly' ? monthlyHours : '',
       payments: type === 'none' ? [] : payments
     };
     onChange(newValue);
@@ -55,6 +74,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type: budgetType,
       fixedBudget: val,
       hourlyRate,
+      monthlyHours,
       payments
     });
   };
@@ -71,6 +91,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
         type: budgetType,
         fixedBudget: val,
         hourlyRate,
+        monthlyHours,
         payments
       });
     }
@@ -87,6 +108,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
         type: budgetType,
         fixedBudget,
         hourlyRate: rounded.toString(),
+        monthlyHours,
         payments
       });
     } else {
@@ -94,6 +116,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
         type: budgetType,
         fixedBudget,
         hourlyRate: val,
+        monthlyHours,
         payments
       });
     }
@@ -112,6 +135,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
           type: budgetType,
           fixedBudget,
           hourlyRate: formatted,
+          monthlyHours,
           payments
         });
       } else {
@@ -120,10 +144,23 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
           type: budgetType,
           fixedBudget,
           hourlyRate: '',
+          monthlyHours,
           payments
         });
       }
     }
+  };
+
+  const handleMonthlyHoursChange = (e) => {
+    const val = e.target.value;
+    setMonthlyHours(val);
+    onChange({
+      type: budgetType,
+      fixedBudget,
+      hourlyRate,
+      monthlyHours: val,
+      payments
+    });
   };
 
   const handleAddPayment = () => {
@@ -139,6 +176,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type: budgetType,
       fixedBudget,
       hourlyRate,
+      monthlyHours,
       payments: updatedPayments
     });
   };
@@ -164,6 +202,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type: budgetType,
       fixedBudget,
       hourlyRate,
+      monthlyHours,
       payments: updatedPayments
     });
   };
@@ -179,6 +218,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       type: budgetType,
       fixedBudget,
       hourlyRate,
+      monthlyHours,
       payments: updatedPayments
     });
   };
@@ -406,6 +446,23 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
             <small className="form-text text-muted">
               Budget will be calculated based on total hours tracked × hourly rate
             </small>
+          </div>
+
+          <div className="form-group">
+            <label>Monthly Hours</label>
+            <div className="input-with-icon">
+              <FiClock className="input-icon" />
+              <input
+                type="number"
+                className="form-control"
+                value={monthlyHours}
+                onChange={handleMonthlyHoursChange}
+                placeholder="0"
+                min="0"
+                step="1"
+                disabled={disabled}
+              />
+            </div>
           </div>
 
           <div className="payments-section">

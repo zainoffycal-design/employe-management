@@ -27,7 +27,7 @@ import './ProjectManagement.scss';
 const ProjectManagement = () => {
   const navigate = useNavigate();
   const { projects, createProject, updateProject, deleteProject, tasks } = useTask();
-  const { currentUser, canViewBudget } = useAuth();
+  const { currentUser } = useAuth();
   const isBdManager = useMemo(() => {
     return permissionUtils.isManagerOfType(currentUser, MANAGER_TYPES.BD);
   }, [currentUser]);
@@ -63,7 +63,7 @@ const ProjectManagement = () => {
     searchTerm: '',
     selectedManager: null,
     projectFilter: 'active',
-    selectedProjectType: { value: 'contract', label: 'Contract' },
+    selectedProjectType: { value: 'freelance', label: 'Freelance' },
     selectedPriority: { value: 'high', label: 'High' }
   });
 
@@ -83,7 +83,7 @@ const ProjectManagement = () => {
           searchTerm: filters.searchTerm !== undefined ? filters.searchTerm : '',
           selectedManager: filters.selectedManager !== undefined ? filters.selectedManager : null,
           projectFilter: filters.projectFilter !== undefined ? filters.projectFilter : 'active',
-          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'contract', label: 'Contract' },
+          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'freelance', label: 'Freelance' },
           selectedPriority: filters.selectedPriority !== undefined ? filters.selectedPriority : { value: 'high', label: 'High' }
         };
       }
@@ -321,15 +321,13 @@ const ProjectManagement = () => {
         teamMembers: formData.teamMembers.map(member => member.value)
       };
       
-      // Include budget if user can view budget (BD Managers)
-      if (canViewBudget()) {
+      if (isBdManager) {
         if (formData.budget && formData.budget.type !== 'none') {
           projectData.budget = formData.budget;
         } else if (formData.budget && formData.budget.type === 'none') {
           projectData.budget = null;
         }
       } else {
-        // Non-BD Managers don't update budget
         delete projectData.budget;
       }
       
@@ -560,7 +558,7 @@ const ProjectManagement = () => {
                 </div>
               )}
             </div>
-            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && (
+            {isBdManager && (
               <Button 
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
@@ -702,7 +700,7 @@ const ProjectManagement = () => {
                 : "Get started by creating your first project to organize your team's work."
               }
             </p>
-            {(currentUser?.role === 'super_manager' || currentUser?.role === 'manager') && !searchTerm.trim() && !selectedManager && !selectedProjectType && !selectedPriority && (
+            {isBdManager && !searchTerm.trim() && !selectedManager && !selectedProjectType && !selectedPriority && (
               <Button 
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
@@ -786,7 +784,7 @@ const ProjectManagement = () => {
             </div>
           </div>
           {renderTeamMemberSelect()}
-          {canViewBudget() && (
+          {isBdManager && (
             <BudgetManager
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
@@ -911,7 +909,7 @@ const ProjectManagement = () => {
               </select>
             </div>
           )}
-          {canViewBudget() && (
+          {isBdManager && (
             <BudgetManager
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
