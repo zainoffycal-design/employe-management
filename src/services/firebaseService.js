@@ -175,6 +175,18 @@ export const userManagementService = {
       updateData.monthlyHours = userData.monthlyHours;
     }
 
+    if (userData.hasCommission !== undefined) {
+      updateData.hasCommission = userData.hasCommission;
+    }
+
+    if (userData.commissionPercentage !== undefined) {
+      updateData.commissionPercentage = userData.commissionPercentage;
+    }
+
+    if (userData.commissionType !== undefined) {
+      updateData.commissionType = userData.commissionType;
+    }
+
     return firebaseUtils.updateDocument('users', userId, updateData);
   },
 

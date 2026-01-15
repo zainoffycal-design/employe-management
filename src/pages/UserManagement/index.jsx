@@ -153,7 +153,10 @@ const UserManagement = () => {
     confirmPassword: '',
     role: 'designer',
     permissions: [],
-    managerType: []
+    managerType: [],
+    hasCommission: false,
+    commissionPercentage: '',
+    commissionType: 'fixed'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -286,6 +289,12 @@ const UserManagement = () => {
         return;
       }
 
+      if (newUser.hasCommission && (!newUser.commissionPercentage || newUser.commissionPercentage === '')) {
+        setError('Please enter a commission percentage.');
+        setLoading(false);
+        return;
+      }
+
       const emailExists = users.some(user => 
         user.email.toLowerCase() === newUser.email.toLowerCase() && user.isActive !== false
       );
@@ -309,6 +318,12 @@ const UserManagement = () => {
         invitationData.managerType = newUser.managerType;
       }
 
+      if (newUser.hasCommission && newUser.commissionPercentage) {
+        invitationData.hasCommission = true;
+        invitationData.commissionPercentage = parseInt(newUser.commissionPercentage, 10) || 0;
+        invitationData.commissionType = newUser.commissionType;
+      }
+
       await emailService.createUserInvitation(invitationData);
 
       setNewUser({
@@ -318,7 +333,10 @@ const UserManagement = () => {
         confirmPassword: '',
         role: 'designer',
         permissions: [],
-        managerType: []
+        managerType: [],
+        hasCommission: false,
+        commissionPercentage: '',
+        commissionType: 'fixed'
       });
       setShowAddUser(false);
       
@@ -354,6 +372,12 @@ const UserManagement = () => {
         return;
       }
 
+      if (editingUser.hasCommission && (!editingUser.commissionPercentage || editingUser.commissionPercentage === '')) {
+        setError('Please enter a commission percentage.');
+        setLoading(false);
+        return;
+      }
+
       if (permissionUtils.isManager(currentUser) && !permissionUtils.isSuperManager(currentUser)) {
         const existingUser = users.find(user => user.id === editingUser.id);
         if (existingUser.role === ROLES.SUPER_MANAGER || existingUser.role === ROLES.MANAGER ||
@@ -378,6 +402,16 @@ const UserManagement = () => {
         updateData.managerType = null;
       } else if (editingUser.role === 'manager') {
         updateData.managerType = [];
+      }
+
+      if (editingUser.hasCommission && editingUser.commissionPercentage) {
+        updateData.hasCommission = true;
+        updateData.commissionPercentage = parseInt(editingUser.commissionPercentage, 10) || 0;
+        updateData.commissionType = editingUser.commissionType;
+      } else {
+        updateData.hasCommission = false;
+        updateData.commissionPercentage = null;
+        updateData.commissionType = null;
       }
 
       await userManagementService.updateUserProfile(editingUser.id, updateData);
@@ -415,10 +449,36 @@ const UserManagement = () => {
   };
 
 
+  const handleCommissionPercentageChange = useCallback((value, isEdit = false) => {
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    if (numericValue === '') {
+      if (isEdit) {
+        setEditingUser(prev => ({ ...prev, commissionPercentage: '' }));
+      } else {
+        setNewUser(prev => ({ ...prev, commissionPercentage: '' }));
+      }
+      return;
+    }
+    
+    const numValue = parseInt(numericValue, 10);
+    if (!isNaN(numValue)) {
+      const clampedValue = Math.max(0, Math.min(100, numValue));
+      if (isEdit) {
+        setEditingUser(prev => ({ ...prev, commissionPercentage: clampedValue }));
+      } else {
+        setNewUser(prev => ({ ...prev, commissionPercentage: clampedValue }));
+      }
+    }
+  }, []);
+
   const openEditUserModal = useCallback((user) => {
     setEditingUser({
       ...user,
-      managerType: normalizeManagerType(user.managerType)
+      managerType: normalizeManagerType(user.managerType),
+      hasCommission: user.hasCommission || false,
+      commissionPercentage: user.hasCommission && user.commissionPercentage ? user.commissionPercentage : '',
+      commissionType: user.commissionType || 'fixed'
     });
     setShowEditUser(true);
   }, []);
@@ -628,6 +688,64 @@ const UserManagement = () => {
             </div>
           )}
 
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={newUser.hasCommission}
+                onChange={(e) => setNewUser({ ...newUser, hasCommission: e.target.checked })}
+              />
+              <span>Add Commission</span>
+            </label>
+          </div>
+
+          {newUser.hasCommission && (
+            <>
+              <div className="form-group">
+                <label htmlFor="commissionPercentage">Commission Percentage</label>
+                <div className="input-wrapper">
+                  <input
+                    type="number"
+                    id="commissionPercentage"
+                    name="commissionPercentage"
+                    value={newUser.commissionPercentage || ''}
+                    onChange={(e) => handleCommissionPercentageChange(e.target.value, false)}
+                    onBlur={(e) => {
+                      const value = e.target.value;
+                      const numValue = parseInt(value, 10);
+                      if (value === '' || isNaN(numValue)) {
+                        setNewUser(prev => ({ ...prev, commissionPercentage: '' }));
+                      } else {
+                        const clampedValue = Math.max(0, Math.min(100, numValue));
+                        setNewUser(prev => ({ ...prev, commissionPercentage: clampedValue }));
+                      }
+                    }}
+                    placeholder="Enter percentage (e.g., 20)"
+                    min="0"
+                    max="100"
+                    step="1"
+                    required={newUser.hasCommission}
+                  />
+                  <span className="input-icon input-icon--right">%</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="commissionType">Commission Type</label>
+                <select
+                  id="commissionType"
+                  name="commissionType"
+                  value={newUser.commissionType}
+                  onChange={(e) => setNewUser({ ...newUser, commissionType: e.target.value })}
+                  required
+                >
+                  <option value="fixed">Fixed</option>
+                  <option value="recurring">Recurring</option>
+                </select>
+              </div>
+            </>
+          )}
+
           <div className="modal-actions">
             <Button 
               variant="secondary"
@@ -725,6 +843,64 @@ const UserManagement = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={editingUser?.hasCommission || false}
+                onChange={(e) => setEditingUser({ ...editingUser, hasCommission: e.target.checked })}
+              />
+              <span>Add Commission</span>
+            </label>
+          </div>
+
+          {editingUser?.hasCommission && (
+            <>
+              <div className="form-group">
+                <label htmlFor="editCommissionPercentage">Commission Percentage</label>
+                <div className="input-wrapper">
+                  <input
+                    type="number"
+                    id="editCommissionPercentage"
+                    name="commissionPercentage"
+                    value={editingUser?.commissionPercentage || ''}
+                    onChange={(e) => handleCommissionPercentageChange(e.target.value, true)}
+                    onBlur={(e) => {
+                      const value = e.target.value;
+                      const numValue = parseInt(value, 10);
+                      if (value === '' || isNaN(numValue)) {
+                        setEditingUser(prev => ({ ...prev, commissionPercentage: '' }));
+                      } else {
+                        const clampedValue = Math.max(0, Math.min(100, numValue));
+                        setEditingUser(prev => ({ ...prev, commissionPercentage: clampedValue }));
+                      }
+                    }}
+                    placeholder="Enter percentage (e.g., 20)"
+                    min="0"
+                    max="100"
+                    step="1"
+                    required={editingUser?.hasCommission}
+                  />
+                  <span className="input-icon input-icon--right">%</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editCommissionType">Commission Type</label>
+                <select
+                  id="editCommissionType"
+                  name="commissionType"
+                  value={editingUser?.commissionType || 'fixed'}
+                  onChange={(e) => setEditingUser({ ...editingUser, commissionType: e.target.value })}
+                  required
+                >
+                  <option value="fixed">Fixed</option>
+                  <option value="recurring">Recurring</option>
+                </select>
+              </div>
+            </>
           )}
 
           <div className="modal-actions">

@@ -31,6 +31,12 @@ export const emailService = {
         userProfile.managerType = userData.managerType;
       }
 
+      if (userData.hasCommission) {
+        userProfile.hasCommission = true;
+        userProfile.commissionPercentage = userData.commissionPercentage || 0;
+        userProfile.commissionType = userData.commissionType || 'fixed';
+      }
+
       const tempUid = `invite_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       
       await setDoc(doc(db, 'user_invitations', tempUid), {
