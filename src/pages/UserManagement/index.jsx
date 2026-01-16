@@ -289,10 +289,12 @@ const UserManagement = () => {
         return;
       }
 
-      if (newUser.hasCommission && (!newUser.commissionPercentage || newUser.commissionPercentage === '')) {
-        setError('Please enter a commission percentage.');
-        setLoading(false);
-        return;
+      if (newUser.hasCommission) {
+        if (!newUser.commissionPercentage || newUser.commissionPercentage === '') {
+          setError('Please enter a commission percentage.');
+          setLoading(false);
+          return;
+        }
       }
 
       const emailExists = users.some(user => 
@@ -372,10 +374,12 @@ const UserManagement = () => {
         return;
       }
 
-      if (editingUser.hasCommission && (!editingUser.commissionPercentage || editingUser.commissionPercentage === '')) {
-        setError('Please enter a commission percentage.');
-        setLoading(false);
-        return;
+      if (editingUser.hasCommission) {
+        if (!editingUser.commissionPercentage || editingUser.commissionPercentage === '') {
+          setError('Please enter a commission percentage.');
+          setLoading(false);
+          return;
+        }
       }
 
       if (permissionUtils.isManager(currentUser) && !permissionUtils.isSuperManager(currentUser)) {
@@ -478,7 +482,7 @@ const UserManagement = () => {
       managerType: normalizeManagerType(user.managerType),
       hasCommission: user.hasCommission || false,
       commissionPercentage: user.hasCommission && user.commissionPercentage ? user.commissionPercentage : '',
-      commissionType: user.commissionType || 'fixed'
+      commissionType: user.commissionType || 'fixed',
     });
     setShowEditUser(true);
   }, []);
@@ -688,18 +692,20 @@ const UserManagement = () => {
             </div>
           )}
 
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={newUser.hasCommission}
-                onChange={(e) => setNewUser({ ...newUser, hasCommission: e.target.checked })}
-              />
-              <span>Add Commission</span>
-            </label>
-          </div>
+          {permissionUtils.isSuperManager(currentUser) && (
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={newUser.hasCommission}
+                  onChange={(e) => setNewUser({ ...newUser, hasCommission: e.target.checked })}
+                />
+                <span>Add Commission</span>
+              </label>
+            </div>
+          )}
 
-          {newUser.hasCommission && (
+          {permissionUtils.isSuperManager(currentUser) && newUser.hasCommission && (
             <>
               <div className="form-group">
                 <label htmlFor="commissionPercentage">Commission Percentage</label>
@@ -743,6 +749,7 @@ const UserManagement = () => {
                   <option value="recurring">Recurring</option>
                 </select>
               </div>
+
             </>
           )}
 
@@ -845,18 +852,20 @@ const UserManagement = () => {
             </div>
           )}
 
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={editingUser?.hasCommission || false}
-                onChange={(e) => setEditingUser({ ...editingUser, hasCommission: e.target.checked })}
-              />
-              <span>Add Commission</span>
-            </label>
-          </div>
+          {permissionUtils.isSuperManager(currentUser) && (
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={editingUser?.hasCommission || false}
+                  onChange={(e) => setEditingUser({ ...editingUser, hasCommission: e.target.checked })}
+                />
+                <span>Add Commission</span>
+              </label>
+            </div>
+          )}
 
-          {editingUser?.hasCommission && (
+          {permissionUtils.isSuperManager(currentUser) && editingUser?.hasCommission && (
             <>
               <div className="form-group">
                 <label htmlFor="editCommissionPercentage">Commission Percentage</label>
@@ -900,6 +909,7 @@ const UserManagement = () => {
                   <option value="recurring">Recurring</option>
                 </select>
               </div>
+
             </>
           )}
 

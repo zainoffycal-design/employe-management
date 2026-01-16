@@ -21,6 +21,7 @@ const UserManagement = lazy(() => import('./pages/UserManagement'));
 const AssetManager = lazy(() => import('./pages/AssetManager'));
 const EmployeePerformance = lazy(() => import('./pages/EmployeePerformance'));
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
+const Commissions = lazy(() => import('./pages/Commissions'));
 const ProjectCalculator = lazy(() => import('./pages/ProjectCalculator'));
 const Signup = lazy(() => import('./pages/Signup'));
 const SetupPassword = lazy(() => import('./pages/SetupPassword'));
@@ -130,10 +131,28 @@ const AppLayout = () => {
                     )}
                   </ProtectedRoute>
                 } />
-                <Route path="/payments" element={
+                <Route path="/finance/overview" element={
                   <ProtectedRoute>
                     {permissionUtils.canManageFinance(currentUser) ? (
                       <FinanceManagement />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/finance/commissions" element={
+                  <ProtectedRoute>
+                    {permissionUtils.canManageFinance(currentUser) ? (
+                      <Commissions />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )}
+                  </ProtectedRoute>
+                } />
+                <Route path="/payments" element={
+                  <ProtectedRoute>
+                    {permissionUtils.canManageFinance(currentUser) ? (
+                      <Navigate to="/finance/overview" replace />
                     ) : (
                       <Navigate to="/" replace />
                     )}

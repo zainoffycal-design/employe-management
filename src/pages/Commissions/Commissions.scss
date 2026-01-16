@@ -1,0 +1,289 @@
+@use '../../styles/_shared.scss' as *;
+
+.commissions-page {
+  padding: 2rem;
+  background: var(--gray-50);
+  min-height: 100vh;
+
+  .access-denied {
+    @include flex-center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--gray-600);
+
+    svg {
+      color: var(--gray-400);
+    }
+
+    h3 {
+      margin: 0;
+      color: var(--gray-800);
+    }
+  }
+
+  .commissions-filters {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+
+        svg {
+          color: var(--gray-500);
+        }
+      }
+
+      input[type="month"] {
+        @include input-wrapper;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        transition: var(--transition);
+
+        &:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+        }
+      }
+    }
+  }
+
+  .commissions-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gray-200);
+
+      svg {
+        color: var(--primary-color);
+      }
+    }
+  }
+
+  .commissions-list {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    height: fit-content;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+
+    .users-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .user-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        border: 2px solid var(--gray-200);
+        cursor: pointer;
+        transition: var(--transition);
+        background: var(--white);
+
+        &:hover {
+          border-color: var(--primary-color);
+          box-shadow: var(--shadow-sm);
+          transform: translateY(-2px);
+        }
+
+        &.active {
+          border-color: var(--primary-color);
+          background: linear-gradient(135deg, rgba(21, 169, 112, 0.05) 0%, rgba(21, 169, 112, 0.1) 100%);
+          box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+        }
+
+        .user-info {
+          flex: 1;
+          min-width: 0;
+
+          .user-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .commission-amount {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            .amount-usd {
+              font-size: 1rem;
+              font-weight: 600;
+              color: var(--primary-color);
+            }
+
+            .amount-pkr {
+              font-size: 0.75rem;
+              color: var(--gray-600);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .commissions-details {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    min-height: 400px;
+
+    .projects-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .project-item {
+        background: var(--gray-50);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border: 1px solid var(--gray-200);
+        transition: var(--transition);
+
+        &:hover {
+          box-shadow: var(--shadow-sm);
+          border-color: var(--gray-300);
+        }
+
+        .project-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--gray-200);
+
+          .project-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0;
+          }
+
+          .project-commission-type {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            background: #fef3c7;
+            color: #d97706;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+          }
+        }
+
+        .project-details {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+
+            .detail-label {
+              font-size: 0.875rem;
+              color: var(--gray-600);
+              font-weight: 500;
+            }
+
+            .detail-value {
+              font-size: 0.875rem;
+              color: var(--gray-800);
+              font-weight: 600;
+
+              &.commission {
+                color: #d97706;
+                font-size: 1rem;
+              }
+            }
+          }
+        }
+      }
+
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--gray-500);
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .commissions-page {
+    .commissions-layout {
+      grid-template-columns: 300px 1fr;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .commissions-page {
+    padding: 1rem;
+
+    .commissions-filters {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .commissions-layout {
+      grid-template-columns: 1fr;
+
+      .commissions-list {
+        max-height: 400px;
+      }
+    }
+  }
+}

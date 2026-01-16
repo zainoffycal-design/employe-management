@@ -63,12 +63,62 @@
       transition: background 0.18s, color 0.18s, box-shadow 0.18s;
       box-shadow: none;
       position: relative;
+      text-decoration: none;
       
       &:hover, &.active {
         background: rgba(255,255,255,0.16);
         color: #fff;
         box-shadow: 0 2px 8px rgba(21,169,112,0.10);
       }
+
+      &.nav-link-parent {
+        cursor: pointer;
+      }
+
+      &.nav-link-sub {
+        padding-left: 1.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.15rem;
+        position: relative;
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0.5rem;
+          top: 10px;
+          bottom: 10px;
+          width: 2px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 2px;
+        }
+      }
+    }
+
+    .nav-item-with-submenu {
+      .nav-submenu {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 0.5rem 0;
+        padding-left: 0.5rem;
+        overflow: hidden;
+        animation: slideDown 0.2s ease-out;
+      }
+
+      .nav-subitem {
+        margin: 0;
+      }
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 200px;
     }
   }
 

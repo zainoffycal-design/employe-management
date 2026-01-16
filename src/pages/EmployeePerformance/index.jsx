@@ -222,6 +222,9 @@ const EmployeePerformance = () => {
       : projects;
 
     const projectStats = projectsToProcess.map(project => {
+      const hasCommission = project.commissionData && project.commissionData[user.id] && project.commissionData[user.id].isActive;
+      const hasRevenue = project.budget && (project.budget.type === 'fixed' || project.budget.type === 'hourly');
+      
       const projectTasks = userTasks.filter(task => task.projectId === project.id);
       
       let projectHours = 0;
@@ -239,7 +242,7 @@ const EmployeePerformance = () => {
         projectHours += taskHours;
       });
 
-      if (projectHours === 0) return null;
+      if (projectHours === 0 && !hasCommission && !hasRevenue) return null;
 
       const projectCostPKR = projectHours * hourlyRatePKR;
       const projectCostUSD = projectCostPKR / exchangeRate;
@@ -250,10 +253,44 @@ const EmployeePerformance = () => {
       let profitPKR = 0;
       let profitMargin = 0;
       let bonusUSD = 0;
+      let commissionUSD = 0;
+      let commissionPKR = 0;
 
       const totalReceived = (project.budget?.payments || []).reduce((sum, payment) => {
         return sum + (parseFloat(payment.amount) || 0);
       }, 0);
+
+      let totalProjectBudgetForCommission = 0;
+      if (project.budget && project.budget.type === 'fixed') {
+        totalProjectBudgetForCommission = parseFloat(project.budget.fixedBudget || 0);
+      } else if (project.budget && project.budget.type === 'hourly') {
+        const allProjectTasks = tasks.filter(t => t.projectId === project.id);
+        let totalProjectHours = 0;
+        allProjectTasks.forEach(task => {
+          const allTimeEntries = (task.timeEntries || []).filter(entry => {
+            if (entry.date) {
+              const entryDate = new Date(entry.date);
+              return isWithinInterval(entryDate, { start: monthRange.start, end: monthRange.end });
+            }
+            return true;
+          });
+          const taskTotalHours = allTimeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
+          totalProjectHours += taskTotalHours;
+        });
+        const projectHourlyRate = parseFloat(project.budget.hourlyRate || 0);
+        totalProjectBudgetForCommission = totalProjectHours * projectHourlyRate;
+      }
+
+      let commissionType = null;
+      let recurringMonths = null;
+      if (project.commissionData && project.commissionData[user.id] && project.commissionData[user.id].isActive) {
+        const commissionInfo = project.commissionData[user.id];
+        const commissionPercentage = commissionInfo.percentage || 0;
+        commissionUSD = (totalProjectBudgetForCommission * commissionPercentage) / 100;
+        commissionPKR = commissionUSD * exchangeRate;
+        commissionType = commissionInfo.type || 'fixed';
+        recurringMonths = commissionInfo.recurringMonths || null;
+      }
 
       if (project.budget && project.budget.type === 'hourly') {
         const projectHourlyRate = parseFloat(project.budget.hourlyRate || 0);
@@ -285,14 +322,14 @@ const EmployeePerformance = () => {
           
           projectRevenueUSD = userBudgetShare + bonusUSD;
           projectRevenuePKR = projectRevenueUSD * exchangeRate;
-          profitUSD = projectRevenueUSD - projectCostUSD;
-          profitPKR = projectRevenuePKR - projectCostPKR;
+          profitUSD = projectRevenueUSD - projectCostUSD - commissionUSD;
+          profitPKR = projectRevenuePKR - projectCostPKR - commissionPKR;
           profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
         } else {
           projectRevenueUSD = budgetRevenueUSD;
           projectRevenuePKR = projectRevenueUSD * exchangeRate;
-          profitUSD = projectRevenueUSD - projectCostUSD;
-          profitPKR = projectRevenuePKR - projectCostPKR;
+          profitUSD = projectRevenueUSD - projectCostUSD - commissionUSD;
+          profitPKR = projectRevenuePKR - projectCostPKR - commissionPKR;
           profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
         }
       } else if (project.budget && project.budget.type === 'fixed') {
@@ -323,8 +360,8 @@ const EmployeePerformance = () => {
           
           projectRevenueUSD = userBudgetShare + bonusUSD;
           projectRevenuePKR = projectRevenueUSD * exchangeRate;
-          profitUSD = projectRevenueUSD - projectCostUSD;
-          profitPKR = projectRevenuePKR - projectCostPKR;
+          profitUSD = projectRevenueUSD - projectCostUSD - commissionUSD;
+          profitPKR = projectRevenuePKR - projectCostPKR - commissionPKR;
           profitMargin = projectRevenueUSD > 0 ? (profitUSD / projectRevenueUSD) * 100 : 0;
         }
       }
@@ -340,6 +377,10 @@ const EmployeePerformance = () => {
         profitUSD: profitUSD,
         profitPKR: profitPKR,
         profitMargin: profitMargin,
+        commissionUSD: commissionUSD,
+        commissionPKR: commissionPKR,
+        commissionType: commissionType,
+        recurringMonths: recurringMonths,
         budgetType: project.budget?.type || 'none'
       };
     }).filter(Boolean);
@@ -349,6 +390,8 @@ const EmployeePerformance = () => {
     const totalCostUSD = projectStats.reduce((sum, p) => sum + p.costUSD, 0);
     const totalRevenueUSD = projectStats.reduce((sum, p) => sum + p.revenueUSD, 0);
     const totalRevenuePKR = projectStats.reduce((sum, p) => sum + p.revenuePKR, 0);
+    const totalCommissionUSD = projectStats.reduce((sum, p) => sum + p.commissionUSD, 0);
+    const totalCommissionPKR = projectStats.reduce((sum, p) => sum + p.commissionPKR, 0);
     const totalProfitUSD = projectStats.reduce((sum, p) => sum + p.profitUSD, 0);
     const totalProfitPKR = projectStats.reduce((sum, p) => sum + p.profitPKR, 0);
     const overallProfitMargin = totalRevenueUSD > 0 ? (totalProfitUSD / totalRevenueUSD) * 100 : 0;
@@ -367,6 +410,8 @@ const EmployeePerformance = () => {
       totalCostUSD,
       totalRevenueUSD,
       totalRevenuePKR,
+      totalCommissionUSD,
+      totalCommissionPKR,
       totalProfitUSD,
       totalProfitPKR,
       overallProfitMargin
@@ -431,7 +476,28 @@ const EmployeePerformance = () => {
       totalCost += stats.totalCostUSD;
     });
 
-    const profit = totalReceived - totalCost;
+    let totalCommission = 0;
+    let totalCommissionPKR = 0;
+    const commissionDetails = [];
+    
+    if (project.commissionData) {
+      Object.keys(project.commissionData).forEach(memberId => {
+        const commissionInfo = project.commissionData[memberId];
+        if (commissionInfo.isActive && commissionInfo.percentage) {
+          const commissionPercentage = commissionInfo.percentage || 0;
+          const memberCommission = (totalProjectBudget * commissionPercentage) / 100;
+          totalCommission += memberCommission;
+          commissionDetails.push({
+            percentage: commissionPercentage,
+            type: commissionInfo.type || 'fixed',
+            recurringMonths: commissionInfo.recurringMonths || null
+          });
+        }
+      });
+    }
+    
+    totalCommissionPKR = totalCommission * exchangeRate;
+    const profit = totalReceived - totalCost - totalCommission;
     const totalProjectBudgetPKR = totalProjectBudget * exchangeRate;
     const totalReceivedPKR = totalReceived * exchangeRate;
     const totalRevenuePKR = totalRevenue * exchangeRate;
@@ -448,6 +514,9 @@ const EmployeePerformance = () => {
       totalRevenuePKR,
       totalCost,
       totalCostPKR,
+      totalCommission,
+      totalCommissionPKR,
+      commissionDetails,
       totalSpentHours,
       profit,
       profitPKR
@@ -550,22 +619,26 @@ const EmployeePerformance = () => {
                 </div>
               </div>
 
-              <div className="stat-row">
-                <div className="stat-item">
-                  <span className="stat-label">Total Hours</span>
-                  <span className="stat-value">{stats.totalHours.toFixed(2)}h</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Total Cost (USD)</span>
-                  <span className="stat-value">${formatCurrency(stats.totalCostUSD, 2, true)}</span>
-                </div>
-              </div>
-              <div className="stat-row">
-                <div className="stat-item">
-                  <span className="stat-label">Total Cost (PKR)</span>
-                  <span className="stat-value">PKR {formatCurrency(stats.totalCostPKR, 2, true)}</span>
-                </div>
-              </div>
+              {stats.totalHours > 0 && (
+                <>
+                  <div className="stat-row">
+                    <div className="stat-item">
+                      <span className="stat-label">Total Hours</span>
+                      <span className="stat-value">{stats.totalHours.toFixed(2)}h</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Total Cost (USD)</span>
+                      <span className="stat-value">${formatCurrency(stats.totalCostUSD, 2, true)}</span>
+                    </div>
+                  </div>
+                  <div className="stat-row">
+                    <div className="stat-item">
+                      <span className="stat-label">Total Cost (PKR)</span>
+                      <span className="stat-value">PKR {formatCurrency(stats.totalCostPKR, 2, true)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {stats.totalRevenueUSD > 0 && (
                 <div className="stat-row">
@@ -576,6 +649,18 @@ const EmployeePerformance = () => {
                   <div className="stat-item">
                     <span className="stat-label">Total Revenue (PKR)</span>
                     <span className="stat-value revenue">PKR {formatCurrency(stats.totalRevenuePKR, 2, true)}</span>
+                  </div>
+                </div>
+              )}
+              {stats.totalCommissionUSD > 0 && (
+                <div className="stat-row">
+                  <div className="stat-item">
+                    <span className="stat-label">Commission (USD)</span>
+                    <span className="stat-value commission">${formatCurrency(stats.totalCommissionUSD, 2, true)}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Commission (PKR)</span>
+                    <span className="stat-value commission">PKR {formatCurrency(stats.totalCommissionPKR, 2, true)}</span>
                   </div>
                 </div>
               )}
@@ -615,17 +700,23 @@ const EmployeePerformance = () => {
                         </span>
                       )}
                     </div>
-                    <span className="project-hours">{project.hours.toFixed(2)}h</span>
+                    {project.hours > 0 && (
+                      <span className="project-hours">{project.hours.toFixed(2)}h</span>
+                    )}
                   </div>
                   <div className="project-details">
-                    <div className="project-detail">
-                      <span>Cost (USD):</span>
-                      <span>${formatCurrency(project.costUSD, 2, true)}</span>
-                    </div>
-                    <div className="project-detail">
-                      <span>Cost (PKR):</span>
-                      <span>PKR {formatCurrency(project.costPKR, 2, true)}</span>
-                    </div>
+                    {project.hours > 0 && (
+                      <>
+                        <div className="project-detail">
+                          <span>Cost (USD):</span>
+                          <span>${formatCurrency(project.costUSD, 2, true)}</span>
+                        </div>
+                        <div className="project-detail">
+                          <span>Cost (PKR):</span>
+                          <span>PKR {formatCurrency(project.costPKR, 2, true)}</span>
+                        </div>
+                      </>
+                    )}
                     {project.revenueUSD > 0 && (
                       <>
                         <div className="project-detail">
@@ -649,6 +740,28 @@ const EmployeePerformance = () => {
                           <span>Profit (PKR):</span>
                           <span className={project.profitPKR >= 0 ? 'profit' : 'loss'}>
                             PKR {formatCurrency(project.profitPKR, 2, true)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {project.commissionType && (
+                      <>
+                        {project.commissionUSD > 0 && (
+                          <>
+                            <div className="project-detail">
+                              <span>Commission (USD):</span>
+                              <span className="commission">${formatCurrency(project.commissionUSD, 2, true)}</span>
+                            </div>
+                            <div className="project-detail">
+                              <span>Commission (PKR):</span>
+                              <span className="commission">PKR {formatCurrency(project.commissionPKR, 2, true)}</span>
+                            </div>
+                          </>
+                        )}
+                        <div className="project-detail">
+                          <span>Commission Type:</span>
+                          <span className="commission">
+                            {project.commissionType === 'fixed' ? 'Fixed' : `Recurring (${project.recurringMonths || 'N/A'} months)`}
                           </span>
                         </div>
                       </>
@@ -742,65 +855,77 @@ const EmployeePerformance = () => {
       {selectedProject && projectStats && (
         <div className="project-stats-section">
           <div className="project-stats-grid">
-            <div className="project-stat-card">
-              <div className="stat-icon budget">
-                <FiDollarSign size={24} />
+            {[
+              {
+                key: 'budget',
+                icon: FiDollarSign,
+                label: 'Total Project Budget',
+                value: `$${formatCurrency(projectStats.totalProjectBudget, 2, true)}`,
+                valuePkr: `PKR ${formatCurrency(projectStats.totalProjectBudgetPKR, 2, true)}`,
+                show: true
+              },
+              {
+                key: 'received',
+                icon: FiDollarSign,
+                label: 'Total Received',
+                value: `$${formatCurrency(projectStats.totalReceived, 2, true)}`,
+                valuePkr: `PKR ${formatCurrency(projectStats.totalReceivedPKR, 2, true)}`,
+                bonus: projectStats.bonus > 0 ? `+$${formatCurrency(projectStats.bonus, 2, true)} bonus` : null,
+                show: true,
+                positive: true
+              },
+              {
+                key: 'cost',
+                icon: FiDollarSign,
+                label: 'Total Cost',
+                value: `$${formatCurrency(projectStats.totalCost, 2, true)}`,
+                valuePkr: `PKR ${formatCurrency(projectStats.totalCostPKR, 2, true)}`,
+                show: true
+              },
+              {
+                key: 'hours',
+                icon: FiClock,
+                label: 'Total Spent Hours',
+                value: `${projectStats.totalSpentHours.toFixed(2)}h`,
+                show: true
+              },
+              {
+                key: 'commission',
+                icon: FiDollarSign,
+                label: 'Commission',
+                value: `$${formatCurrency(projectStats.totalCommission, 2, true)}`,
+                valuePkr: `PKR ${formatCurrency(projectStats.totalCommissionPKR, 2, true)}`,
+                show: projectStats.totalCommission > 0
+              },
+              {
+                key: 'profit',
+                icon: FiDollarSign,
+                label: 'Total Profit',
+                value: `$${formatCurrency(projectStats.profit, 2, true)}`,
+                valuePkr: `PKR ${formatCurrency(projectStats.profitPKR, 2, true)}`,
+                show: true,
+                positive: projectStats.profit >= 0
+              }
+            ].filter(card => card.show).map(card => (
+              <div key={card.key} className="project-stat-card">
+                <div className={`stat-icon ${card.key}`}>
+                  <card.icon size={24} />
+                </div>
+                <div className="stat-content">
+                  <span className="stat-label">{card.label}</span>
+                  {card.value && (
+                    <span className={`stat-value ${card.positive !== undefined ? (card.positive ? 'positive' : 'negative') : ''} ${card.key === 'commission' ? 'commission' : ''}`}>
+                      {card.value}
+                    </span>
+                  )}
+                  {card.valuePkr && (
+                    <span className={`stat-value-pkr ${card.positive !== undefined ? (card.positive ? 'positive' : 'negative') : ''} ${card.key === 'commission' ? 'commission' : ''}`}>
+                      {card.valuePkr}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="stat-content">
-                <span className="stat-label">Total Project Budget</span>
-                <span className="stat-value">${formatCurrency(projectStats.totalProjectBudget, 2, true)}</span>
-                <span className="stat-value-pkr">PKR {formatCurrency(projectStats.totalProjectBudgetPKR, 2, true)}</span>
-              </div>
-            </div>
-            <div className="project-stat-card">
-              <div className="stat-icon received">
-                <FiDollarSign size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Total Received</span>
-                <span className="stat-value positive">${formatCurrency(projectStats.totalReceived, 2, true)}</span>
-                <span className="stat-value-pkr positive">PKR {formatCurrency(projectStats.totalReceivedPKR, 2, true)}</span>
-                {projectStats.bonus > 0 && (
-                  <span className="stat-bonus">+${formatCurrency(projectStats.bonus, 2, true)} bonus</span>
-                )}
-              </div>
-            </div>
-            <div className="project-stat-card">
-              <div className="stat-icon cost">
-                <FiDollarSign size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Total Cost</span>
-                <span className="stat-value">${formatCurrency(projectStats.totalCost, 2, true)}</span>
-                <span className="stat-value-pkr">PKR {formatCurrency(projectStats.totalCostPKR, 2, true)}</span>
-              </div>
-            </div>
-            <div className="project-stat-card">
-              <div className="stat-icon hours">
-                <FiClock size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Total Spent Hours</span>
-                <span className="stat-value">{projectStats.totalSpentHours.toFixed(2)}h</span>
-              </div>
-            </div>
-            <div className="project-stat-card">
-              <div className="stat-icon profit">
-                <FiDollarSign size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Profit</span>
-                <span className={`stat-value ${projectStats.profit >= 0 ? 'positive' : 'negative'}`}>
-                  ${formatCurrency(projectStats.profit, 2, true)}
-                </span>
-                <span className={`stat-value-pkr ${projectStats.profit >= 0 ? 'positive' : 'negative'}`}>
-                  PKR {formatCurrency(projectStats.profitPKR, 2, true)}
-                </span>
-                {projectStats.bonus > 0 && (
-                  <span className="stat-bonus">+${formatCurrency(projectStats.bonus, 2, true)} bonus included</span>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

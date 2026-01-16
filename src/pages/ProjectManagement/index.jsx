@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { deleteField } from 'firebase/firestore';
 import { 
   FiFolder, 
   FiPlus, 
@@ -52,7 +53,8 @@ const ProjectManagement = () => {
       fixedBudget: '',
       hourlyRate: '',
       payments: []
-    }
+    },
+    commissionData: {}
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -219,8 +221,28 @@ const ProjectManagement = () => {
     { value: 'low', label: 'Low' }
   ];
 
+  const getCurrentMonthYear = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const getMonthYearOptions = () => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+    return options;
+  };
+
   const CustomOption = ({ children, ...props }) => {
     const { data } = props;
+    const user = allUsers.find(u => u.id === data.value || u.email === data.value);
+    const hasCommission = user?.hasCommission && user?.commissionPercentage;
+    
     return (
       <div 
         {...props.innerProps} 
@@ -229,19 +251,27 @@ const ProjectManagement = () => {
           cursor: 'pointer',
           backgroundColor: props.isFocused ? '#f8fafc' : 'white',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
-        <Avatar 
-          src={data.avatar} 
-          name={data.label}
-          size="small"
-          style={{ marginRight: '8px' }}
-        />
-        <div>
-          <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+          <Avatar 
+            src={data.avatar} 
+            name={data.label}
+            size="small"
+            style={{ marginRight: '8px' }}
+          />
+          <div>
+            <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
+          </div>
         </div>
+        {hasCommission && (
+          <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500 }}>
+            {user.commissionPercentage}% {user.commissionType === 'fixed' ? 'Fixed' : 'Recurring'}
+          </div>
+        )}
       </div>
     );
   };
@@ -258,6 +288,26 @@ const ProjectManagement = () => {
         return;
       }
 
+      const commissionData = {};
+      formData.teamMembers.forEach(member => {
+        const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+        if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
+          const commissionInfo = formData.commissionData[member.value];
+          if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
+            setError('Please enter a valid number of months for recurring commission.');
+            setLoading(false);
+            return;
+          }
+          commissionData[member.value] = {
+            percentage: user.commissionPercentage,
+            type: user.commissionType,
+            recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
+            startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+            isActive: true
+          };
+        }
+      });
+
       const projectData = {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value),
@@ -266,6 +316,10 @@ const ProjectManagement = () => {
         status: 'active',
         createdAt: new Date().toISOString()
       };
+
+      if (Object.keys(commissionData).length > 0) {
+        projectData.commissionData = commissionData;
+      }
 
       if (formData.budget.type === 'none') {
         delete projectData.budget;
@@ -285,7 +339,8 @@ const ProjectManagement = () => {
           fixedBudget: '',
           hourlyRate: '',
           payments: []
-        }
+        },
+        commissionData: {}
       });
     } catch (error) {
       console.error('Error creating project:', error);
@@ -316,10 +371,36 @@ const ProjectManagement = () => {
         return;
       }
 
+      const commissionData = {};
+      formData.teamMembers.forEach(member => {
+        const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+        if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
+          const commissionInfo = formData.commissionData[member.value];
+          if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
+            setError('Please enter a valid number of months for recurring commission.');
+            setLoading(false);
+            return;
+          }
+          commissionData[member.value] = {
+            percentage: user.commissionPercentage,
+            type: user.commissionType,
+            recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
+            startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+            isActive: true
+          };
+        }
+      });
+
       let projectData = {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value)
       };
+
+      if (Object.keys(commissionData).length > 0) {
+        projectData.commissionData = commissionData;
+      } else {
+        projectData.commissionData = deleteField();
+      }
       
       if (isBdManager) {
         if (formData.budget && formData.budget.type !== 'none') {
@@ -355,7 +436,8 @@ const ProjectManagement = () => {
           fixedBudget: '',
           hourlyRate: '',
           payments: []
-        }
+        },
+        commissionData: {}
       });
     } catch (error) {
       console.error('Error updating project:', error);
@@ -485,29 +567,152 @@ const ProjectManagement = () => {
       });
   }, [projects, projectFilter, activeProjects, completedProjects, searchTerm, selectedManager, selectedProjectType, selectedPriority, allUsers]);
 
-  const renderTeamMemberSelect = () => (
-    <div className="form-group">
-      <label>Team Members</label>
-      <Select
-        isMulti
-        options={groupedOptions}
-        value={formData.teamMembers}
-        onChange={(selected) => setFormData({
-          ...formData,
-          teamMembers: selected || []
-        })}
-        styles={reactSelectStyles}
-        components={{ Option: CustomOption }}
-        placeholder="Select team members..."
-        closeMenuOnSelect={false}
-        className="team-select"
-        classNamePrefix="team-select"
-      />
-      <small className="form-text text-muted">
-        Selected: {formData.teamMembers.length} members
-      </small>
-    </div>
-  );
+  const renderTeamMemberSelect = () => {
+    const membersWithCommission = formData.teamMembers.filter(member => {
+      const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+      return user?.hasCommission && user?.commissionPercentage;
+    });
+
+    return (
+      <>
+        <div className="form-group">
+          <label>Team Members</label>
+          <Select
+            isMulti
+            options={groupedOptions}
+            value={formData.teamMembers}
+            onChange={(selected) => {
+              const newMembers = selected || [];
+              const newCommissionData = { ...formData.commissionData };
+              
+              newMembers.forEach(member => {
+                const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+                if (user?.hasCommission && user?.commissionPercentage) {
+                  if (!newCommissionData[member.value]) {
+                    newCommissionData[member.value] = {
+                      percentage: user.commissionPercentage,
+                      type: user.commissionType,
+                      recurringMonths: user.recurringMonths || null,
+                      isActive: false,
+                      startMonth: null
+                    };
+                  }
+                }
+              });
+              
+              Object.keys(newCommissionData).forEach(memberId => {
+                if (!newMembers.find(m => m.value === memberId)) {
+                  delete newCommissionData[memberId];
+                }
+              });
+
+              setFormData({
+                ...formData,
+                teamMembers: newMembers,
+                commissionData: newCommissionData
+              });
+            }}
+            styles={reactSelectStyles}
+            components={{ Option: CustomOption }}
+            placeholder="Select team members..."
+            closeMenuOnSelect={false}
+            className="team-select"
+            classNamePrefix="team-select"
+          />
+          <small className="form-text text-muted">
+            Selected: {formData.teamMembers.length} members
+          </small>
+        </div>
+
+        {membersWithCommission.length > 0 && (
+          <div className="form-group">
+            <label>Commission Settings</label>
+            <div className="commission-settings">
+              {membersWithCommission.map(member => {
+                const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+                const commissionInfo = formData.commissionData[member.value] || {};
+                if (!user?.hasCommission) return null;
+
+                return (
+                  <div key={member.value} className="commission-item">
+                    <div className="commission-header">
+                      <Avatar src={user.avatar} name={user.name} size="small" />
+                      <div className="commission-user-info">
+                        <div className="commission-name">{user.name}</div>
+                        <div className="commission-info">
+                          {user.commissionPercentage}% {user.commissionType === 'fixed' ? 'Fixed' : 'Recurring'}
+                        </div>
+                      </div>
+                      <label className="commission-toggle">
+                        <input
+                          type="checkbox"
+                          checked={!!commissionInfo.isActive}
+                          onChange={(e) => {
+                            const isActive = e.target.checked;
+                            setFormData(prev => ({
+                              ...prev,
+                              commissionData: {
+                                ...prev.commissionData,
+                                [member.value]: {
+                                  percentage: user.commissionPercentage,
+                                  type: user.commissionType,
+                                  recurringMonths: prev.commissionData[member.value]?.recurringMonths || null,
+                                  isActive: isActive,
+                                  startMonth: isActive ? getCurrentMonthYear() : null
+                                }
+                              }
+                            }));
+                          }}
+                        />
+                        <span>Active</span>
+                      </label>
+                    </div>
+                    {commissionInfo.isActive && user.commissionType === 'recurring' && (
+                      <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                        <label htmlFor={`recurringMonths-${member.value}`}>
+                          Duration (Months) <span className="required">*</span>
+                        </label>
+                        <div className="input-wrapper">
+                          <input
+                            type="number"
+                            id={`recurringMonths-${member.value}`}
+                            value={commissionInfo.recurringMonths || ''}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9]/g, '');
+                              const numValue = parseInt(value, 10);
+                              setFormData(prev => ({
+                                ...prev,
+                                commissionData: {
+                                  ...prev.commissionData,
+                                  [member.value]: {
+                                    ...prev.commissionData[member.value],
+                                    recurringMonths: value === '' ? '' : (!isNaN(numValue) && numValue > 0 ? numValue : prev.commissionData[member.value]?.recurringMonths || '')
+                                  }
+                                }
+                              }));
+                            }}
+                            placeholder="Enter number of months"
+                            min="1"
+                            step="1"
+                            required={commissionInfo.isActive && user.commissionType === 'recurring'}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {commissionInfo.isActive && commissionInfo.startMonth && (
+                      <div className="commission-month">
+                        Started: {new Date(commissionInfo.startMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="project-management">
@@ -650,13 +855,43 @@ const ProjectManagement = () => {
                         className="action-btn"
                         onClick={() => {
                           setSelectedProject(project);
+                          const teamMembers = project.teamMembers ? project.teamMembers.map(id => {
+                            const user = allUsers.find(u => u.id === id);
+                            return user ? {
+                              value: user.id,
+                              label: user.name,
+                              role: user.role === 'manager' ? 'Manager' : user.role.charAt(0).toUpperCase() + user.role.slice(1),
+                              avatar: user.avatar
+                            } : null;
+                          }).filter(Boolean) : [];
+
+                          const commissionData = {};
+                          if (project.commissionData) {
+                            Object.keys(project.commissionData).forEach(memberId => {
+                              commissionData[memberId] = {
+                                ...project.commissionData[memberId],
+                                isActive: project.commissionData[memberId].isActive === true
+                              };
+                            });
+                          }
+                          
+                          teamMembers.forEach(member => {
+                            const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+                            if (user?.hasCommission && user?.commissionPercentage && !commissionData[member.value]) {
+                              commissionData[member.value] = {
+                                percentage: user.commissionPercentage,
+                                type: user.commissionType,
+                                recurringMonths: user.commissionType === 'recurring' ? '' : null,
+                                isActive: false,
+                                startMonth: null
+                              };
+                            }
+                          });
+
                           setFormData({
                             name: project.name,
-                            description: project.description,
-                            teamMembers: project.teamMembers.map(id => ({
-                              value: id,
-                              label: users.find(user => user.id === id)?.name || 'Unknown User'
-                            })),
+                            description: project.description || '',
+                            teamMembers: teamMembers,
                             status: project.status || 'active',
                             projectType: project.projectType || '',
                             priority: project.priority || '',
@@ -665,7 +900,8 @@ const ProjectManagement = () => {
                               fixedBudget: '',
                               hourlyRate: '',
                               payments: []
-                            }
+                            },
+                            commissionData: commissionData
                           });
                           setShowEditModal(true);
                         }}
@@ -807,7 +1043,8 @@ const ProjectManagement = () => {
                     fixedBudget: '',
                     hourlyRate: '',
                     payments: []
-                  }
+                  },
+                  commissionData: {}
                 });
                 setError('');
               }}
@@ -842,7 +1079,8 @@ const ProjectManagement = () => {
               fixedBudget: '',
               hourlyRate: '',
               payments: []
-            }
+            },
+            commissionData: {}
           });
           setError('');
         }}

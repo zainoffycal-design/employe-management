@@ -104,7 +104,7 @@ const FinanceManagement = () => {
   return (
     <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle 
-        title="Finance Management"
+        title="Financial Overview"
         subtitle={`Financial overview for ${currentMonth}`}
         icon={FiDollarSign}
         showBackButton={true}

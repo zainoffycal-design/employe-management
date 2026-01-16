@@ -442,6 +442,14 @@
     }
   }
 
+  label {
+    .required {
+      color: #dc2626;
+      font-weight: 600;
+      margin-left: 0.25rem;
+    }
+  }
+
 }
 
 @media (max-width: 1400px) {
