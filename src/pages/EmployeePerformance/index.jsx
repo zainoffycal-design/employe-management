@@ -256,37 +256,22 @@ const EmployeePerformance = () => {
       let commissionUSD = 0;
       let commissionPKR = 0;
 
-      const totalReceived = (project.budget?.payments || []).reduce((sum, payment) => {
-        return sum + (parseFloat(payment.amount) || 0);
-      }, 0);
-
-      let totalProjectBudgetForCommission = 0;
-      if (project.budget && project.budget.type === 'fixed') {
-        totalProjectBudgetForCommission = parseFloat(project.budget.fixedBudget || 0);
-      } else if (project.budget && project.budget.type === 'hourly') {
-        const allProjectTasks = tasks.filter(t => t.projectId === project.id);
-        let totalProjectHours = 0;
-        allProjectTasks.forEach(task => {
-          const allTimeEntries = (task.timeEntries || []).filter(entry => {
-            if (entry.date) {
-              const entryDate = new Date(entry.date);
-              return isWithinInterval(entryDate, { start: monthRange.start, end: monthRange.end });
-            }
-            return true;
-          });
-          const taskTotalHours = allTimeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
-          totalProjectHours += taskTotalHours;
-        });
-        const projectHourlyRate = parseFloat(project.budget.hourlyRate || 0);
-        totalProjectBudgetForCommission = totalProjectHours * projectHourlyRate;
-      }
+      const totalReceived = (project.budget?.payments || []).filter(payment => {
+        if (!payment.receivedAt || !payment.amount) return false;
+        try {
+          const paymentDate = new Date(payment.receivedAt);
+          return isWithinInterval(paymentDate, { start: monthRange.start, end: monthRange.end });
+        } catch {
+          return false;
+        }
+      }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
 
       let commissionType = null;
       let recurringMonths = null;
       if (project.commissionData && project.commissionData[user.id] && project.commissionData[user.id].isActive) {
         const commissionInfo = project.commissionData[user.id];
         const commissionPercentage = commissionInfo.percentage || 0;
-        commissionUSD = (totalProjectBudgetForCommission * commissionPercentage) / 100;
+        commissionUSD = (totalReceived * commissionPercentage) / 100;
         commissionPKR = commissionUSD * exchangeRate;
         commissionType = commissionInfo.type || 'fixed';
         recurringMonths = commissionInfo.recurringMonths || null;
@@ -447,9 +432,15 @@ const EmployeePerformance = () => {
       totalProjectBudget = totalSpentHours * hourlyRate;
     }
 
-    const totalReceived = (project.budget?.payments || []).reduce((sum, payment) => {
-      return sum + (parseFloat(payment.amount) || 0);
-    }, 0);
+    const totalReceived = (project.budget?.payments || []).filter(payment => {
+      if (!payment.receivedAt || !payment.amount) return false;
+      try {
+        const paymentDate = new Date(payment.receivedAt);
+        return isWithinInterval(paymentDate, { start: monthRange.start, end: monthRange.end });
+      } catch {
+        return false;
+      }
+    }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
 
     const bonus = totalReceived > totalProjectBudget ? totalReceived - totalProjectBudget : 0;
     const totalRevenue = totalProjectBudget + bonus;
@@ -485,7 +476,7 @@ const EmployeePerformance = () => {
         const commissionInfo = project.commissionData[memberId];
         if (commissionInfo.isActive && commissionInfo.percentage) {
           const commissionPercentage = commissionInfo.percentage || 0;
-          const memberCommission = (totalProjectBudget * commissionPercentage) / 100;
+          const memberCommission = (totalReceived * commissionPercentage) / 100;
           totalCommission += memberCommission;
           commissionDetails.push({
             percentage: commissionPercentage,
@@ -686,91 +677,6 @@ const EmployeePerformance = () => {
             </>
           )}
 
-          {stats.projectStats.length > 0 && (
-            <div className="project-breakdown">
-              <h4>Project Breakdown</h4>
-              {stats.projectStats.map(project => (
-                <div key={project.projectId} className="project-item">
-                  <div className="project-header">
-                    <div className="project-name-section">
-                      <span className="project-name">{project.projectName}</span>
-                      {project.budgetType !== 'none' && (
-                        <span className={`project-budget-badge ${project.budgetType === 'fixed' ? 'fixed' : 'hourly'}`}>
-                          {project.budgetType === 'fixed' ? 'Fixed' : 'Hourly'}
-                        </span>
-                      )}
-                    </div>
-                    {project.hours > 0 && (
-                      <span className="project-hours">{project.hours.toFixed(2)}h</span>
-                    )}
-                  </div>
-                  <div className="project-details">
-                    {project.hours > 0 && (
-                      <>
-                        <div className="project-detail">
-                          <span>Cost (USD):</span>
-                          <span>${formatCurrency(project.costUSD, 2, true)}</span>
-                        </div>
-                        <div className="project-detail">
-                          <span>Cost (PKR):</span>
-                          <span>PKR {formatCurrency(project.costPKR, 2, true)}</span>
-                        </div>
-                      </>
-                    )}
-                    {project.revenueUSD > 0 && (
-                      <>
-                        <div className="project-detail">
-                          <span>Revenue (USD):</span>
-                          <span className="revenue">${formatCurrency(project.revenueUSD, 2, true)}</span>
-                        </div>
-                        <div className="project-detail">
-                          <span>Revenue (PKR):</span>
-                          <span className="revenue">PKR {formatCurrency(project.revenuePKR, 2, true)}</span>
-                        </div>
-                        <div className="project-detail">
-                          <span>Profit (USD):</span>
-                          <span className={project.profitUSD >= 0 ? 'profit' : 'loss'}>
-                            ${formatCurrency(project.profitUSD, 2, true)}
-                            {project.profitMargin !== 0 && (
-                              <span className="margin"> ({project.profitMargin.toFixed(2)}%)</span>
-                            )}
-                          </span>
-                        </div>
-                        <div className="project-detail">
-                          <span>Profit (PKR):</span>
-                          <span className={project.profitPKR >= 0 ? 'profit' : 'loss'}>
-                            PKR {formatCurrency(project.profitPKR, 2, true)}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {project.commissionType && (
-                      <>
-                        {project.commissionUSD > 0 && (
-                          <>
-                            <div className="project-detail">
-                              <span>Commission (USD):</span>
-                              <span className="commission">${formatCurrency(project.commissionUSD, 2, true)}</span>
-                            </div>
-                            <div className="project-detail">
-                              <span>Commission (PKR):</span>
-                              <span className="commission">PKR {formatCurrency(project.commissionPKR, 2, true)}</span>
-                            </div>
-                          </>
-                        )}
-                        <div className="project-detail">
-                          <span>Commission Type:</span>
-                          <span className="commission">
-                            {project.commissionType === 'fixed' ? 'Fixed' : `Recurring (${project.recurringMonths || 'N/A'} months)`}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </motion.div>
     );

@@ -59,41 +59,23 @@ const Commissions = () => {
     }
   }, [fromDate, toDate]);
 
-  const calculateProjectHours = useCallback((projectId, monthRange) => {
-    const projectTasks = tasks.filter(t => t.projectId === projectId);
-    let totalHours = 0;
+  const calculateReceivedPayments = useCallback((project, monthRange) => {
+    if (!project.budget?.payments || !Array.isArray(project.budget.payments)) return 0;
 
-    projectTasks.forEach(task => {
-      const timeEntries = (task.timeEntries || []).filter(entry => {
-        if (!entry.date) return true;
-        try {
-          const entryDate = new Date(entry.date);
-          return isValid(entryDate) && isWithinInterval(entryDate, monthRange);
-        } catch {
-          return false;
+    return project.budget.payments.reduce((sum, payment) => {
+      if (!payment.receivedAt || !payment.amount) return sum;
+      try {
+        const paymentDate = new Date(payment.receivedAt);
+        if (!isValid(paymentDate)) return sum;
+        if (isWithinInterval(paymentDate, monthRange)) {
+          return sum + (parseFloat(payment.amount) || 0);
         }
-      });
-      totalHours += timeEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
-    });
-
-    return totalHours;
-  }, [tasks]);
-
-  const calculateProjectBudget = useCallback((project, monthRange) => {
-    if (!project.budget) return 0;
-
-    if (project.budget.type === 'fixed') {
-      return parseFloat(project.budget.fixedBudget || 0);
-    }
-
-    if (project.budget.type === 'hourly') {
-      const totalHours = calculateProjectHours(project.id, monthRange);
-      const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
-      return totalHours * hourlyRate;
-    }
-
-    return 0;
-  }, [calculateProjectHours]);
+      } catch {
+        return sum;
+      }
+      return sum;
+    }, 0);
+  }, []);
 
   const isCommissionInRange = useCallback((commissionInfo, monthRange) => {
     if (!commissionInfo.startMonth) return false;
@@ -140,8 +122,8 @@ const Commissions = () => {
           if (!isCommissionInRange(commissionInfo, monthRange)) return;
 
           const commissionPercentage = commissionInfo.percentage || 0;
-          const projectBudget = calculateProjectBudget(project, monthRange);
-          const commissionUSD = (projectBudget * commissionPercentage) / 100;
+          const receivedAmount = calculateReceivedPayments(project, monthRange);
+          const commissionUSD = (receivedAmount * commissionPercentage) / 100;
 
           if (commissionUSD > 0) {
             const commissionPKR = commissionUSD * EXCHANGE_RATE;
@@ -173,7 +155,7 @@ const Commissions = () => {
               commissionPercentage,
               commissionType: commissionInfo.type || 'fixed',
               recurringMonths: commissionInfo.recurringMonths || null,
-              projectBudget,
+              receivedAmount,
               startMonth: commissionInfo.startMonth,
               endMonth
             });
@@ -190,7 +172,7 @@ const Commissions = () => {
         };
       })
       .filter(userComm => userComm.totalCommissionUSD > 0);
-  }, [users, projects, monthRange, calculateProjectBudget, isCommissionInRange]);
+  }, [users, projects, monthRange, calculateReceivedPayments, isCommissionInRange]);
 
   if (currentUser?.role !== 'super_manager') {
     return (
@@ -302,8 +284,8 @@ const Commissions = () => {
                         <span className="detail-value">{projectComm.commissionPercentage}%</span>
                       </div>
                       <div className="detail-row">
-                        <span className="detail-label">Project Budget:</span>
-                        <span className="detail-value">${formatCurrency(projectComm.projectBudget, 2, true)}</span>
+                        <span className="detail-label">Received Amount:</span>
+                        <span className="detail-value">${formatCurrency(projectComm.receivedAmount, 2, true)}</span>
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Commission (USD):</span>
