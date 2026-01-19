@@ -3,13 +3,15 @@ import { FiDollarSign, FiClock, FiPlus, FiTrash2, FiCalendar, FiEdit3 } from 're
 import { formatCurrency } from '../../utils/uiUtils';
 import './BudgetManager.scss';
 
-const BudgetManager = ({ value, onChange, disabled = false }) => {
+const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) => {
   const [budgetType, setBudgetType] = useState(value?.type || 'none');
   const [fixedBudget, setFixedBudget] = useState(value?.fixedBudget || '');
   const [hourlyRate, setHourlyRate] = useState(value?.hourlyRate || '');
   const [monthlyHours, setMonthlyHours] = useState(value?.monthlyHours || '');
   const [payments, setPayments] = useState(value?.payments || []);
   const [editingPaymentId, setEditingPaymentId] = useState(null);
+  const defaultTax = projectType === 'freelance' ? 10 : 0;
+  const [tax, setTax] = useState(value?.tax !== undefined ? value.tax : defaultTax);
 
   useEffect(() => {
     if (value) {
@@ -18,8 +20,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       if (fixedBudgetValue !== undefined && fixedBudgetValue !== null && fixedBudgetValue !== '') {
         const num = parseFloat(fixedBudgetValue);
         if (!isNaN(num)) {
-          const rounded = Math.round(num);
-          setFixedBudget(rounded.toFixed(2));
+          setFixedBudget(Math.round(num).toString());
         } else {
           setFixedBudget('');
         }
@@ -30,8 +31,7 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       if (hourlyRateValue !== undefined && hourlyRateValue !== null && hourlyRateValue !== '') {
         const num = parseFloat(hourlyRateValue);
         if (!isNaN(num)) {
-          const rounded = Math.round(num);
-          setHourlyRate(rounded.toFixed(2));
+          setHourlyRate(Math.round(num).toString());
         } else {
           setHourlyRate('');
         }
@@ -45,8 +45,39 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
         setMonthlyHours('');
       }
       setPayments(value.payments || []);
+      if (value.tax !== undefined) {
+        setTax(value.tax);
+      } else {
+        setTax(defaultTax);
+      }
     }
-  }, [value]);
+  }, [value, defaultTax]);
+  
+  useEffect(() => {
+    if (projectType) {
+      const newTax = projectType === 'freelance' ? 10 : 0;
+      if (value?.tax === undefined || value?.tax === null || (projectType === 'freelance' && value.tax !== 10) || (projectType !== 'freelance' && value.tax === 10)) {
+        if (tax !== newTax) {
+          setTax(newTax);
+          onChange({
+            type: budgetType,
+            fixedBudget,
+            hourlyRate,
+            monthlyHours,
+            payments,
+            tax: newTax
+          });
+        }
+      }
+    }
+  }, [projectType]);
+
+  const calculateAfterTax = (amount, taxPercent) => {
+    if (!amount || amount === '' || isNaN(parseFloat(amount))) return 0;
+    const amt = parseFloat(amount);
+    const taxAmount = (amt * taxPercent) / 100;
+    return Math.round(amt - taxAmount);
+  };
 
   const handleBudgetTypeChange = (type) => {
     setBudgetType(type);
@@ -55,44 +86,121 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       fixedBudget: type === 'fixed' ? fixedBudget : '',
       hourlyRate: type === 'hourly' ? hourlyRate : '',
       monthlyHours: type === 'hourly' ? monthlyHours : '',
-      payments: type === 'none' ? [] : payments
+      payments: type === 'none' ? [] : payments,
+      tax
     };
     onChange(newValue);
   };
 
+  const handleTaxChange = (e) => {
+    const val = e.target.value;
+    setTax(val);
+    if (val === '' || val === null || val === undefined) {
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax: ''
+      });
+      return;
+    }
+    const num = parseFloat(val);
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax: val
+      });
+    }
+  };
+
+  const handleTaxBlur = (e) => {
+    let val = e.target.value;
+    if (val === '' || val === null || val === undefined) {
+      setTax(0);
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax: 0
+      });
+      return;
+    }
+    const num = parseFloat(val);
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      const rounded = Math.round(num);
+      setTax(rounded);
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax: rounded
+      });
+    }
+  };
+
   const handleFixedBudgetChange = (e) => {
     let val = e.target.value;
+    setFixedBudget(val);
     
-    if (val && !isNaN(parseFloat(val))) {
-      const num = parseFloat(val);
-      const rounded = Math.round(num * 100) / 100;
-      val = rounded.toString();
+    if (val === '' || val === null || val === undefined) {
+      onChange({
+        type: budgetType,
+        fixedBudget: '',
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax
+      });
+      return;
     }
     
-    setFixedBudget(val);
     onChange({
       type: budgetType,
       fixedBudget: val,
       hourlyRate,
       monthlyHours,
-      payments
+      payments,
+      tax
     });
   };
   
   const handleFixedBudgetBlur = (e) => {
     let val = e.target.value;
     
-    if (val && !isNaN(parseFloat(val))) {
-      const num = parseFloat(val);
-      const rounded = Math.round(num * 100) / 100;
-      val = rounded.toFixed(2);
-      setFixedBudget(val);
+    if (val === '' || val === null || val === undefined) {
+      setFixedBudget('');
       onChange({
         type: budgetType,
-        fixedBudget: val,
+        fixedBudget: '',
         hourlyRate,
         monthlyHours,
-        payments
+        payments,
+        tax
+      });
+      return;
+    }
+    
+    if (!isNaN(parseFloat(val))) {
+      const num = parseFloat(val);
+      const rounded = Math.round(num);
+      setFixedBudget(rounded.toString());
+      onChange({
+        type: budgetType,
+        fixedBudget: rounded.toString(),
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax
       });
     }
   };
@@ -101,15 +209,28 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
     let val = e.target.value;
     setHourlyRate(val);
     
-    if (val && !isNaN(parseFloat(val))) {
+    if (val === '' || val === null || val === undefined) {
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: '',
+        monthlyHours,
+        payments,
+        tax
+      });
+      return;
+    }
+    
+    if (!isNaN(parseFloat(val))) {
       const num = parseFloat(val);
-      const rounded = Math.round(num * 100) / 100;
+      const rounded = Math.round(num);
       onChange({
         type: budgetType,
         fixedBudget,
         hourlyRate: rounded.toString(),
         monthlyHours,
-        payments
+        payments,
+        tax
       });
     } else {
       onChange({
@@ -117,7 +238,8 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
         fixedBudget,
         hourlyRate: val,
         monthlyHours,
-        payments
+        payments,
+        tax
       });
     }
   };
@@ -125,29 +247,41 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
   const handleHourlyRateBlur = (e) => {
     let val = e.target.value;
     
-    if (val && val.trim() !== '') {
-      if (!isNaN(parseFloat(val))) {
-        const num = parseFloat(val);
-        const rounded = Math.round(num * 100) / 100;
-        const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
-        setHourlyRate(formatted);
-        onChange({
-          type: budgetType,
-          fixedBudget,
-          hourlyRate: formatted,
-          monthlyHours,
-          payments
-        });
-      } else {
-        setHourlyRate('');
-        onChange({
-          type: budgetType,
-          fixedBudget,
-          hourlyRate: '',
-          monthlyHours,
-          payments
-        });
-      }
+    if (val === '' || val === null || val === undefined) {
+      setHourlyRate('');
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: '',
+        monthlyHours,
+        payments,
+        tax
+      });
+      return;
+    }
+    
+    if (!isNaN(parseFloat(val))) {
+      const num = parseFloat(val);
+      const rounded = Math.round(num);
+      setHourlyRate(rounded.toString());
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: rounded.toString(),
+        monthlyHours,
+        payments,
+        tax
+      });
+    } else {
+      setHourlyRate('');
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate: '',
+        monthlyHours,
+        payments,
+        tax
+      });
     }
   };
 
@@ -177,7 +311,8 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       fixedBudget,
       hourlyRate,
       monthlyHours,
-      payments: updatedPayments
+      payments: updatedPayments,
+      tax
     });
   };
 
@@ -203,7 +338,8 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       fixedBudget,
       hourlyRate,
       monthlyHours,
-      payments: updatedPayments
+      payments: updatedPayments,
+      tax
     });
   };
 
@@ -219,15 +355,50 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
       fixedBudget,
       hourlyRate,
       monthlyHours,
-      payments: updatedPayments
+      payments: updatedPayments,
+      tax
     });
+  };
+
+  const handlePaymentAmountBlur = (paymentId) => {
+    const payment = payments.find(p => p.id === paymentId);
+    if (payment && payment.amount) {
+      const num = parseFloat(payment.amount);
+      if (!isNaN(num)) {
+        const rounded = Math.round(num);
+        const updatedPayments = payments.map(p =>
+          p.id === paymentId ? { ...p, amount: rounded.toString() } : p
+        );
+        setPayments(updatedPayments);
+        onChange({
+          type: budgetType,
+          fixedBudget,
+          hourlyRate,
+          monthlyHours,
+          payments: updatedPayments,
+          tax
+        });
+      }
+    }
+    handleFinishEdit(paymentId);
   };
 
   const totalReceived = payments.reduce((sum, payment) => {
     return sum + (parseFloat(payment.amount) || 0);
   }, 0);
 
-  const remainingBudget = parseFloat(fixedBudget) - totalReceived;
+  const totalReceivedAfterTax = payments.reduce((sum, payment) => {
+    const amount = parseFloat(payment.amount) || 0;
+    return sum + calculateAfterTax(amount, tax);
+  }, 0);
+
+  const budgetAfterTax = calculateAfterTax(fixedBudget, tax);
+  const remainingBudget = budgetAfterTax - totalReceivedAfterTax;
+  
+  const hourlyRateAfterTax = calculateAfterTax(hourlyRate, tax);
+  const estimatedBudgetAfterTax = hourlyRateAfterTax && monthlyHours 
+    ? hourlyRateAfterTax * parseFloat(monthlyHours || 0)
+    : 0;
 
   const hasBudgetData = (budgetType === 'fixed' && (fixedBudget || payments.length > 0)) ||
                         (budgetType === 'hourly' && hourlyRate);
@@ -275,21 +446,41 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
 
       {budgetType === 'fixed' && (
         <div className="budget-section">
-          <div className="form-group">
-            <label>Total Budget Amount</label>
-            <div className="input-with-icon">
-              <FiDollarSign className="input-icon" />
-              <input
-                type="number"
-                className="form-control"
-                value={fixedBudget}
-                onChange={handleFixedBudgetChange}
-                onBlur={handleFixedBudgetBlur}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-                disabled={disabled}
-              />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Total Budget Amount</label>
+              <div className="input-with-icon">
+                <FiDollarSign className="input-icon" />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={fixedBudget}
+                  onChange={handleFixedBudgetChange}
+                  onBlur={handleFixedBudgetBlur}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Tax (%)</label>
+              <div className="input-with-icon">
+                <FiDollarSign className="input-icon" />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={tax || ''}
+                  onChange={handleTaxChange}
+                  onBlur={handleTaxBlur}
+                  placeholder="0"
+                  min="0"
+                  max="100"
+                  step="1"
+                  disabled={disabled}
+                />
+              </div>
             </div>
           </div>
 
@@ -297,16 +488,16 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
             <div className="budget-summary">
               <div className="summary-item">
                 <span className="summary-label">Total Budget:</span>
-                <span className="summary-value">${formatCurrency(parseFloat(fixedBudget || 0))}</span>
+                <span className="summary-value">${formatCurrency(budgetAfterTax, 0, true)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">Received:</span>
-                <span className="summary-value received">${formatCurrency(totalReceived)}</span>
+                <span className="summary-value received">${formatCurrency(totalReceivedAfterTax, 0, true)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">{remainingBudget < 0 ? 'Bonus:' : 'Remaining:'}</span>
                 <span className={`summary-value ${remainingBudget < 0 ? 'bonus' : ''}`}>
-                  {remainingBudget < 0 ? `+$${formatCurrency(Math.abs(remainingBudget))}` : `$${formatCurrency(remainingBudget)}`}
+                  {remainingBudget < 0 ? `+$${formatCurrency(Math.abs(remainingBudget), 0, true)}` : `$${formatCurrency(remainingBudget, 0, true)}`}
                 </span>
               </div>
             </div>
@@ -338,7 +529,9 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                         <div className="payment-summary">
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
-                            <span className="amount-value">${formatCurrency(parseFloat(payment.amount || 0))}</span>
+                            <span className="amount-value">
+                              ${formatCurrency(calculateAfterTax(parseFloat(payment.amount || 0), tax), 0, true)}
+                            </span>
                             {payment.receivedAt && (
                               <span className="payment-date">
                                 {new Date(payment.receivedAt).toLocaleDateString()}
@@ -378,10 +571,10 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                                   className="form-control"
                                   value={payment.amount}
                                   onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
-                                  onBlur={() => handleFinishEdit(payment.id)}
-                                  placeholder="0.00"
+                                  onBlur={() => handlePaymentAmountBlur(payment.id)}
+                                  placeholder="0"
                                   min="0"
-                                  step="0.01"
+                                  step="1"
                                   disabled={disabled}
                                   autoFocus={isEditing && !hasAmount}
                                 />
@@ -427,25 +620,45 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
 
       {budgetType === 'hourly' && (
         <div className="budget-section">
-          <div className="form-group">
-            <label>Hourly Rate</label>
-            <div className="input-with-icon">
-              <FiDollarSign className="input-icon" />
-              <input
-                type="number"
-                className="form-control"
-                value={hourlyRate}
-                onChange={handleHourlyRateChange}
-                onBlur={handleHourlyRateBlur}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-                disabled={disabled}
-              />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Hourly Rate</label>
+              <div className="input-with-icon">
+                <FiDollarSign className="input-icon" />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={hourlyRate}
+                  onChange={handleHourlyRateChange}
+                  onBlur={handleHourlyRateBlur}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  disabled={disabled}
+                />
+              </div>
+              <small className="form-text text-muted">
+                Budget will be calculated based on total hours tracked × hourly rate
+              </small>
             </div>
-            <small className="form-text text-muted">
-              Budget will be calculated based on total hours tracked × hourly rate
-            </small>
+            <div className="form-group">
+              <label>Tax (%)</label>
+              <div className="input-with-icon">
+                <FiDollarSign className="input-icon" />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={tax || ''}
+                  onChange={handleTaxChange}
+                  onBlur={handleTaxBlur}
+                  placeholder="0"
+                  min="0"
+                  max="100"
+                  step="1"
+                  disabled={disabled}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-group">
@@ -491,7 +704,9 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                         <div className="payment-summary">
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
-                            <span className="amount-value">${formatCurrency(parseFloat(payment.amount || 0))}</span>
+                            <span className="amount-value">
+                              ${formatCurrency(calculateAfterTax(parseFloat(payment.amount || 0), tax), 0, true)}
+                            </span>
                             {payment.receivedAt && (
                               <span className="payment-date">
                                 {new Date(payment.receivedAt).toLocaleDateString()}
@@ -531,10 +746,10 @@ const BudgetManager = ({ value, onChange, disabled = false }) => {
                                   className="form-control"
                                   value={payment.amount}
                                   onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
-                                  onBlur={() => handleFinishEdit(payment.id)}
-                                  placeholder="0.00"
+                                  onBlur={() => handlePaymentAmountBlur(payment.id)}
+                                  placeholder="0"
                                   min="0"
-                                  step="0.01"
+                                  step="1"
                                   disabled={disabled}
                                   autoFocus={isEditing && !hasAmount}
                                 />

@@ -59,8 +59,20 @@ const Commissions = () => {
     }
   }, [fromDate, toDate]);
 
+  const calculateAfterTax = useCallback((amount, taxPercent) => {
+    if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+    const amt = parseFloat(amount);
+    const taxAmount = (amt * taxPercent) / 100;
+    return Math.round(amt - taxAmount);
+  }, []);
+
   const calculateReceivedPayments = useCallback((project, monthRange) => {
     if (!project.budget?.payments || !Array.isArray(project.budget.payments)) return 0;
+
+    let tax = parseFloat(project.budget?.tax);
+    if (isNaN(tax) || tax === null || tax === undefined) {
+      tax = project.projectType === 'freelance' ? 10 : 0;
+    }
 
     return project.budget.payments.reduce((sum, payment) => {
       if (!payment.receivedAt || !payment.amount) return sum;
@@ -68,14 +80,16 @@ const Commissions = () => {
         const paymentDate = new Date(payment.receivedAt);
         if (!isValid(paymentDate)) return sum;
         if (isWithinInterval(paymentDate, monthRange)) {
-          return sum + (parseFloat(payment.amount) || 0);
+          const paymentAmount = parseFloat(payment.amount) || 0;
+          const paymentAfterTax = calculateAfterTax(paymentAmount, tax);
+          return sum + paymentAfterTax;
         }
       } catch {
         return sum;
       }
       return sum;
     }, 0);
-  }, []);
+  }, [calculateAfterTax]);
 
   const isCommissionInRange = useCallback((commissionInfo, monthRange) => {
     if (!commissionInfo.startMonth) return false;
@@ -248,8 +262,8 @@ const Commissions = () => {
                   <div className="user-info">
                     <div className="user-name">{userComm.userName}</div>
                     <div className="commission-amount">
-                      <span className="amount-usd">${formatCurrency(userComm.totalCommissionUSD, 2, true)}</span>
-                      <span className="amount-pkr">PKR {formatCurrency(userComm.totalCommissionPKR, 2, true)}</span>
+                      <span className="amount-usd">${formatCurrency(userComm.totalCommissionUSD, 0, true)}</span>
+                      <span className="amount-pkr">PKR {formatCurrency(userComm.totalCommissionPKR, 0, true)}</span>
                     </div>
                   </div>
                 </div>
@@ -285,15 +299,15 @@ const Commissions = () => {
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Received Amount:</span>
-                        <span className="detail-value">${formatCurrency(projectComm.receivedAmount, 2, true)}</span>
+                        <span className="detail-value">${formatCurrency(projectComm.receivedAmount, 0, true)}</span>
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Commission (USD):</span>
-                        <span className="detail-value commission">${formatCurrency(projectComm.commissionUSD, 2, true)}</span>
+                        <span className="detail-value commission">${formatCurrency(projectComm.commissionUSD, 0, true)}</span>
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Commission (PKR):</span>
-                        <span className="detail-value commission">PKR {formatCurrency(projectComm.commissionPKR, 2, true)}</span>
+                        <span className="detail-value commission">PKR {formatCurrency(projectComm.commissionPKR, 0, true)}</span>
                       </div>
                       {projectComm.startMonth && (() => {
                         const startDate = parse(projectComm.startMonth + '-01', 'yyyy-MM-dd', new Date());

@@ -247,9 +247,9 @@ const FinanceManagement = () => {
                         )}
                       </div>
                       <div className="payment-amount-section">
-                        <div className="amount-received">${formatCurrency(project.received)}</div>
+                        <div className="amount-received">${formatCurrency(project.received, 0, true)}</div>
                         {estimated > 0 && (
-                          <div className="amount-estimated">of ${formatCurrency(estimated)}</div>
+                          <div className="amount-estimated">of ${formatCurrency(estimated, 0, true)}</div>
                         )}
                       </div>
                     </div>
@@ -266,7 +266,7 @@ const FinanceManagement = () => {
                           <span className="progress-percentage">{receivedPercentage.toFixed(1)}%</span>
                           {project.budgetType === 'hourly' && project.hourlyRate && (
                             <span className="hourly-rate">
-                              ${formatCurrency(project.hourlyRate)}/hr
+                              ${formatCurrency(project.hourlyRate, 0, true)}/hr
                             </span>
                           )}
                         </div>
@@ -277,21 +277,21 @@ const FinanceManagement = () => {
                       <div className="detail-item">
                         <span className="detail-label">Received</span>
                         <span className="detail-value received">
-                          ${formatCurrency(project.received)}
+                          ${formatCurrency(project.received, 0, true)}
                         </span>
                       </div>
                       {project.hasPreviousPayments && project.thisMonthReceived > 0 && (
                         <div className="detail-item">
                           <span className="detail-label">This Month</span>
                           <span className="detail-value received">
-                            +${formatCurrency(project.thisMonthReceived)}
+                            +${formatCurrency(project.thisMonthReceived, 0, true)}
                           </span>
                         </div>
                       )}
                       {estimated > 0 && (
                         <div className="detail-item">
                           <span className="detail-label">{project.budgetType === 'fixed' ? 'Budget' : 'Estimated'}</span>
-                          <span className="detail-value estimated">${formatCurrency(estimated)}</span>
+                          <span className="detail-value estimated">${formatCurrency(estimated, 0, true)}</span>
                         </div>
                       )}
                       {project.paymentCount > 0 && (

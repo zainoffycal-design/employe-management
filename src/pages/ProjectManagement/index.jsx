@@ -52,7 +52,8 @@ const ProjectManagement = () => {
       type: 'none',
       fixedBudget: '',
       hourlyRate: '',
-      payments: []
+      payments: [],
+      tax: 0
     },
     commissionData: {}
   });
@@ -168,6 +169,30 @@ const ProjectManagement = () => {
     saveFilters();
   }, [searchTerm, selectedManager, projectFilter, selectedProjectType, selectedPriority]);
 
+  useEffect(() => {
+    if (formData.projectType === 'freelance') {
+      if (formData.budget.tax !== 10) {
+        setFormData(prev => ({
+          ...prev,
+          budget: {
+            ...prev.budget,
+            tax: 10
+          }
+        }));
+      }
+    } else if (formData.projectType && formData.projectType !== 'freelance') {
+      if (formData.budget.tax === 10) {
+        setFormData(prev => ({
+          ...prev,
+          budget: {
+            ...prev.budget,
+            tax: 0
+          }
+        }));
+      }
+    }
+  }, [formData.projectType]);
+
   const groupedOptions = Object.entries(
     users.reduce((acc, user) => {
       if (user.role === 'super_manager') {
@@ -240,8 +265,6 @@ const ProjectManagement = () => {
 
   const CustomOption = ({ children, ...props }) => {
     const { data } = props;
-    const user = allUsers.find(u => u.id === data.value || u.email === data.value);
-    const hasCommission = user?.hasCommission && user?.commissionPercentage;
     
     return (
       <div 
@@ -251,27 +274,19 @@ const ProjectManagement = () => {
           cursor: 'pointer',
           backgroundColor: props.isFocused ? '#f8fafc' : 'white',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          alignItems: 'center'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-          <Avatar 
-            src={data.avatar} 
-            name={data.label}
-            size="small"
-            style={{ marginRight: '8px' }}
-          />
-          <div>
-            <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
-          </div>
+        <Avatar 
+          src={data.avatar} 
+          name={data.label}
+          size="small"
+          style={{ marginRight: '8px' }}
+        />
+        <div>
+          <div style={{ fontSize: '0.875rem', color: '#334155' }}>{data.label}</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{data.role}</div>
         </div>
-        {hasCommission && (
-          <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500 }}>
-            {user.commissionPercentage}% {user.commissionType === 'fixed' ? 'Fixed' : 'Recurring'}
-          </div>
-        )}
       </div>
     );
   };
@@ -1025,6 +1040,7 @@ const ProjectManagement = () => {
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
               disabled={loading}
+              projectType={formData.projectType}
             />
           )}
           <div className="modal-actions">
@@ -1152,6 +1168,7 @@ const ProjectManagement = () => {
               value={formData.budget}
               onChange={(budget) => setFormData({ ...formData, budget })}
               disabled={loading}
+              projectType={formData.projectType}
             />
           )}
           <div className="modal-actions">

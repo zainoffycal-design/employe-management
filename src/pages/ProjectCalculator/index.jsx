@@ -67,24 +67,32 @@ const ProjectCalculator = () => {
           setType(project.projectType);
         }
         const budgetType = project.budget?.type;
+        const calculateAfterTax = (amount, taxPercent) => {
+          if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+          const amt = parseFloat(amount);
+          const taxAmount = (amt * taxPercent) / 100;
+          return Math.round(amt - taxAmount);
+        };
+
+        let tax = parseFloat(project.budget?.tax);
+        if (isNaN(tax) || tax === null || tax === undefined) {
+          tax = project.projectType === 'freelance' ? 10 : 0;
+        }
+
         if (budgetType === 'hourly' || budgetType === 'fixed') {
           setCostType(budgetType);
           if (budgetType === 'hourly' && project.budget?.hourlyRate !== undefined && project.budget?.hourlyRate !== null && project.budget?.hourlyRate !== '') {
             const hourlyRateValue = project.budget.hourlyRate;
+            const hourlyRateAfterTax = calculateAfterTax(hourlyRateValue, tax);
             if (typeof hourlyRateValue === 'string') {
-              const num = parseFloat(hourlyRateValue);
+              const num = hourlyRateAfterTax;
               if (!isNaN(num) && isFinite(num)) {
-                const rounded = Math.round(num);
-                setCostAmount(rounded.toFixed(2));
+                setCostAmount(num.toString());
               } else {
-                setCostAmount(hourlyRateValue);
+                setCostAmount(hourlyRateAfterTax.toString());
               }
             } else {
-              const num = parseFloat(hourlyRateValue);
-              if (!isNaN(num) && isFinite(num)) {
-                const rounded = Math.round(num);
-                setCostAmount(rounded.toFixed(2));
-              }
+              setCostAmount(hourlyRateAfterTax.toString());
             }
             if (project.budget?.monthlyHours !== undefined && project.budget?.monthlyHours !== null && project.budget?.monthlyHours !== '') {
               setMonthlyHours(project.budget.monthlyHours.toString());
@@ -93,20 +101,16 @@ const ProjectCalculator = () => {
             }
           } else if (budgetType === 'fixed' && project.budget?.fixedBudget !== undefined && project.budget?.fixedBudget !== null && project.budget?.fixedBudget !== '') {
             const fixedBudgetValue = project.budget.fixedBudget;
+            const fixedBudgetAfterTax = calculateAfterTax(fixedBudgetValue, tax);
             if (typeof fixedBudgetValue === 'string') {
-              const num = parseFloat(fixedBudgetValue);
+              const num = fixedBudgetAfterTax;
               if (!isNaN(num) && isFinite(num)) {
-                const rounded = Math.round(num);
-                setCostAmount(rounded.toFixed(2));
+                setCostAmount(num.toString());
               } else {
-                setCostAmount(fixedBudgetValue);
+                setCostAmount(fixedBudgetAfterTax.toString());
               }
             } else {
-              const num = parseFloat(fixedBudgetValue);
-              if (!isNaN(num) && isFinite(num)) {
-                const rounded = Math.round(num);
-                setCostAmount(rounded.toFixed(2));
-              }
+              setCostAmount(fixedBudgetAfterTax.toString());
             }
             setMonthlyHours('');
           } else {

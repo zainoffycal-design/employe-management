@@ -256,7 +256,19 @@ const EmployeePerformance = () => {
       let commissionUSD = 0;
       let commissionPKR = 0;
 
-      const totalReceived = (project.budget?.payments || []).filter(payment => {
+      const calculateAfterTax = (amount, taxPercent) => {
+        if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+        const amt = parseFloat(amount);
+        const taxAmount = (amt * taxPercent) / 100;
+        return Math.round(amt - taxAmount);
+      };
+
+      let tax = parseFloat(project.budget?.tax);
+      if (isNaN(tax) || tax === null || tax === undefined) {
+        tax = project.projectType === 'freelance' ? 10 : 0;
+      }
+      
+      const totalReceivedBeforeTax = (project.budget?.payments || []).filter(payment => {
         if (!payment.receivedAt || !payment.amount) return false;
         try {
           const paymentDate = new Date(payment.receivedAt);
@@ -265,6 +277,8 @@ const EmployeePerformance = () => {
           return false;
         }
       }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+      
+      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
 
       let commissionType = null;
       let recurringMonths = null;
@@ -278,7 +292,8 @@ const EmployeePerformance = () => {
       }
 
       if (project.budget && project.budget.type === 'hourly') {
-        const projectHourlyRate = parseFloat(project.budget.hourlyRate || 0);
+        const projectHourlyRateBeforeTax = parseFloat(project.budget.hourlyRate || 0);
+        const projectHourlyRate = calculateAfterTax(projectHourlyRateBeforeTax, tax);
         const budgetRevenueUSD = projectHours * projectHourlyRate;
         const allProjectTasks = tasks.filter(t => t.projectId === project.id);
         let totalProjectHours = 0;
@@ -334,7 +349,8 @@ const EmployeePerformance = () => {
         });
         
         if (totalProjectHours > 0) {
-          const fixedBudget = parseFloat(project.budget.fixedBudget || 0);
+          const fixedBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
+          const fixedBudget = calculateAfterTax(fixedBudgetBeforeTax, tax);
           const userShare = projectHours / totalProjectHours;
           const userBudgetShare = fixedBudget * userShare;
           const userReceivedShare = totalReceived * userShare;
@@ -424,15 +440,26 @@ const EmployeePerformance = () => {
       totalSpentHours += taskHours;
     });
 
+    const calculateAfterTax = (amount, taxPercent) => {
+      if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+      const amt = parseFloat(amount);
+      const taxAmount = (amt * taxPercent) / 100;
+      return Math.round(amt - taxAmount);
+    };
+
+    const tax = project.budget?.tax || 0;
+    
     let totalProjectBudget = 0;
     if (project.budget && project.budget.type === 'fixed') {
-      totalProjectBudget = parseFloat(project.budget.fixedBudget || 0);
+      const fixedBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
+      totalProjectBudget = calculateAfterTax(fixedBudgetBeforeTax, tax);
     } else if (project.budget && project.budget.type === 'hourly') {
-      const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
+      const hourlyRateBeforeTax = parseFloat(project.budget.hourlyRate || 0);
+      const hourlyRate = calculateAfterTax(hourlyRateBeforeTax, tax);
       totalProjectBudget = totalSpentHours * hourlyRate;
     }
 
-    const totalReceived = (project.budget?.payments || []).filter(payment => {
+    const totalReceivedBeforeTax = (project.budget?.payments || []).filter(payment => {
       if (!payment.receivedAt || !payment.amount) return false;
       try {
         const paymentDate = new Date(payment.receivedAt);
@@ -441,6 +468,8 @@ const EmployeePerformance = () => {
         return false;
       }
     }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+    
+    const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
 
     const bonus = totalReceived > totalProjectBudget ? totalReceived - totalProjectBudget : 0;
     const totalRevenue = totalProjectBudget + bonus;

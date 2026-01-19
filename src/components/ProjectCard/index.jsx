@@ -59,7 +59,15 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
   const progressPercentage = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
 
   const totalProjectHours = useMemo(() => {
-    return projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
+    return projectTasks.reduce((sum, task) => {
+      if (task.timeEntries && task.timeEntries.length > 0) {
+        const taskHours = task.timeEntries.reduce((entrySum, entry) => {
+          return entrySum + (parseFloat(entry.hours) || 0);
+        }, 0);
+        return sum + taskHours;
+      }
+      return sum + (parseFloat(task.totalHours) || 0);
+    }, 0);
   }, [projectTasks]);
 
   const totalEstimatedHours = useMemo(() => {
@@ -82,14 +90,32 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     };
   }, [totalEstimatedHours, totalProjectHours]);
 
+  const calculateAfterTax = (amount, taxPercent) => {
+    if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+    const amt = parseFloat(amount);
+    const taxPct = parseFloat(taxPercent);
+    if (isNaN(taxPct) || taxPct <= 0) return Math.round(amt);
+    const taxAmount = (amt * taxPct) / 100;
+    return Math.round(amt - taxAmount);
+  };
+
   const budgetStats = useMemo(() => {
     if (!project.budget || project.budget.type === 'none') return null;
     
+    let tax = parseFloat(project.budget.tax);
+    if (isNaN(tax) || tax === null || tax === undefined) {
+      tax = project.projectType === 'freelance' ? 10 : 0;
+    }
+    
     if (project.budget.type === 'fixed') {
-      const totalBudget = parseFloat(project.budget.fixedBudget || 0);
-      const totalReceived = (project.budget.payments || []).reduce((sum, payment) => {
+      const totalBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
+      const totalBudget = calculateAfterTax(totalBudgetBeforeTax, tax);
+      
+      const totalReceivedBeforeTax = (project.budget.payments || []).reduce((sum, payment) => {
         return sum + (parseFloat(payment.amount) || 0);
       }, 0);
+      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+      
       const remaining = totalBudget - totalReceived;
       const receivedPercentage = totalBudget > 0 ? (totalReceived / totalBudget) * 100 : 0;
       
@@ -103,11 +129,15 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     }
     
     if (project.budget.type === 'hourly') {
-      const hourlyRate = parseFloat(project.budget.hourlyRate || 0);
+      const hourlyRateBeforeTax = parseFloat(project.budget.hourlyRate || 0);
+      const hourlyRate = calculateAfterTax(hourlyRateBeforeTax, tax);
       const estimatedBudget = totalProjectHours * hourlyRate;
-      const totalReceived = (project.budget.payments || []).reduce((sum, payment) => {
+      
+      const totalReceivedBeforeTax = (project.budget.payments || []).reduce((sum, payment) => {
         return sum + (parseFloat(payment.amount) || 0);
       }, 0);
+      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+      
       const remaining = estimatedBudget - totalReceived;
       const receivedPercentage = estimatedBudget > 0 ? (totalReceived / estimatedBudget) * 100 : 0;
       
@@ -198,7 +228,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   <FiDollarSign size={14} />
                   <span>Budget</span>
                 </div>
-                <span className="info-total">${formatCurrency(budgetStats.totalBudget)}</span>
+                <span className="info-total">${formatCurrency(budgetStats.totalBudget, 0, true)}</span>
               </div>
               <div className="info-progress-bar">
                 <div 
@@ -209,12 +239,12 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
               <div className="info-details">
                 <div className="info-item">
                   <span className="info-label">Received</span>
-                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived)}</span>
+                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived, 0, true)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
                   <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
-                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining))}` : `$${formatCurrency(budgetStats.remaining)}`}
+                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining), 0, true)}` : `$${formatCurrency(budgetStats.remaining, 0, true)}`}
                   </span>
                 </div>
               </div>
@@ -227,7 +257,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   <FiClock size={14} />
                   <span>Hour-Based Budget</span>
                 </div>
-                <span className="info-total">${formatCurrency(budgetStats.hourlyRate)}/hr</span>
+                <span className="info-total">${formatCurrency(budgetStats.hourlyRate, 0, true)}/hr</span>
               </div>
               <div className="info-progress-bar">
                 <div 
@@ -238,16 +268,16 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
               <div className="info-details">
                 <div className="info-item">
                   <span className="info-label">Received</span>
-                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived)}</span>
+                  <span className="info-value positive">${formatCurrency(budgetStats.totalReceived, 0, true)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Estimated</span>
-                  <span className="info-value">${formatCurrency(budgetStats.estimatedBudget)}</span>
+                  <span className="info-value">${formatCurrency(budgetStats.estimatedBudget, 0, true)}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">{budgetStats.remaining < 0 ? 'Bonus' : 'Remaining'}</span>
                   <span className={`info-value ${budgetStats.remaining < 0 ? 'bonus' : ''}`}>
-                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining))}` : `$${formatCurrency(budgetStats.remaining)}`}
+                    {budgetStats.remaining < 0 ? `+$${formatCurrency(Math.abs(budgetStats.remaining), 0, true)}` : `$${formatCurrency(budgetStats.remaining, 0, true)}`}
                   </span>
                 </div>
               </div>

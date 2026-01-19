@@ -1,5 +1,12 @@
 import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 
+const calculateAfterTax = (amount, taxPercent) => {
+  if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+  const amt = parseFloat(amount);
+  const taxAmount = (amt * taxPercent) / 100;
+  return Math.round(amt - taxAmount);
+};
+
 export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBudget = 0) => {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
@@ -8,7 +15,15 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
     .filter(project => project.budget && project.budget.type !== 'none')
     .map(project => {
       const projectTasks = tasks.filter(task => task.projectId === project.id);
-      const totalProjectHours = projectTasks.reduce((sum, task) => sum + (task.totalHours || 0), 0);
+      const totalProjectHours = projectTasks.reduce((sum, task) => {
+        if (task.timeEntries && task.timeEntries.length > 0) {
+          const taskHours = task.timeEntries.reduce((entrySum, entry) => {
+            return entrySum + (parseFloat(entry.hours) || 0);
+          }, 0);
+          return sum + taskHours;
+        }
+        return sum + (parseFloat(task.totalHours) || 0);
+      }, 0);
 
       if (project.budget.type === 'fixed') {
         const allPayments = (project.budget.payments || []).filter(payment => {
@@ -32,17 +47,24 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
           return format(paymentDate, 'MMMM yyyy');
         }))].sort();
 
-        const received = allPayments.reduce((sum, payment) => {
+        let tax = parseFloat(project.budget.tax);
+        if (isNaN(tax) || tax === null || tax === undefined) {
+          tax = project.projectType === 'freelance' ? 10 : 0;
+        }
+        const receivedBeforeTax = allPayments.reduce((sum, payment) => {
           const amount = parseFloat(payment.amount) || 0;
           return sum + amount;
         }, 0);
 
-        const thisMonthReceived = thisMonthPayments.reduce((sum, payment) => {
+        const thisMonthReceivedBeforeTax = thisMonthPayments.reduce((sum, payment) => {
           const amount = parseFloat(payment.amount) || 0;
           return sum + amount;
         }, 0);
 
-        const totalBudget = parseFloat(project.budget.fixedBudget || 0);
+        const totalBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
+        const totalBudget = calculateAfterTax(totalBudgetBeforeTax, tax);
+        const received = calculateAfterTax(receivedBeforeTax, tax);
+        const thisMonthReceived = calculateAfterTax(thisMonthReceivedBeforeTax, tax);
 
         return {
           projectId: project.id,
@@ -87,23 +109,32 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
           return format(paymentDate, 'MMMM yyyy');
         }))].sort();
 
-        const received = allPayments.reduce((sum, payment) => {
+        let tax = parseFloat(project.budget.tax);
+        if (isNaN(tax) || tax === null || tax === undefined) {
+          tax = project.projectType === 'freelance' ? 10 : 0;
+        }
+        const hourlyRateBeforeTax = hourlyRate;
+        const hourlyRateAfterTax = calculateAfterTax(hourlyRateBeforeTax, tax);
+        const estimatedBudget = totalProjectHours * hourlyRateAfterTax;
+        
+        const receivedBeforeTax = allPayments.reduce((sum, payment) => {
           const amount = parseFloat(payment.amount) || 0;
           return sum + amount;
         }, 0);
 
-        const thisMonthReceived = thisMonthPayments.reduce((sum, payment) => {
+        const thisMonthReceivedBeforeTax = thisMonthPayments.reduce((sum, payment) => {
           const amount = parseFloat(payment.amount) || 0;
           return sum + amount;
         }, 0);
 
-        const estimatedBudget = totalProjectHours * hourlyRate;
+        const received = calculateAfterTax(receivedBeforeTax, tax);
+        const thisMonthReceived = calculateAfterTax(thisMonthReceivedBeforeTax, tax);
 
         return {
           projectId: project.id,
           projectName: project.name,
           budgetType: 'hourly',
-          hourlyRate,
+          hourlyRate: hourlyRateAfterTax,
           totalHours: totalProjectHours,
           estimatedBudget,
           received,
