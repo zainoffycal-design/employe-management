@@ -170,26 +170,24 @@ const ProjectManagement = () => {
   }, [searchTerm, selectedManager, projectFilter, selectedProjectType, selectedPriority]);
 
   useEffect(() => {
-    if (formData.projectType === 'freelance') {
-      if (formData.budget.tax !== 10) {
-        setFormData(prev => ({
-          ...prev,
-          budget: {
-            ...prev.budget,
-            tax: 10
-          }
-        }));
-      }
-    } else if (formData.projectType && formData.projectType !== 'freelance') {
-      if (formData.budget.tax === 10) {
-        setFormData(prev => ({
-          ...prev,
-          budget: {
-            ...prev.budget,
-            tax: 0
-          }
-        }));
-      }
+    const currentTax = parseFloat(formData.budget.tax);
+    
+    if (formData.projectType === 'freelance' && currentTax !== 10) {
+      setFormData(prev => ({
+        ...prev,
+        budget: {
+          ...prev.budget,
+          tax: 10
+        }
+      }));
+    } else if (formData.projectType && formData.projectType !== 'freelance' && currentTax === 10) {
+      setFormData(prev => ({
+        ...prev,
+        budget: {
+          ...prev.budget,
+          tax: 0
+        }
+      }));
     }
   }, [formData.projectType]);
 

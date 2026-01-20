@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiCalendar, FiUser, FiFolder } from 'react-icons/fi';
+import { FiDollarSign, FiCalendar, FiUser, FiFolder, FiEye, FiEyeOff } from 'react-icons/fi';
 import { startOfMonth, endOfMonth, format, parse, isWithinInterval, isValid, addMonths } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { userManagementService } from '../../services/firebaseService';
+import { calculateAfterTax } from '../../utils/financeCalculations';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
 import { formatCurrency } from '../../utils/uiUtils';
@@ -19,6 +20,7 @@ const Commissions = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [fromDate, setFromDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM'));
   const [toDate, setToDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM'));
+  const [visibleUserIds, setVisibleUserIds] = useState(new Set());
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -58,13 +60,6 @@ const Commissions = () => {
       };
     }
   }, [fromDate, toDate]);
-
-  const calculateAfterTax = useCallback((amount, taxPercent) => {
-    if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
-    const amt = parseFloat(amount);
-    const taxAmount = (amt * taxPercent) / 100;
-    return Math.round(amt - taxAmount);
-  }, []);
 
   const calculateReceivedPayments = useCallback((project, monthRange) => {
     if (!project.budget?.payments || !Array.isArray(project.budget.payments)) return 0;
@@ -205,6 +200,30 @@ const Commissions = () => {
     return userCommissions.find(uc => uc.userId === selectedUser);
   }, [selectedUser, userCommissions]);
 
+  const handleUserClick = useCallback((userId) => {
+    setSelectedUser(userId);
+    setVisibleUserIds(prev => {
+      const newSet = new Set();
+      if (prev.has(userId)) {
+        return newSet;
+      } else {
+        newSet.add(userId);
+        return newSet;
+      }
+    });
+  }, []);
+
+  const handleToggleAllAmounts = useCallback((e) => {
+    e.stopPropagation();
+    setVisibleUserIds(prev => {
+      if (prev.size === userCommissions.length) {
+        return new Set();
+      } else {
+        return new Set(userCommissions.map(uc => uc.userId));
+      }
+    });
+  }, [userCommissions]);
+
   return (
     <motion.div className="commissions-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle
@@ -242,32 +261,55 @@ const Commissions = () => {
 
       <div className="commissions-layout">
         <div className="commissions-list">
-          <h3 className="section-title">
-            <FiUser size={20} />
-            Users & Commission Amount
-          </h3>
+          <div className="section-header-with-toggle">
+            <h3 className="section-title">
+              <FiUser size={20} />
+              Users & Commission Amount
+            </h3>
+            <button
+              type="button"
+              className="toggle-amounts-btn"
+              onClick={handleToggleAllAmounts}
+              title={visibleUserIds.size === userCommissions.length ? 'Hide all amounts' : 'Show all amounts'}
+            >
+              {visibleUserIds.size === userCommissions.length ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+            </button>
+          </div>
           <div className="users-list">
             {userCommissions.length === 0 ? (
               <div className="empty-state">
                 <p>No commissions found for the selected period.</p>
               </div>
             ) : (
-              userCommissions.map(userComm => (
-                <div
-                  key={userComm.userId}
-                  className={`user-item ${selectedUser === userComm.userId ? 'active' : ''}`}
-                  onClick={() => setSelectedUser(userComm.userId)}
-                >
-                  <Avatar src={userComm.userAvatar} name={userComm.userName} size="medium" />
-                  <div className="user-info">
-                    <div className="user-name">{userComm.userName}</div>
-                    <div className="commission-amount">
-                      <span className="amount-usd">${formatCurrency(userComm.totalCommissionUSD, 0, true)}</span>
-                      <span className="amount-pkr">PKR {formatCurrency(userComm.totalCommissionPKR, 0, true)}</span>
+              userCommissions.map(userComm => {
+                const isSelected = selectedUser === userComm.userId;
+                const isVisible = visibleUserIds.has(userComm.userId);
+                return (
+                  <div
+                    key={userComm.userId}
+                    className={`user-item ${isSelected ? 'active' : ''}`}
+                    onClick={() => handleUserClick(userComm.userId)}
+                  >
+                    <Avatar src={userComm.userAvatar} name={userComm.userName} size="medium" />
+                    <div className="user-info">
+                      <div className="user-name">{userComm.userName}</div>
+                      <div className="commission-amount">
+                        {isVisible ? (
+                          <>
+                            <span className="amount-usd">${formatCurrency(userComm.totalCommissionUSD, 0, true)}</span>
+                            <span className="amount-pkr">PKR {formatCurrency(userComm.totalCommissionPKR, 0, true)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="amount-usd">***</span>
+                            <span className="amount-pkr">***</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

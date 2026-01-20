@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiClock, FiPlus, FiTrash2, FiCalendar, FiEdit3 } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/uiUtils';
+import { calculateAfterTax } from '../../utils/financeCalculations';
 import './BudgetManager.scss';
 
 const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) => {
@@ -54,30 +55,30 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
   }, [value, defaultTax]);
   
   useEffect(() => {
-    if (projectType) {
-      const newTax = projectType === 'freelance' ? 10 : 0;
-      if (value?.tax === undefined || value?.tax === null || (projectType === 'freelance' && value.tax !== 10) || (projectType !== 'freelance' && value.tax === 10)) {
-        if (tax !== newTax) {
-          setTax(newTax);
-          onChange({
-            type: budgetType,
-            fixedBudget,
-            hourlyRate,
-            monthlyHours,
-            payments,
-            tax: newTax
-          });
-        }
-      }
+    if (!projectType) return;
+    
+    const newTax = projectType === 'freelance' ? 10 : 0;
+    const currentTax = parseFloat(value?.tax);
+    
+    const shouldUpdate = 
+      isNaN(currentTax) || 
+      currentTax === null || 
+      currentTax === undefined || 
+      (projectType === 'freelance' && currentTax !== 10) || 
+      (projectType !== 'freelance' && currentTax === 10);
+    
+    if (shouldUpdate && tax !== newTax) {
+      setTax(newTax);
+      onChange({
+        type: budgetType,
+        fixedBudget,
+        hourlyRate,
+        monthlyHours,
+        payments,
+        tax: newTax
+      });
     }
-  }, [projectType]);
-
-  const calculateAfterTax = (amount, taxPercent) => {
-    if (!amount || amount === '' || isNaN(parseFloat(amount))) return 0;
-    const amt = parseFloat(amount);
-    const taxAmount = (amt * taxPercent) / 100;
-    return Math.round(amt - taxAmount);
-  };
+  }, [projectType, value?.tax]);
 
   const handleBudgetTypeChange = (type) => {
     setBudgetType(type);

@@ -1,9 +1,11 @@
 import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 
-const calculateAfterTax = (amount, taxPercent) => {
-  if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
+export const calculateAfterTax = (amount, taxPercent) => {
+  if (!amount || amount === 0 || amount === '' || isNaN(parseFloat(amount))) return 0;
   const amt = parseFloat(amount);
-  const taxAmount = (amt * taxPercent) / 100;
+  const taxPct = parseFloat(taxPercent) || 0;
+  if (taxPct <= 0) return Math.round(amt);
+  const taxAmount = (amt * taxPct) / 100;
   return Math.round(amt - taxAmount);
 };
 

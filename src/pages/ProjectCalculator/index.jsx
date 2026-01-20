@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { permissionUtils } from '../../utils/permissionUtils';
 import { reactSelectStyles } from '../../utils/uiUtils';
+import { calculateAfterTax } from '../../utils/financeCalculations';
 import Select from 'react-select';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
@@ -67,13 +68,7 @@ const ProjectCalculator = () => {
           setType(project.projectType);
         }
         const budgetType = project.budget?.type;
-        const calculateAfterTax = (amount, taxPercent) => {
-          if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
-          const amt = parseFloat(amount);
-          const taxAmount = (amt * taxPercent) / 100;
-          return Math.round(amt - taxAmount);
-        };
-
+        
         let tax = parseFloat(project.budget?.tax);
         if (isNaN(tax) || tax === null || tax === undefined) {
           tax = project.projectType === 'freelance' ? 10 : 0;

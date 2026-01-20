@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { permissionUtils } from "../../utils/permissionUtils";
 import { formatCurrency } from "../../utils/uiUtils";
+import { calculateAfterTax } from "../../utils/financeCalculations";
 import SlideModal from "../SlideModal";
 import TaskDetails from "../TaskDetails";
 import "./ProjectCard.scss";
@@ -90,15 +91,6 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     };
   }, [totalEstimatedHours, totalProjectHours]);
 
-  const calculateAfterTax = (amount, taxPercent) => {
-    if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
-    const amt = parseFloat(amount);
-    const taxPct = parseFloat(taxPercent);
-    if (isNaN(taxPct) || taxPct <= 0) return Math.round(amt);
-    const taxAmount = (amt * taxPct) / 100;
-    return Math.round(amt - taxAmount);
-  };
-
   const budgetStats = useMemo(() => {
     if (!project.budget || project.budget.type === 'none') return null;
     
@@ -130,8 +122,8 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
     
     if (project.budget.type === 'hourly') {
       const hourlyRateBeforeTax = parseFloat(project.budget.hourlyRate || 0);
-      const hourlyRate = calculateAfterTax(hourlyRateBeforeTax, tax);
-      const estimatedBudget = totalProjectHours * hourlyRate;
+      const hourlyRateAfterTax = calculateAfterTax(hourlyRateBeforeTax, tax);
+      const estimatedBudget = totalProjectHours * hourlyRateAfterTax;
       
       const totalReceivedBeforeTax = (project.budget.payments || []).reduce((sum, payment) => {
         return sum + (parseFloat(payment.amount) || 0);
@@ -143,7 +135,8 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
       
       return {
         type: 'hourly',
-        hourlyRate,
+        hourlyRate: hourlyRateBeforeTax,
+        hourlyRateAfterTax,
         totalHours: totalProjectHours,
         estimatedBudget,
         totalReceived,

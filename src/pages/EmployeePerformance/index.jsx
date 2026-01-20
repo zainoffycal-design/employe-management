@@ -21,6 +21,7 @@ import { permissionUtils } from '../../utils/permissionUtils';
 import { userManagementService } from '../../services/firebaseService';
 import { getRoleDisplayName } from '../../utils/permissionUtils';
 import { formatCurrency, reactSelectStyles } from '../../utils/uiUtils';
+import { calculateAfterTax } from '../../utils/financeCalculations';
 import Select from 'react-select';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
@@ -256,13 +257,6 @@ const EmployeePerformance = () => {
       let commissionUSD = 0;
       let commissionPKR = 0;
 
-      const calculateAfterTax = (amount, taxPercent) => {
-        if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
-        const amt = parseFloat(amount);
-        const taxAmount = (amt * taxPercent) / 100;
-        return Math.round(amt - taxAmount);
-      };
-
       let tax = parseFloat(project.budget?.tax);
       if (isNaN(tax) || tax === null || tax === undefined) {
         tax = project.projectType === 'freelance' ? 10 : 0;
@@ -440,14 +434,10 @@ const EmployeePerformance = () => {
       totalSpentHours += taskHours;
     });
 
-    const calculateAfterTax = (amount, taxPercent) => {
-      if (!amount || amount === 0 || isNaN(parseFloat(amount))) return 0;
-      const amt = parseFloat(amount);
-      const taxAmount = (amt * taxPercent) / 100;
-      return Math.round(amt - taxAmount);
-    };
-
-    const tax = project.budget?.tax || 0;
+    let tax = parseFloat(project.budget?.tax);
+    if (isNaN(tax) || tax === null || tax === undefined) {
+      tax = project.projectType === 'freelance' ? 10 : 0;
+    }
     
     let totalProjectBudget = 0;
     if (project.budget && project.budget.type === 'fixed') {
