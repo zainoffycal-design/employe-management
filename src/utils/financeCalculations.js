@@ -179,11 +179,32 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
     }
   }, 0);
 
+  const projectsThisMonthOnly = projectsWithThisMonthPayments.filter(p => !p.hasPreviousPayments);
+  const monthlyBudgetThisMonthOnly = projectsThisMonthOnly.reduce((sum, p) => {
+    if (p.budgetType === 'fixed') {
+      return sum + (p.totalBudget || 0);
+    } else {
+      const hourlyRate = p.hourlyRate || 0;
+      const projectTasks = tasks.filter(task => task.projectId === p.projectId);
+      const thisMonthHours = projectTasks.reduce((hoursSum, task) => {
+        if (!task.timeEntries || task.timeEntries.length === 0) return hoursSum;
+        const thisMonthEntries = task.timeEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return isWithinInterval(entryDate, { start: monthStart, end: monthEnd });
+        });
+        const taskHours = thisMonthEntries.reduce((entrySum, entry) => entrySum + (entry.hours || 0), 0);
+        return hoursSum + taskHours;
+      }, 0);
+      return sum + (thisMonthHours * hourlyRate);
+    }
+  }, 0);
+
   return {
     projectPayments: hasThisMonthPayments ? projectsWithThisMonthPayments : projectPayments,
     grandTotalReceived: hasThisMonthPayments ? grandTotalThisMonthReceived : grandTotalReceived,
     grandTotalEstimated: monthlyCalculatedEstimated,
     calculatedEstimated: monthlyCalculatedEstimated,
+    monthlyBudgetThisMonthOnly,
     monthlyBudget,
     hasThisMonthPayments
   };

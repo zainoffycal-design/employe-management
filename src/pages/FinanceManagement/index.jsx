@@ -83,7 +83,7 @@ const FinanceManagement = () => {
     
     const amount = parseFloat(budgetAmount);
     if (isNaN(amount) || amount < 0) {
-      toast.error('Please enter a valid budget amount');
+      toast.error('Please enter a valid target amount');
       return;
     }
 
@@ -92,10 +92,10 @@ const FinanceManagement = () => {
       await budgetService.setMonthlyBudget(currentUser.uid, currentYear, currentMonthNum, amount);
       setMonthlyBudget(amount);
       setShowBudgetModal(false);
-      toast.success('Budget saved successfully');
+      toast.success('Target saved successfully');
     } catch (error) {
-      console.error('Error saving budget:', error);
-      toast.error('Failed to save budget');
+      console.error('Error saving target:', error);
+      toast.error('Failed to save target');
     } finally {
       setLoadingBudget(false);
     }
@@ -130,7 +130,7 @@ const FinanceManagement = () => {
             onClick={handleOpenBudgetModal}
           >
             <FiSettings size={16} />
-            Set Budget
+            Set Target
           </button>
         </div>
         {monthlyBudget > 0 ? (
@@ -141,7 +141,7 @@ const FinanceManagement = () => {
             transition={{ delay: 0.05 }}
           >
             <div className="budget-progress-header">
-              <span className="budget-progress-label">Budget Progress</span>
+              <span className="budget-progress-label">Target Progress</span>
               <span className="budget-progress-percentage">
                 {monthlyBudget > 0 ? ((monthlyPayments.grandTotalReceived / monthlyBudget) * 100).toFixed(1) : 0}%
               </span>
@@ -157,7 +157,7 @@ const FinanceManagement = () => {
               </div>
               <div className="progress-stats">
                 <span>${formatCurrency(monthlyPayments.grandTotalReceived)} received</span>
-                <span>of ${formatCurrency(monthlyBudget)} budget</span>
+                <span>of ${formatCurrency(monthlyBudget)} target</span>
               </div>
             </div>
           </motion.div>
@@ -207,11 +207,15 @@ const FinanceManagement = () => {
                   <div className="summary-header">
                     <FiSettings size={24} />
                     <div className="summary-title">
-                      <span className="summary-label">Total Budget</span>
-                      <span className="summary-subtitle">Set Budget</span>
+                      <span className="summary-label">Total Target</span>
+                      <span className="summary-subtitle">Set Target</span>
                     </div>
                   </div>
-                  <div className="summary-amount">${formatCurrency(monthlyBudget)}</div>
+                  <div className="summary-amount summary-amount--ratio">
+                    <span className="summary-amount-current">${formatCurrency(monthlyPayments.monthlyBudgetThisMonthOnly)}</span>
+                    <span className="summary-amount-divider">/</span>
+                    <span className="summary-amount-target">${formatCurrency(monthlyBudget)}</span>
+                  </div>
                 </motion.div>
               )}
             </div>
@@ -338,7 +342,7 @@ const FinanceManagement = () => {
       <Modal
         isOpen={showBudgetModal}
         onClose={() => setShowBudgetModal(false)}
-        title={`Set Budget for ${currentMonth}`}
+        title={`Set Target for ${currentMonth}`}
         size="small"
       >
         <form onSubmit={(e) => { e.preventDefault(); handleSaveBudget(); }}>
@@ -369,7 +373,7 @@ const FinanceManagement = () => {
               loadingText="Saving..."
               type="button"
             >
-              Save Budget
+              Save Target
             </Button>
           </div>
         </form>

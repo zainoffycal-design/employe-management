@@ -169,28 +169,6 @@ const ProjectManagement = () => {
     saveFilters();
   }, [searchTerm, selectedManager, projectFilter, selectedProjectType, selectedPriority]);
 
-  useEffect(() => {
-    const currentTax = parseFloat(formData.budget.tax);
-    
-    if (formData.projectType === 'freelance' && currentTax !== 10) {
-      setFormData(prev => ({
-        ...prev,
-        budget: {
-          ...prev.budget,
-          tax: 10
-        }
-      }));
-    } else if (formData.projectType && formData.projectType !== 'freelance' && currentTax === 10) {
-      setFormData(prev => ({
-        ...prev,
-        budget: {
-          ...prev.budget,
-          tax: 0
-        }
-      }));
-    }
-  }, [formData.projectType]);
-
   const groupedOptions = Object.entries(
     users.reduce((acc, user) => {
       if (user.role === 'super_manager') {
@@ -302,24 +280,27 @@ const ProjectManagement = () => {
       }
 
       const commissionData = {};
-      formData.teamMembers.forEach(member => {
-        const user = allUsers.find(u => u.id === member.value || u.email === member.value);
-        if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
-          const commissionInfo = formData.commissionData[member.value];
-          if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
-            setError('Please enter a valid number of months for recurring commission.');
-            setLoading(false);
-            return;
+      // Only super_manager can set commission data
+      if (currentUser?.role === 'super_manager') {
+        formData.teamMembers.forEach(member => {
+          const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+          if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
+            const commissionInfo = formData.commissionData[member.value];
+            if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
+              setError('Please enter a valid number of months for recurring commission.');
+              setLoading(false);
+              return;
+            }
+            commissionData[member.value] = {
+              percentage: user.commissionPercentage,
+              type: user.commissionType,
+              recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
+              startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+              isActive: true
+            };
           }
-          commissionData[member.value] = {
-            percentage: user.commissionPercentage,
-            type: user.commissionType,
-            recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
-            startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
-            isActive: true
-          };
-        }
-      });
+        });
+      }
 
       const projectData = {
         ...formData,
@@ -330,7 +311,8 @@ const ProjectManagement = () => {
         createdAt: new Date().toISOString()
       };
 
-      if (Object.keys(commissionData).length > 0) {
+      // Only super_manager can save commission data
+      if (currentUser?.role === 'super_manager' && Object.keys(commissionData).length > 0) {
         projectData.commissionData = commissionData;
       }
 
@@ -385,35 +367,43 @@ const ProjectManagement = () => {
       }
 
       const commissionData = {};
-      formData.teamMembers.forEach(member => {
-        const user = allUsers.find(u => u.id === member.value || u.email === member.value);
-        if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
-          const commissionInfo = formData.commissionData[member.value];
-          if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
-            setError('Please enter a valid number of months for recurring commission.');
-            setLoading(false);
-            return;
+      // Only super_manager can set commission data
+      if (currentUser?.role === 'super_manager') {
+        formData.teamMembers.forEach(member => {
+          const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+          if (user?.hasCommission && user?.commissionPercentage && formData.commissionData[member.value]?.isActive) {
+            const commissionInfo = formData.commissionData[member.value];
+            if (user.commissionType === 'recurring' && (!commissionInfo.recurringMonths || commissionInfo.recurringMonths === '' || parseInt(commissionInfo.recurringMonths, 10) <= 0)) {
+              setError('Please enter a valid number of months for recurring commission.');
+              setLoading(false);
+              return;
+            }
+            commissionData[member.value] = {
+              percentage: user.commissionPercentage,
+              type: user.commissionType,
+              recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
+              startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+              isActive: true
+            };
           }
-          commissionData[member.value] = {
-            percentage: user.commissionPercentage,
-            type: user.commissionType,
-            recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
-            startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
-            isActive: true
-          };
-        }
-      });
+        });
+      }
 
       let projectData = {
         ...formData,
         teamMembers: formData.teamMembers.map(member => member.value)
       };
 
-      if (Object.keys(commissionData).length > 0) {
-        projectData.commissionData = commissionData;
-      } else {
-        projectData.commissionData = deleteField();
+      // Only super_manager can save commission data
+      if (currentUser?.role === 'super_manager') {
+        if (Object.keys(commissionData).length > 0) {
+          projectData.commissionData = commissionData;
+        } else {
+          projectData.commissionData = deleteField();
+        }
       }
+      // For managers, preserve existing commission data if any, but don't allow modification
+      // (commission data will remain unchanged for managers)
       
       if (isBdManager) {
         if (formData.budget && formData.budget.type !== 'none') {
@@ -637,7 +627,7 @@ const ProjectManagement = () => {
           </small>
         </div>
 
-        {membersWithCommission.length > 0 && (
+        {membersWithCommission.length > 0 && currentUser?.role === 'super_manager' && (
           <div className="form-group">
             <label>Commission Settings</label>
             <div className="commission-settings">
@@ -879,27 +869,30 @@ const ProjectManagement = () => {
                           }).filter(Boolean) : [];
 
                           const commissionData = {};
-                          if (project.commissionData) {
-                            Object.keys(project.commissionData).forEach(memberId => {
-                              commissionData[memberId] = {
-                                ...project.commissionData[memberId],
-                                isActive: project.commissionData[memberId].isActive === true
-                              };
+                          // Only load commission data for super_manager
+                          if (currentUser?.role === 'super_manager') {
+                            if (project.commissionData) {
+                              Object.keys(project.commissionData).forEach(memberId => {
+                                commissionData[memberId] = {
+                                  ...project.commissionData[memberId],
+                                  isActive: project.commissionData[memberId].isActive === true
+                                };
+                              });
+                            }
+                            
+                            teamMembers.forEach(member => {
+                              const user = allUsers.find(u => u.id === member.value || u.email === member.value);
+                              if (user?.hasCommission && user?.commissionPercentage && !commissionData[member.value]) {
+                                commissionData[member.value] = {
+                                  percentage: user.commissionPercentage,
+                                  type: user.commissionType,
+                                  recurringMonths: user.commissionType === 'recurring' ? '' : null,
+                                  isActive: false,
+                                  startMonth: null
+                                };
+                              }
                             });
                           }
-                          
-                          teamMembers.forEach(member => {
-                            const user = allUsers.find(u => u.id === member.value || u.email === member.value);
-                            if (user?.hasCommission && user?.commissionPercentage && !commissionData[member.value]) {
-                              commissionData[member.value] = {
-                                percentage: user.commissionPercentage,
-                                type: user.commissionType,
-                                recurringMonths: user.commissionType === 'recurring' ? '' : null,
-                                isActive: false,
-                                startMonth: null
-                              };
-                            }
-                          });
 
                           setFormData({
                             name: project.name,

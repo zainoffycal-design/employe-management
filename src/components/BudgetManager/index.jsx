@@ -53,32 +53,6 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
       }
     }
   }, [value, defaultTax]);
-  
-  useEffect(() => {
-    if (!projectType) return;
-    
-    const newTax = projectType === 'freelance' ? 10 : 0;
-    const currentTax = parseFloat(value?.tax);
-    
-    const shouldUpdate = 
-      isNaN(currentTax) || 
-      currentTax === null || 
-      currentTax === undefined || 
-      (projectType === 'freelance' && currentTax !== 10) || 
-      (projectType !== 'freelance' && currentTax === 10);
-    
-    if (shouldUpdate && tax !== newTax) {
-      setTax(newTax);
-      onChange({
-        type: budgetType,
-        fixedBudget,
-        hourlyRate,
-        monthlyHours,
-        payments,
-        tax: newTax
-      });
-    }
-  }, [projectType, value?.tax]);
 
   const handleBudgetTypeChange = (type) => {
     setBudgetType(type);
