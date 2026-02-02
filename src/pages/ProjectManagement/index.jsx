@@ -1007,7 +1007,14 @@ const ProjectManagement = () => {
               <Select
                 options={projectTypeOptions}
                 value={projectTypeOptions.find(option => option.value === formData.projectType)}
-                onChange={(selected) => setFormData({ ...formData, projectType: selected?.value || '' })}
+                onChange={(selected) => {
+                  const projectType = selected?.value || '';
+                  setFormData(prev => ({
+                    ...prev,
+                    projectType,
+                    ...(projectType === 'freelance' ? { budget: { ...prev.budget, tax: 10 } } : {})
+                  }));
+                }}
                 styles={reactSelectStyles}
                 placeholder="Select project type..."
                 isClearable
@@ -1122,7 +1129,14 @@ const ProjectManagement = () => {
               <Select
                 options={projectTypeOptions}
                 value={projectTypeOptions.find(option => option.value === formData.projectType)}
-                onChange={(selected) => setFormData({ ...formData, projectType: selected?.value || '' })}
+                onChange={(selected) => {
+                  const projectType = selected?.value || '';
+                  setFormData(prev => ({
+                    ...prev,
+                    projectType,
+                    ...(projectType === 'freelance' ? { budget: { ...prev.budget, tax: 10 } } : {})
+                  }));
+                }}
                 styles={reactSelectStyles}
                 placeholder="Select project type..."
                 isClearable

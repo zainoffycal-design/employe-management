@@ -133,8 +133,10 @@ const Commissions = () => {
           const commissionPercentage = commissionInfo.percentage || 0;
           const receivedAmount = calculateReceivedPayments(project, monthRange);
           const commissionUSD = (receivedAmount * commissionPercentage) / 100;
+          const isRecurring = commissionInfo.type === 'recurring';
+          const showRow = commissionUSD > 0 || isRecurring;
 
-          if (commissionUSD > 0) {
+          if (showRow) {
             const commissionPKR = commissionUSD * EXCHANGE_RATE;
             totalCommissionUSD += commissionUSD;
             totalCommissionPKR += commissionPKR;
@@ -180,7 +182,7 @@ const Commissions = () => {
           projectCommissions
         };
       })
-      .filter(userComm => userComm.totalCommissionUSD > 0);
+      .filter(userComm => userComm.totalCommissionUSD > 0 || userComm.projectCommissions.length > 0);
   }, [users, projects, monthRange, calculateReceivedPayments, isCommissionInRange]);
 
   if (currentUser?.role !== 'super_manager') {
