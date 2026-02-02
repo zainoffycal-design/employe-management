@@ -445,4 +445,72 @@ export const budgetService = {
       return [];
     }
   }
+};
+
+const COMMISSION_PAYMENTS_COLLECTION = 'commission_payments';
+
+export const commissionPaymentService = {
+  getDocId(userId, month) {
+    return `${userId}_${month}`;
+  },
+
+  async getPaymentStatus(userId, month) {
+    try {
+      const docId = commissionPaymentService.getDocId(userId, month);
+      const data = await firebaseUtils.getDocument(COMMISSION_PAYMENTS_COLLECTION, docId);
+      return data?.paid === true;
+    } catch (error) {
+      console.error('Error getting commission payment status:', error);
+      return false;
+    }
+  },
+
+  async getPaymentStatusBatch(userIds, months) {
+    try {
+      const status = {};
+      await Promise.all(
+        userIds.flatMap(uid =>
+          months.map(async (month) => {
+            const docId = commissionPaymentService.getDocId(uid, month);
+            const data = await firebaseUtils.getDocument(COMMISSION_PAYMENTS_COLLECTION, docId);
+            status[`${uid}_${month}`] = data?.paid === true;
+          })
+        )
+      );
+      return status;
+    } catch (error) {
+      console.error('Error getting commission payment status batch:', error);
+      return {};
+    }
+  },
+
+  async setPaid(userId, month, paid = true) {
+    try {
+      const docId = commissionPaymentService.getDocId(userId, month);
+      const ref = doc(db, COMMISSION_PAYMENTS_COLLECTION, docId);
+      await setDoc(ref, {
+        userId,
+        month,
+        paid,
+        paidAt: paid ? new Date().toISOString() : null,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error setting commission payment status:', error);
+      throw error;
+    }
+  },
+
+  async setPaidBatch(entries) {
+    try {
+      await Promise.all(
+        entries.map(({ userId, month, paid }) =>
+          commissionPaymentService.setPaid(userId, month, paid)
+        )
+      );
+    } catch (error) {
+      console.error('Error setting commission payment batch:', error);
+      throw error;
+    }
+  }
 }; 

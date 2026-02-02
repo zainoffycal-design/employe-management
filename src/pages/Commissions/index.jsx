@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiCalendar, FiUser, FiFolder, FiEye, FiEyeOff } from 'react-icons/fi';
-import { startOfMonth, endOfMonth, format, parse, isWithinInterval, isValid, addMonths } from 'date-fns';
+import { FiDollarSign, FiCalendar, FiUser, FiFolder, FiEye, FiEyeOff, FiCheck } from 'react-icons/fi';
+import { startOfMonth, endOfMonth, format, parse, isWithinInterval, isValid, addMonths, subMonths, isBefore, isAfter } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
-import { userManagementService } from '../../services/firebaseService';
+import { userManagementService, commissionPaymentService } from '../../services/firebaseService';
 import { calculateAfterTax } from '../../utils/financeCalculations';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
 import { formatCurrency } from '../../utils/uiUtils';
+import toast from 'react-hot-toast';
 import './Commissions.scss';
 
 const EXCHANGE_RATE = 280;
@@ -18,9 +19,39 @@ const Commissions = () => {
   const { projects, tasks } = useTask();
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [fromDate, setFromDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM'));
-  const [toDate, setToDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM'));
+  const currentMonthStr = format(startOfMonth(new Date()), 'yyyy-MM');
+  const [viewMode, setViewMode] = useState('current'); // 'current' | 'range'
+  const [fromDate, setFromDate] = useState(currentMonthStr);
+  const [toDate, setToDate] = useState(currentMonthStr);
   const [visibleUserIds, setVisibleUserIds] = useState(new Set());
+  const [paymentStatusByUserMonth, setPaymentStatusByUserMonth] = useState({});
+  const [markingPaidUserId, setMarkingPaidUserId] = useState(null);
+  const [markingUnpaidUserId, setMarkingUnpaidUserId] = useState(null);
+
+
+  const getMonthsInRange = useCallback((fromYYYYMM, toYYYYMM) => {
+    const months = [];
+    let d = parse(fromYYYYMM + '-01', 'yyyy-MM-dd', new Date());
+    let end = parse(toYYYYMM + '-01', 'yyyy-MM-dd', new Date());
+    if (!isValid(d) || !isValid(end)) return months;
+    if (isAfter(d, end)) [d, end] = [end, d];
+    while (!isAfter(d, end)) {
+      months.push(format(d, 'yyyy-MM'));
+      d = addMonths(d, 1);
+    }
+    return months;
+  }, []);
+
+  const getPreviousMonthsList = useCallback((fromYYYYMM, count) => {
+    const months = [];
+    let d = parse(fromYYYYMM + '-01', 'yyyy-MM-dd', new Date());
+    if (!isValid(d)) return months;
+    for (let i = 1; i <= count; i++) {
+      d = subMonths(d, 1);
+      months.push(format(d, 'yyyy-MM'));
+    }
+    return months;
+  }, []);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -34,6 +65,29 @@ const Commissions = () => {
     };
     loadUsers();
   }, []);
+
+  const monthsForPaymentStatus = useMemo(() => {
+    const rangeMonths = getMonthsInRange(fromDate, toDate);
+    const prevMonths = getPreviousMonthsList(fromDate, 12);
+    return [...prevMonths, ...rangeMonths];
+  }, [fromDate, toDate, getMonthsInRange, getPreviousMonthsList]);
+
+  useEffect(() => {
+    if (!users.length || !monthsForPaymentStatus.length) {
+      setPaymentStatusByUserMonth({});
+      return;
+    }
+    const loadPaymentStatus = async () => {
+      try {
+        const userIds = users.map(u => u.id);
+        const status = await commissionPaymentService.getPaymentStatusBatch(userIds, monthsForPaymentStatus);
+        setPaymentStatusByUserMonth(status);
+      } catch (error) {
+        console.error('Error loading commission payment status:', error);
+      }
+    };
+    loadPaymentStatus();
+  }, [users, monthsForPaymentStatus]);
 
   const monthRange = useMemo(() => {
     try {
@@ -115,6 +169,39 @@ const Commissions = () => {
     }
   }, []);
 
+  const rangeMonths = useMemo(() => getMonthsInRange(fromDate, toDate), [fromDate, toDate, getMonthsInRange]);
+  const previousMonthsList = useMemo(() => getPreviousMonthsList(fromDate, 12), [fromDate, getPreviousMonthsList]);
+
+  const commissionPerUserPerMonth = useMemo(() => {
+    if (!users.length || !projects.length) return {};
+    const result = {};
+    monthsForPaymentStatus.forEach(monthStr => {
+      const d = parse(monthStr + '-01', 'yyyy-MM-dd', new Date());
+      if (!isValid(d)) return;
+      const singleMonthRange = { start: startOfMonth(d), end: endOfMonth(d) };
+      users.forEach(user => {
+        let usd = 0;
+        let pkr = 0;
+        projects.forEach(project => {
+          const commissionInfo = project.commissionData?.[user.id];
+          if (!commissionInfo?.isActive) return;
+          if (!isCommissionInRange(commissionInfo, singleMonthRange)) return;
+          const commissionPercentage = commissionInfo.percentage || 0;
+          const receivedAmount = calculateReceivedPayments(project, singleMonthRange);
+          const commissionUSD = (receivedAmount * commissionPercentage) / 100;
+          const isRecurring = commissionInfo.type === 'recurring';
+          if (commissionUSD > 0 || isRecurring) {
+            usd += commissionUSD;
+            pkr += commissionUSD * EXCHANGE_RATE;
+          }
+        });
+        if (!result[user.id]) result[user.id] = {};
+        result[user.id][monthStr] = { usd, pkr };
+      });
+    });
+    return result;
+  }, [users, projects, monthsForPaymentStatus, calculateReceivedPayments, isCommissionInRange]);
+
   const userCommissions = useMemo(() => {
     if (!users.length || !projects.length) return [];
 
@@ -173,17 +260,43 @@ const Commissions = () => {
           }
         });
 
+        let carryOverUSD = 0;
+        let carryOverPKR = 0;
+        const unpaidMonthsToMark = [];
+        previousMonthsList.forEach(prevMonth => {
+          const key = `${user.id}_${prevMonth}`;
+          if (paymentStatusByUserMonth[key] !== true) {
+            const perMonth = commissionPerUserPerMonth[user.id]?.[prevMonth] || { usd: 0, pkr: 0 };
+            carryOverUSD += perMonth.usd;
+            carryOverPKR += perMonth.pkr;
+            unpaidMonthsToMark.push(prevMonth);
+          }
+        });
+        rangeMonths.forEach(m => {
+          const key = `${user.id}_${m}`;
+          if (paymentStatusByUserMonth[key] !== true) unpaidMonthsToMark.push(m);
+        });
+        const isPeriodPaid = rangeMonths.length > 0 && rangeMonths.every(m => paymentStatusByUserMonth[`${user.id}_${m}`] === true);
+        const totalDisplayUSD = totalCommissionUSD + carryOverUSD;
+        const totalDisplayPKR = totalCommissionPKR + carryOverPKR;
+
         return {
           userId: user.id,
           userName: user.name,
           userAvatar: user.avatar,
           totalCommissionUSD,
           totalCommissionPKR,
+          totalDisplayUSD,
+          totalDisplayPKR,
+          carryOverUSD,
+          carryOverPKR,
+          isPeriodPaid,
+          unpaidMonthsToMark,
           projectCommissions
         };
       })
-      .filter(userComm => userComm.totalCommissionUSD > 0 || userComm.projectCommissions.length > 0);
-  }, [users, projects, monthRange, calculateReceivedPayments, isCommissionInRange]);
+      .filter(userComm => userComm.totalCommissionUSD > 0 || userComm.projectCommissions.length > 0 || userComm.carryOverUSD > 0);
+  }, [users, projects, monthRange, rangeMonths, previousMonthsList, paymentStatusByUserMonth, commissionPerUserPerMonth, calculateReceivedPayments, isCommissionInRange]);
 
   if (currentUser?.role !== 'super_manager') {
     return (
@@ -226,6 +339,47 @@ const Commissions = () => {
     });
   }, [userCommissions]);
 
+  const handleMarkAsPaid = useCallback(async (e, userComm) => {
+    e.stopPropagation();
+    if (!userComm?.unpaidMonthsToMark?.length || markingPaidUserId) return;
+    setMarkingPaidUserId(userComm.userId);
+    try {
+      await commissionPaymentService.setPaidBatch(
+        userComm.unpaidMonthsToMark.map(month => ({ userId: userComm.userId, month, paid: true }))
+      );
+      const userIds = users.map(u => u.id);
+      const status = await commissionPaymentService.getPaymentStatusBatch(userIds, monthsForPaymentStatus);
+      setPaymentStatusByUserMonth(status);
+      toast.success('Marked as paid');
+    } catch (error) {
+      console.error('Error marking commission as paid:', error);
+      toast.error('Failed to mark as paid');
+    } finally {
+      setMarkingPaidUserId(null);
+    }
+  }, [users, monthsForPaymentStatus, markingPaidUserId]);
+
+  const handleMarkAsUnpaid = useCallback(async (e, userComm) => {
+    e.stopPropagation();
+    if (!userComm || markingUnpaidUserId || markingPaidUserId) return;
+    if (rangeMonths.length === 0) return;
+    setMarkingUnpaidUserId(userComm.userId);
+    try {
+      await commissionPaymentService.setPaidBatch(
+        rangeMonths.map(month => ({ userId: userComm.userId, month, paid: false }))
+      );
+      const userIds = users.map(u => u.id);
+      const status = await commissionPaymentService.getPaymentStatusBatch(userIds, monthsForPaymentStatus);
+      setPaymentStatusByUserMonth(status);
+      toast.success('Marked as unpaid');
+    } catch (error) {
+      console.error('Error marking commission as unpaid:', error);
+      toast.error('Failed to mark as unpaid');
+    } finally {
+      setMarkingUnpaidUserId(null);
+    }
+  }, [users, monthsForPaymentStatus, rangeMonths, markingPaidUserId, markingUnpaidUserId]);
+
   return (
     <motion.div className="commissions-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle
@@ -235,29 +389,84 @@ const Commissions = () => {
       />
 
       <div className="commissions-filters">
-        <div className="filter-group">
-          <label htmlFor="fromDate">
-            <FiCalendar size={16} />
-            From Month
-          </label>
-          <input
-            type="month"
-            id="fromDate"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
+        <div className="filter-row filter-row--mode">
+          <span className="filter-row-label">View by</span>
+          <div className="filter-mode-toggle" role="group" aria-label="Date view mode">
+            <button
+              type="button"
+              className={`mode-btn ${viewMode === 'current' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('current');
+                setToDate(fromDate);
+              }}
+              aria-pressed={viewMode === 'current'}
+            >
+              <FiCalendar size={16} />
+              Current month
+            </button>
+            <button
+              type="button"
+              className={`mode-btn ${viewMode === 'range' ? 'active' : ''}`}
+              onClick={() => {
+                setViewMode('range');
+                if (fromDate === toDate) {
+                  const from = parse(fromDate + '-01', 'yyyy-MM-dd', new Date());
+                  if (isValid(from)) setToDate(format(addMonths(from, 1), 'yyyy-MM'));
+                }
+              }}
+              aria-pressed={viewMode === 'range'}
+            >
+              <FiCalendar size={16} />
+              Date range
+            </button>
+          </div>
         </div>
-        <div className="filter-group">
-          <label htmlFor="toDate">
-            <FiCalendar size={16} />
-            To Month
-          </label>
-          <input
-            type="month"
-            id="toDate"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
+        <div className="filter-row filter-row--dates">
+          {viewMode === 'current' ? (
+            <div className="filter-group filter-group--single">
+              <label htmlFor="currentMonth">
+                <FiCalendar size={16} />
+                Month
+              </label>
+              <input
+                type="month"
+                id="currentMonth"
+                value={fromDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFromDate(val);
+                  setToDate(val);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="filter-group">
+                <label htmlFor="fromDate">
+                  <FiCalendar size={16} />
+                  From month
+                </label>
+                <input
+                  type="month"
+                  id="fromDate"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
+              <div className="filter-group filter-group--to">
+                <label htmlFor="toDate">
+                  <FiCalendar size={16} />
+                  To month
+                </label>
+                <input
+                  type="month"
+                  id="toDate"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -286,6 +495,7 @@ const Commissions = () => {
               userCommissions.map(userComm => {
                 const isSelected = selectedUser === userComm.userId;
                 const isVisible = visibleUserIds.has(userComm.userId);
+                const hasCarryOver = (userComm.carryOverUSD || 0) > 0;
                 return (
                   <div
                     key={userComm.userId}
@@ -298,8 +508,11 @@ const Commissions = () => {
                       <div className="commission-amount">
                         {isVisible ? (
                           <>
-                            <span className="amount-usd">${formatCurrency(userComm.totalCommissionUSD, 0, true)}</span>
-                            <span className="amount-pkr">PKR {formatCurrency(userComm.totalCommissionPKR, 0, true)}</span>
+                            <span className="amount-usd">${formatCurrency(userComm.totalDisplayUSD, 0, true)}</span>
+                            <span className="amount-pkr">PKR {formatCurrency(userComm.totalDisplayPKR, 0, true)}</span>
+                            {hasCarryOver && (
+                              <span className="carry-over-note" title="Includes previous unpaid">+prev</span>
+                            )}
                           </>
                         ) : (
                           <>
@@ -308,6 +521,33 @@ const Commissions = () => {
                           </>
                         )}
                       </div>
+                    </div>
+                    <div className="commission-status-row" onClick={(e) => e.stopPropagation()}>
+                      <span className={`status-badge ${userComm.isPeriodPaid ? 'paid' : 'unpaid'}`}>
+                        {userComm.isPeriodPaid ? 'Paid' : 'Unpaid'}
+                      </span>
+                      {!userComm.isPeriodPaid ? (
+                        <button
+                          type="button"
+                          className="mark-paid-btn"
+                          onClick={(e) => handleMarkAsPaid(e, userComm)}
+                          disabled={markingPaidUserId === userComm.userId}
+                          title="Mark as paid"
+                        >
+                          <FiCheck size={14} />
+                          {markingPaidUserId === userComm.userId ? '...' : 'Pay'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="mark-unpaid-btn"
+                          onClick={(e) => handleMarkAsUnpaid(e, userComm)}
+                          disabled={markingUnpaidUserId === userComm.userId}
+                          title="Mark as unpaid"
+                        >
+                          {markingUnpaidUserId === userComm.userId ? '...' : 'Unpay'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -322,7 +562,15 @@ const Commissions = () => {
             Project Level Commission
           </h3>
           {selectedUserCommissions ? (
-            <div className="projects-list">
+            <>
+              {(selectedUserCommissions.carryOverUSD || 0) > 0 && (
+                <div className="previous-unpaid-summary">
+                  <span className="previous-label">Previous (unpaid):</span>
+                  <span className="previous-amount">${formatCurrency(selectedUserCommissions.carryOverUSD, 0, true)}</span>
+                  <span className="previous-amount-pkr">PKR {formatCurrency(selectedUserCommissions.carryOverPKR, 0, true)}</span>
+                </div>
+              )}
+              <div className="projects-list">
               {selectedUserCommissions.projectCommissions.length === 0 ? (
                 <div className="empty-state">
                   <p>No project commissions found for this user.</p>
@@ -383,7 +631,8 @@ const Commissions = () => {
                   </div>
                 ))
               )}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="empty-state">
               <p>Select a user from the list to view project-level commission details.</p>

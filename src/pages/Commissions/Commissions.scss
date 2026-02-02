@@ -25,24 +25,99 @@
 
   .commissions-filters {
     display: flex;
-    gap: 1.5rem;
+    flex-direction: column;
+    gap: 1.25rem;
     margin-bottom: 2rem;
     background: var(--white);
-    padding: 1.5rem;
+    padding: 1.5rem 1.75rem;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--gray-200);
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      &.filter-row--mode {
+        padding-bottom: 0.25rem;
+      }
+
+      &.filter-row--dates {
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--gray-200);
+        gap: 1.25rem 1.5rem;
+      }
+
+      .filter-row-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        min-width: 4rem;
+      }
+    }
+
+    .filter-mode-toggle {
+      display: inline-flex;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      padding: 3px;
+      gap: 0;
+
+      .mode-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--gray-600);
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: var(--transition);
+
+        &:first-child {
+          margin-right: 0;
+        }
+
+        &:hover:not(.active) {
+          background: var(--gray-200);
+          color: var(--gray-800);
+        }
+
+        &.active {
+          background: var(--white);
+          color: var(--primary-color);
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--gray-200);
+        }
+      }
+    }
 
     .filter-group {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
 
+      &.filter-group--single {
+        min-width: 160px;
+      }
+
+      &.filter-group--to {
+        margin-left: 0;
+      }
+
       label {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         font-weight: 500;
         color: var(--gray-700);
 
@@ -53,12 +128,13 @@
 
       input[type="month"] {
         @include input-wrapper;
-        padding: 0.75rem;
+        padding: 0.6rem 0.75rem;
         border: 1px solid var(--gray-300);
         border-radius: var(--border-radius);
         font-size: 0.875rem;
         color: var(--gray-700);
         transition: var(--transition);
+        min-width: 140px;
 
         &:focus {
           outline: none;
@@ -155,7 +231,7 @@
 
       .user-item {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 1rem;
         padding: 1rem;
         border-radius: var(--border-radius);
@@ -194,6 +270,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
+            flex-wrap: wrap;
 
             .amount-usd {
               font-size: 1rem;
@@ -204,6 +281,91 @@
             .amount-pkr {
               font-size: 0.75rem;
               color: var(--gray-600);
+            }
+
+            .carry-over-note {
+              font-size: 0.65rem;
+              color: var(--gray-500);
+              font-weight: 500;
+            }
+          }
+        }
+
+        .commission-status-row {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          cursor: default;
+
+          .status-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+
+            &.paid {
+              background: rgba(21, 169, 112, 0.15);
+              color: var(--primary-color);
+            }
+
+            &.unpaid {
+              background: rgba(245, 158, 11, 0.15);
+              color: var(--warning-color);
+            }
+          }
+
+          .mark-paid-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: rgba(21, 169, 112, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+
+            &:hover:not(:disabled) {
+              background: var(--primary-color);
+              color: white;
+            }
+
+            &:disabled {
+              opacity: 0.7;
+              cursor: not-allowed;
+            }
+          }
+
+          .mark-unpaid-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+
+            &:hover:not(:disabled) {
+              background: var(--gray-200);
+              color: var(--gray-800);
+              border-color: var(--gray-400);
+            }
+
+            &:disabled {
+              opacity: 0.7;
+              cursor: not-allowed;
             }
           }
         }
@@ -218,6 +380,34 @@
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--gray-200);
     min-height: 400px;
+
+    .previous-unpaid-summary {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      flex-wrap: wrap;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: var(--border-radius);
+      font-size: 0.875rem;
+
+      .previous-label {
+        font-weight: 600;
+        color: var(--gray-700);
+      }
+
+      .previous-amount {
+        font-weight: 600;
+        color: var(--primary-color);
+      }
+
+      .previous-amount-pkr {
+        font-weight: 500;
+        color: var(--gray-600);
+      }
+    }
 
     .projects-list {
       display: flex;

@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Simple helper function
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Users collection - allow all operations for authenticated users
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+      // Allow unauthenticated read for initial signup check
+      allow read: if true;
+    }
+    
+    // User invitations collection - allow all operations for authenticated users
+    match /user_invitations/{invitationId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Projects collection - allow all operations for authenticated users
+    match /projects/{projectId} {
+      allow read, write: if isAuthenticated();
+      
+      // Tasks subcollection - allow all operations for authenticated users
+      match /tasks/{taskId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // Notifications collection - allow all operations for authenticated users
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Assets collection - allow all operations for authenticated users
+    match /assets/{assetId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Asset requests collection - allow all operations for authenticated users
+    match /asset_requests/{requestId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Monthly budgets collection - allow authenticated users to read/write
+    // We check userId in the application code for security
+    match /monthly_budgets/{budgetId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        (request.resource.data.userId == request.auth.uid);
+    }
+    
+    // Commission payments (paid/unpaid status per user per month)
+    match /commission_payments/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
