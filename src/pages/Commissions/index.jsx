@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiCalendar, FiUser, FiFolder, FiEye, FiEyeOff, FiCheck } from 'react-icons/fi';
+import { FiDollarSign, FiCalendar, FiUser, FiFolder, FiEye, FiEyeOff } from 'react-icons/fi';
 import { startOfMonth, endOfMonth, format, parse, isWithinInterval, isValid, addMonths, subMonths, isBefore, isAfter } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
@@ -8,6 +8,8 @@ import { userManagementService, commissionPaymentService } from '../../services/
 import { calculateAfterTax } from '../../utils/financeCalculations';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import { formatCurrency } from '../../utils/uiUtils';
 import toast from 'react-hot-toast';
 import './Commissions.scss';
@@ -27,6 +29,10 @@ const Commissions = () => {
   const [paymentStatusByUserMonth, setPaymentStatusByUserMonth] = useState({});
   const [markingPaidUserId, setMarkingPaidUserId] = useState(null);
   const [markingUnpaidUserId, setMarkingUnpaidUserId] = useState(null);
+  const [showMarkPaidConfirm, setShowMarkPaidConfirm] = useState(false);
+  const [confirmMarkPaidUserComm, setConfirmMarkPaidUserComm] = useState(null);
+  const [showMarkUnpaidConfirm, setShowMarkUnpaidConfirm] = useState(false);
+  const [confirmMarkUnpaidUserComm, setConfirmMarkUnpaidUserComm] = useState(null);
 
 
   const getMonthsInRange = useCallback((fromYYYYMM, toYYYYMM) => {
@@ -340,7 +346,7 @@ const Commissions = () => {
   }, [userCommissions]);
 
   const handleMarkAsPaid = useCallback(async (e, userComm) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (!userComm?.unpaidMonthsToMark?.length || markingPaidUserId) return;
     setMarkingPaidUserId(userComm.userId);
     try {
@@ -360,7 +366,7 @@ const Commissions = () => {
   }, [users, monthsForPaymentStatus, markingPaidUserId]);
 
   const handleMarkAsUnpaid = useCallback(async (e, userComm) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (!userComm || markingUnpaidUserId || markingPaidUserId) return;
     if (rangeMonths.length === 0) return;
     setMarkingUnpaidUserId(userComm.userId);
@@ -380,6 +386,32 @@ const Commissions = () => {
     }
   }, [users, monthsForPaymentStatus, rangeMonths, markingPaidUserId, markingUnpaidUserId]);
 
+  const openMarkPaidConfirm = useCallback((e, userComm) => {
+    e?.stopPropagation?.();
+    setConfirmMarkPaidUserComm(userComm);
+    setShowMarkPaidConfirm(true);
+  }, []);
+
+  const openMarkUnpaidConfirm = useCallback((e, userComm) => {
+    e?.stopPropagation?.();
+    setConfirmMarkUnpaidUserComm(userComm);
+    setShowMarkUnpaidConfirm(true);
+  }, []);
+
+  const confirmMarkAsPaid = useCallback(async () => {
+    if (!confirmMarkPaidUserComm) return;
+    await handleMarkAsPaid(null, confirmMarkPaidUserComm);
+    setShowMarkPaidConfirm(false);
+    setConfirmMarkPaidUserComm(null);
+  }, [confirmMarkPaidUserComm, handleMarkAsPaid]);
+
+  const confirmMarkAsUnpaid = useCallback(async () => {
+    if (!confirmMarkUnpaidUserComm) return;
+    await handleMarkAsUnpaid(null, confirmMarkUnpaidUserComm);
+    setShowMarkUnpaidConfirm(false);
+    setConfirmMarkUnpaidUserComm(null);
+  }, [confirmMarkUnpaidUserComm, handleMarkAsUnpaid]);
+
   return (
     <motion.div className="commissions-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageTitle
@@ -388,8 +420,8 @@ const Commissions = () => {
         icon={FiDollarSign}
       />
 
-      <div className="commissions-filters">
-        <div className="filter-row filter-row--mode">
+      <div className="commissions-filters commissions-filters--single-row">
+        <div className="filter-left">
           <span className="filter-row-label">View by</span>
           <div className="filter-mode-toggle" role="group" aria-label="Date view mode">
             <button
@@ -402,7 +434,7 @@ const Commissions = () => {
               aria-pressed={viewMode === 'current'}
             >
               <FiCalendar size={16} />
-              Current month
+              Month
             </button>
             <button
               type="button"
@@ -421,52 +453,52 @@ const Commissions = () => {
             </button>
           </div>
         </div>
-        <div className="filter-row filter-row--dates">
-          {viewMode === 'current' ? (
-            <div className="filter-group filter-group--single">
-              <label htmlFor="currentMonth">
+        <div className="filter-right">
+        {viewMode === 'current' ? (
+          <div className="filter-group filter-group--single">
+            <label htmlFor="currentMonth">
+              <FiCalendar size={16} />
+              Month
+            </label>
+            <input
+              type="month"
+              id="currentMonth"
+              value={fromDate}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFromDate(val);
+                setToDate(val);
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="filter-group">
+              <label htmlFor="fromDate">
                 <FiCalendar size={16} />
-                Month
+                From month
               </label>
               <input
                 type="month"
-                id="currentMonth"
+                id="fromDate"
                 value={fromDate}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFromDate(val);
-                  setToDate(val);
-                }}
+                onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
-          ) : (
-            <>
-              <div className="filter-group">
-                <label htmlFor="fromDate">
-                  <FiCalendar size={16} />
-                  From month
-                </label>
-                <input
-                  type="month"
-                  id="fromDate"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                />
-              </div>
-              <div className="filter-group filter-group--to">
-                <label htmlFor="toDate">
-                  <FiCalendar size={16} />
-                  To month
-                </label>
-                <input
-                  type="month"
-                  id="toDate"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                />
-              </div>
-            </>
-          )}
+            <div className="filter-group filter-group--to">
+              <label htmlFor="toDate">
+                <FiCalendar size={16} />
+                To month
+              </label>
+              <input
+                type="month"
+                id="toDate"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+          </>
+        )}
         </div>
       </div>
 
@@ -523,29 +555,28 @@ const Commissions = () => {
                       </div>
                     </div>
                     <div className="commission-status-row" onClick={(e) => e.stopPropagation()}>
-                      <span className={`status-badge ${userComm.isPeriodPaid ? 'paid' : 'unpaid'}`}>
-                        {userComm.isPeriodPaid ? 'Paid' : 'Unpaid'}
-                      </span>
+                      {userComm.isPeriodPaid && (
+                        <span className="status-badge paid">Paid</span>
+                      )}
                       {!userComm.isPeriodPaid ? (
                         <button
                           type="button"
                           className="mark-paid-btn"
-                          onClick={(e) => handleMarkAsPaid(e, userComm)}
+                          onClick={(e) => openMarkPaidConfirm(e, userComm)}
                           disabled={markingPaidUserId === userComm.userId}
                           title="Mark as paid"
                         >
-                          <FiCheck size={14} />
-                          {markingPaidUserId === userComm.userId ? '...' : 'Pay'}
+                          {markingPaidUserId === userComm.userId ? '...' : 'Paid'}
                         </button>
                       ) : (
                         <button
                           type="button"
                           className="mark-unpaid-btn"
-                          onClick={(e) => handleMarkAsUnpaid(e, userComm)}
+                          onClick={(e) => openMarkUnpaidConfirm(e, userComm)}
                           disabled={markingUnpaidUserId === userComm.userId}
                           title="Mark as unpaid"
                         >
-                          {markingUnpaidUserId === userComm.userId ? '...' : 'Unpay'}
+                          {markingUnpaidUserId === userComm.userId ? '...' : 'Unpaid'}
                         </button>
                       )}
                     </div>
@@ -640,6 +671,90 @@ const Commissions = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showMarkPaidConfirm}
+        onClose={() => {
+          setShowMarkPaidConfirm(false);
+          setConfirmMarkPaidUserComm(null);
+        }}
+        title="Mark as paid"
+      >
+        <div className="commission-confirm-content">
+          {confirmMarkPaidUserComm && (
+            <>
+              <p>
+                Mark commission as <strong>paid</strong> for{' '}
+                <strong>{users.find(u => u.id === confirmMarkPaidUserComm.userId)?.displayName || 'this user'}</strong>?
+              </p>
+              <p className="commission-confirm-sub">
+                This will mark all unpaid months in the selected period (and any carry-over) as paid.
+              </p>
+            </>
+          )}
+          <div className="modal-actions">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowMarkPaidConfirm(false);
+                setConfirmMarkPaidUserComm(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmMarkAsPaid}
+              loading={markingPaidUserId === confirmMarkPaidUserComm?.userId}
+              loadingText="Marking..."
+            >
+              Mark as paid
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showMarkUnpaidConfirm}
+        onClose={() => {
+          setShowMarkUnpaidConfirm(false);
+          setConfirmMarkUnpaidUserComm(null);
+        }}
+        title="Mark as unpaid"
+      >
+        <div className="commission-confirm-content">
+          {confirmMarkUnpaidUserComm && (
+            <>
+              <p>
+                Mark commission as <strong>unpaid</strong> for{' '}
+                <strong>{users.find(u => u.id === confirmMarkUnpaidUserComm.userId)?.displayName || 'this user'}</strong>?
+              </p>
+              <p className="commission-confirm-sub">
+                This will mark all months in the selected period as unpaid. Carry-over will be recalculated.
+              </p>
+            </>
+          )}
+          <div className="modal-actions">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowMarkUnpaidConfirm(false);
+                setConfirmMarkUnpaidUserComm(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmMarkAsUnpaid}
+              loading={markingUnpaidUserId === confirmMarkUnpaidUserComm?.userId}
+              loadingText="Marking..."
+            >
+              Mark as unpaid
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   );
 };
