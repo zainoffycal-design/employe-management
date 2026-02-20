@@ -7,7 +7,9 @@ import {
   FiUsers,
   FiShield,
   FiUserPlus,
-  FiEdit3
+  FiEdit3,
+  FiUserCheck,
+  FiUserX
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { userManagementService } from '../../services/firebaseService';
@@ -18,6 +20,7 @@ import Modal from '../../components/Modal';
 import PageTitle from '../../components/PageTitle';
 import Button from '../../components/Button';
 import Avatar from '../../components/Avatar';
+import toast from 'react-hot-toast';
 import './UserManagement.scss';
 
 const STATUS_DISPLAY = {
@@ -73,10 +76,13 @@ const normalizeManagerType = (managerType) => {
 
 
 
-const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null, index = 0 }) => {
+const UserCard = ({ user, onEdit, onDelete, onToggleActive, canManageUsers, canToggleActive, isCurrentUser = false, onResendInvitation, isSuperManager = false, currentUserRole = null, index = 0 }) => {
+  const isInactive = user.isActive === false || user.status === 'inactive';
+  const canActivateDeactivate = canToggleActive && user.status !== 'invited';
+
   return (
     <motion.div 
-      className={`user-card ${isCurrentUser ? 'current-user' : ''}`}
+      className={`user-card ${isCurrentUser ? 'current-user' : ''} ${isInactive ? 'inactive' : ''}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
@@ -100,13 +106,22 @@ const UserCard = ({ user, onEdit, onDelete, canManageUsers, isCurrentUser = fals
           <div className={`badge badge--role ${getRoleBadgeColor(user.role)}`}>
             {getRoleDisplayName(user.role)}
           </div>
-          <span className={`badge badge--status ${user.status}`}>
-            {STATUS_DISPLAY[user.status] || 'Unknown'}
+          <span className={`badge badge--status ${user.status || (user.isActive === false ? 'inactive' : 'active')}`}>
+            {STATUS_DISPLAY[user.status] || (user.isActive === false ? 'Inactive' : 'Active')}
           </span>
         </div>
       </div>
       {canManageUsers && !isCurrentUser && (
         <div className="user-actions">
+          {canActivateDeactivate && (
+            <button
+              className={`action-btn ${isInactive ? 'activate' : 'deactivate'}`}
+              onClick={() => onToggleActive(user)}
+              title={isInactive ? 'Activate user' : 'Deactivate user'}
+            >
+              {isInactive ? <FiUserCheck /> : <FiUserX />}
+            </button>
+          )}
           {!isSuperManager && user.status === 'invited' && (
             <button
               className="action-btn resend"
@@ -170,24 +185,24 @@ const UserManagement = () => {
     return roles;
   }, [currentUser]);
 
-  const activeUsers = useMemo(() => 
-    users.filter(user => user.isActive !== false || user.status === 'invited'),
-    [users]
-  );
+  const displayedUsers = useMemo(() => {
+    if (permissionUtils.isSuperManager(currentUser)) return users;
+    return users.filter(u => u.isActive !== false || u.status === 'invited');
+  }, [users, currentUser]);
 
   const allUsersIncludingCurrent = useMemo(() => {
-    const currentUserExists = activeUsers.some(user => 
+    const currentUserExists = displayedUsers.some(user => 
       user.id === currentUser.uid || 
       user.email === currentUser.email ||
       (user.uid && user.uid === currentUser.uid)
     );
     
     if (currentUserExists) {
-      return activeUsers;
+      return displayedUsers;
     }
     
     return [
-      ...activeUsers,
+      ...displayedUsers,
       {
         id: currentUser.uid,
         name: currentUser.name,
@@ -198,7 +213,7 @@ const UserManagement = () => {
         permissions: currentUser.permissions || []
       }
     ];
-  }, [activeUsers, currentUser]);
+  }, [displayedUsers, currentUser]);
 
   const groupedUsers = useMemo(() => {
     const grouped = allUsersIncludingCurrent.reduce((acc, user) => {
@@ -452,6 +467,25 @@ const UserManagement = () => {
     }
   };
 
+  const handleToggleUserActive = useCallback(async (user) => {
+    const isActivating = user.isActive === false || user.status === 'inactive';
+    const action = isActivating ? 'activate' : 'deactivate';
+    if (!window.confirm(`Are you sure you want to ${action} ${user.name}?`)) return;
+
+    try {
+      if (isActivating) {
+        await userManagementService.activateUser(user.id);
+        toast.success(`${user.name} has been activated`);
+      } else {
+        await userManagementService.deactivateUser(user.id);
+        toast.success(`${user.name} has been deactivated`);
+      }
+      await loadUsers();
+    } catch (err) {
+      console.error(`Error ${action}ing user:`, err);
+      toast.error(`Failed to ${action} user. Please try again.`);
+    }
+  }, [loadUsers]);
 
   const handleCommissionPercentageChange = useCallback((value, isEdit = false) => {
     const numericValue = value.replace(/[^0-9]/g, '');
@@ -549,7 +583,9 @@ const UserManagement = () => {
                       user={user}
                       onEdit={openEditUserModal}
                       onDelete={handleDeleteUser}
+                      onToggleActive={handleToggleUserActive}
                       canManageUsers={canManageUsers}
+                      canToggleActive={permissionUtils.isSuperManager(currentUser)}
                       isCurrentUser={user.id === currentUser.uid}
                       onResendInvitation={handleResendInvitation}
                       isSuperManager={permissionUtils.isSuperManager(user)}
@@ -568,7 +604,9 @@ const UserManagement = () => {
                           user={user}
                           onEdit={openEditUserModal}
                           onDelete={handleDeleteUser}
+                          onToggleActive={handleToggleUserActive}
                           canManageUsers={canManageUsers}
+                          canToggleActive={permissionUtils.isSuperManager(currentUser)}
                           isCurrentUser={user.id === currentUser.uid}
                           onResendInvitation={handleResendInvitation}
                           isSuperManager={permissionUtils.isSuperManager(user)}
@@ -587,7 +625,9 @@ const UserManagement = () => {
                           user={user}
                           onEdit={openEditUserModal}
                           onDelete={handleDeleteUser}
+                          onToggleActive={handleToggleUserActive}
                           canManageUsers={canManageUsers}
+                          canToggleActive={permissionUtils.isSuperManager(currentUser)}
                           isCurrentUser={user.id === currentUser.uid}
                           onResendInvitation={handleResendInvitation}
                           isSuperManager={permissionUtils.isSuperManager(user)}

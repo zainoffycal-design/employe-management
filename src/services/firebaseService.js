@@ -1,5 +1,5 @@
 import { firebaseUtils, queryBuilders } from '../utils/firebaseUtils';
-import { collection, query, where, getDocs, deleteDoc, doc, setDoc, writeBatch, deleteField } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { generateAvatarUrl } from '../utils/avatarUtils';
@@ -251,6 +251,21 @@ export const userManagementService = {
       });
     } catch (error) {
       console.error('Error deactivating user:', error);
+      throw error;
+    }
+  },
+
+  activateUser: async (userId) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        isActive: true,
+        status: 'active',
+        deactivatedAt: deleteField(),
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error activating user:', error);
       throw error;
     }
   },

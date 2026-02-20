@@ -22,15 +22,20 @@ export const AuthProvider = ({ children }) => {
         }
         
         if (userData) {
-          const userWithUid = { 
-            uid: user.uid, 
-            email: user.email, 
-            ...userData 
-          };
-          setCurrentUser(userWithUid);
-          setIsAuthenticated(true);
-          
-          await userManagementService.ensureUserUid(user.uid, user.email);
+          if (userData.isActive === false) {
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+            await firebaseUtils.signOut();
+          } else {
+            const userWithUid = { 
+              uid: user.uid, 
+              email: user.email, 
+              ...userData 
+            };
+            setCurrentUser(userWithUid);
+            setIsAuthenticated(true);
+            await userManagementService.ensureUserUid(user.uid, user.email);
+          }
         } else {
           // User exists in Firebase Auth but not in Firestore - sign them out
           setCurrentUser(null);
@@ -75,6 +80,12 @@ export const AuthProvider = ({ children }) => {
       }
       
       if (userData) {
+        if (userData.isActive === false) {
+          await firebaseUtils.signOut();
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          return { success: false, error: 'Your account has been deactivated. Please contact your administrator.' };
+        }
         const userWithUid = { 
           uid: user.uid, 
           email: user.email, 

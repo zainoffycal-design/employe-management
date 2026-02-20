@@ -144,6 +144,12 @@
       border-color: var(--primary-color);
     }
 
+    &.inactive {
+      opacity: 0.85;
+      background: var(--gray-50);
+      border-color: var(--gray-200);
+    }
+
     &.current-user {
       border-color: var(--primary-color);
       background: linear-gradient(135deg, var(--white) 0%, #f0fdf4 100%);
@@ -387,6 +393,18 @@
           background: #fffbeb;
           color: #d97706;
           border-color: #fed7aa;
+        }
+
+        &.activate:hover {
+          background: #f0fdf4;
+          color: #16a34a;
+          border-color: #bbf7d0;
+        }
+
+        &.deactivate:hover {
+          background: #fef2f2;
+          color: #dc2626;
+          border-color: #fecaca;
         }
 
         svg {
