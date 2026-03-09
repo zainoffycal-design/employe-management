@@ -169,7 +169,7 @@ const Dashboard = () => {
   const { totalHours, totalEstimatedHours } = useMemo(() => getProjectHours(), [getProjectHours]);
 
   const completedProjects = useMemo(() => 
-    projects.filter(project => project.status === 'completed'), [projects]
+    projects.filter(project => project.status === 'completed' || project.status === 'terminate'), [projects]
   );
 
   const activeTasks = useMemo(() => 
@@ -243,10 +243,10 @@ const Dashboard = () => {
     });
 
     projects.forEach(project => {
-      if (project.status === 'completed' && project.updatedAt) {
+      if ((project.status === 'completed' || project.status === 'terminate') && project.updatedAt) {
         activities.push({
-          type: 'project_completed',
-          id: `project-completed-${project.id}`,
+          type: project.status === 'terminate' ? 'project_terminated' : 'project_completed',
+          id: `project-${project.status}-${project.id}`,
           timestamp: project.updatedAt,
           projectId: project.id,
           projectName: project.name,
@@ -554,6 +554,8 @@ const Dashboard = () => {
                         index={index}
                         variant="dashboard"
                         users={users}
+                        isCompleted={project.status === 'completed' || project.status === 'terminate'}
+                        isTerminated={project.status === 'terminate'}
                       />
                     ))}
                   </div>
@@ -640,14 +642,14 @@ const Dashboard = () => {
                           variant="primary" 
                           size="sm"
                           onClick={() => {
-                            const isProjectCompleted = project?.status === 'completed';
-                            const canAccess = !isProjectCompleted || currentUser?.role === 'super_manager';
+                            const isEndState = project?.status === 'completed' || project?.status === 'terminate';
+                            const canAccess = !isEndState || currentUser?.role === 'super_manager';
                             if (canAccess) {
                               navigate(`/project/${task.projectId}/board`);
                             }
                           }}
-                          title={project?.status === 'completed' && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed projects. Only super managers can access completed project boards." : ""}
-                          disabled={project?.status === 'completed' && currentUser?.role !== 'super_manager'}
+                          title={(project?.status === 'completed' || project?.status === 'terminate') && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed/terminated projects. Only super managers can access these project boards." : ""}
+                          disabled={(project?.status === 'completed' || project?.status === 'terminate') && currentUser?.role !== 'super_manager'}
                         >
                           <FiLayout size={14} />
                           View Board
@@ -717,7 +719,7 @@ const Dashboard = () => {
                         {activity.type === 'comment' && <FiMessageSquare size={16} />}
                         {activity.type === 'task_created' && <FiPlus size={16} />}
                         {activity.type === 'task_completed' && <FiCheckCircle size={16} />}
-                        {activity.type === 'project_completed' && <FiFolder size={16} />}
+                        {(activity.type === 'project_completed' || activity.type === 'project_terminated') && <FiFolder size={16} />}
                       </div>
                       <div className="activity-content">
                         <div className="activity-text">
@@ -742,6 +744,11 @@ const Dashboard = () => {
                           {activity.type === 'project_completed' && (
                             <>
                               <strong>{activity.projectName}</strong> project was completed
+                            </>
+                          )}
+                          {activity.type === 'project_terminated' && (
+                            <>
+                              <strong>{activity.projectName}</strong> project was terminated
                             </>
                           )}
                         </div>
@@ -825,20 +832,20 @@ const Dashboard = () => {
                           )}
                         </div>
                       </div>
-                      {(activity.type === 'task_created' || activity.type === 'task_completed' || activity.type === 'comment') && (
+                      {(activity.type === 'task_created' || activity.type === 'task_completed' || activity.type === 'comment' || activity.type === 'project_completed' || activity.type === 'project_terminated') && (
                         <Button 
                           variant="secondary" 
                           size="sm"
                           onClick={() => {
                             const project = projects.find(p => p.id === activity.projectId);
-                            const isProjectCompleted = project?.status === 'completed';
-                            const canAccess = !isProjectCompleted || currentUser?.role === 'super_manager';
+                            const isEndState = project?.status === 'completed' || project?.status === 'terminate';
+                            const canAccess = !isEndState || currentUser?.role === 'super_manager';
                             if (canAccess) {
                               navigate(`/project/${activity.projectId}/board`);
                             }
                           }}
-                          title={project?.status === 'completed' && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed projects." : "View Project Board"}
-                          disabled={project?.status === 'completed' && currentUser?.role !== 'super_manager'}
+                          title={(project?.status === 'completed' || project?.status === 'terminate') && currentUser?.role !== 'super_manager' ? "You don't have permission to access completed/terminated projects." : "View Project Board"}
+                          disabled={(project?.status === 'completed' || project?.status === 'terminate') && currentUser?.role !== 'super_manager'}
                         >
                           <FiLayout size={14} />
                           View

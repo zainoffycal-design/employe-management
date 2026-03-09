@@ -14,7 +14,8 @@ const PROJECT_TYPE_LABELS = {
   'contract': 'Contract',
   'full-time': 'Full Time',
   '1099': '1099',
-  'freelance': 'Freelance'
+  'freelance': 'Freelance',
+  'internal': 'Internal'
 };
 
 const PRIORITY_LABELS = {
@@ -23,7 +24,7 @@ const PRIORITY_LABELS = {
   'low': 'Low'
 };
 
-const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], variant = "full", users = [], isCompleted = false }) => {
+const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], variant = "full", users = [], isCompleted = false, isTerminated = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
@@ -150,7 +151,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
 
   const { canViewBudget: canViewBudgetFromAuth } = useAuth();
   const canViewBudget = canViewBudgetFromAuth();
-  const canAccessBoard = !isCompleted || permissionUtils.isSuperManager(currentUser);
+  const canAccessBoard = (!isCompleted && !isTerminated) || permissionUtils.isSuperManager(currentUser);
 
   const handleCardClickWithPermission = () => {
     if (!canAccessBoard) {
@@ -161,7 +162,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
 
   return (
     <motion.div
-      className={`project-card ${variant === "dashboard" ? "dashboard-variant" : ""} ${isCompleted ? "completed" : ""} ${!canAccessBoard ? "no-access" : ""}`}
+      className={`project-card ${variant === "dashboard" ? "dashboard-variant" : ""} ${isTerminated ? "terminated" : ""} ${isCompleted && !isTerminated ? "completed" : ""} ${!canAccessBoard ? "no-access" : ""}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
@@ -177,7 +178,12 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
         <div className="project-info">
           <div className="project-title-wrapper">
             <h3 className="project-title">{project.name}</h3>
-            {isCompleted && (
+            {isTerminated && (
+              <span className="terminated-badge">
+                Terminated
+              </span>
+            )}
+            {isCompleted && !isTerminated && (
               <span className="completed-badge">
                 <FiCheckCircle size={14} />
                 Completed

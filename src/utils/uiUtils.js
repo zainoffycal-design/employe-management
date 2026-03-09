@@ -261,7 +261,8 @@ export const parseTextWithMentions = (text) => {
 export const reactSelectStyles = {
   control: (base) => ({
     ...base,
-    minHeight: '48px',
+    minHeight: '40px',
+    fontSize: '0.8125rem',
     backgroundColor: 'white',
     borderColor: '#d1d5db',
     border: '1px solid #d1d5db',
@@ -277,7 +278,8 @@ export const reactSelectStyles = {
   }),
   option: (base, state) => ({
     ...base,
-    padding: '8px 12px',
+    padding: '6px 12px',
+    fontSize: '0.8125rem',
     backgroundColor: state.isSelected 
       ? '#f1f5f9'
       : state.isFocused 
@@ -299,7 +301,7 @@ export const reactSelectStyles = {
     ...base,
     color: '#334155',
     padding: '2px 6px',
-    fontSize: '0.875rem'
+    fontSize: '0.8125rem'
   }),
   multiValueRemove: (base) => ({
     ...base,
@@ -318,12 +320,25 @@ export const reactSelectStyles = {
   }),
   menu: (base) => ({
     ...base,
+    zIndex: 9999,
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     borderRadius: '6px'
   }),
+  singleValue: (base) => ({
+    ...base,
+    fontSize: '0.8125rem'
+  }),
+  placeholder: (base) => ({
+    ...base,
+    fontSize: '0.8125rem'
+  }),
+  input: (base) => ({
+    ...base,
+    fontSize: '0.8125rem'
+  }),
   groupHeading: (base) => ({
     ...base,
-    fontSize: '0.875rem',
+    fontSize: '0.8125rem',
     color: '#64748b',
     fontWeight: 600,
     textTransform: 'none',

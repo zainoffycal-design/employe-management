@@ -175,7 +175,7 @@ const ProjectBoard = () => {
 
   const isLoading = authLoading || !projectsLoaded || !currentUser;
   const isProjectNotFound = !isLoading && !currentProject;
-  const isProjectCompleted = currentProject?.status === 'completed';
+  const isProjectCompleted = currentProject?.status === 'completed' || currentProject?.status === 'terminate';
   const canAccessCompletedProject = currentUser?.role === 'super_manager';
 
   useEffect(() => {

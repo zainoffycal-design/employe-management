@@ -35,7 +35,8 @@ const PROJECT_TYPE_OPTIONS = [
   { value: 'contract', label: 'Contract' },
   { value: 'full-time', label: 'Full Time' },
   { value: '1099', label: '1099' },
-  { value: 'freelance', label: 'Freelance' }
+  { value: 'freelance', label: 'Freelance' },
+  { value: 'internal', label: 'Internal' }
 ];
 
 const ProjectCalculator = () => {

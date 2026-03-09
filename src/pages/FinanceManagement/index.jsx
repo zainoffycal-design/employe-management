@@ -143,7 +143,7 @@ const FinanceManagement = () => {
             <div className="budget-progress-header">
               <span className="budget-progress-label">Target Progress</span>
               <span className="budget-progress-percentage">
-                {monthlyBudget > 0 ? ((monthlyPayments.grandTotalReceived / monthlyBudget) * 100).toFixed(1) : 0}%
+                {monthlyBudget > 0 ? ((monthlyPayments.grandTotalThisMonthReceived / monthlyBudget) * 100).toFixed(1) : 0}%
               </span>
             </div>
             <div className="payment-progress">
@@ -151,12 +151,12 @@ const FinanceManagement = () => {
                 <div 
                   className="progress-fill" 
                   style={{ 
-                    width: `${monthlyBudget > 0 ? Math.min((monthlyPayments.grandTotalReceived / monthlyBudget) * 100, 100) : 0}%` 
+                    width: `${monthlyBudget > 0 ? Math.min((monthlyPayments.grandTotalThisMonthReceived / monthlyBudget) * 100, 100) : 0}%` 
                   }}
                 />
               </div>
               <div className="progress-stats">
-                <span>${formatCurrency(monthlyPayments.grandTotalReceived)} received</span>
+                <span>${formatCurrency(monthlyPayments.grandTotalThisMonthReceived)} received</span>
                 <span>of ${formatCurrency(monthlyBudget)} target</span>
               </div>
             </div>

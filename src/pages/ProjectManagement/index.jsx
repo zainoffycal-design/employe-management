@@ -25,6 +25,9 @@ import Avatar from '../../components/Avatar';
 import BudgetManager from '../../components/BudgetManager';
 import './ProjectManagement.scss';
 
+const PROJECT_TYPE_KEYS = ['contract', 'full-time', '1099', 'freelance', 'internal'];
+const PROJECT_TYPE_COUNTS_INITIAL = { contract: 0, 'full-time': 0, '1099': 0, freelance: 0, internal: 0 };
+
 const ProjectManagement = () => {
   const navigate = useNavigate();
   const { projects, createProject, updateProject, deleteProject, tasks } = useTask();
@@ -206,14 +209,16 @@ const ProjectManagement = () => {
   const projectFilterOptions = [
     { value: 'all', label: 'All Projects' },
     { value: 'active', label: 'Active Projects' },
-    { value: 'completed', label: 'Completed Projects' }
+    { value: 'completed', label: 'Completed Projects' },
+    { value: 'terminate', label: 'Terminated' }
   ];
 
   const projectTypeOptions = [
     { value: 'contract', label: 'Contract' },
     { value: 'full-time', label: 'Full Time' },
     { value: '1099', label: '1099' },
-    { value: 'freelance', label: 'Freelance' }
+    { value: 'freelance', label: 'Freelance' },
+    { value: 'internal', label: 'Internal' }
   ];
 
   const priorityOptions = [
@@ -417,9 +422,11 @@ const ProjectManagement = () => {
       
       if (currentUser.role === 'super_manager' && formData.status) {
         projectData.status = formData.status;
-        if (formData.status === 'active' && selectedProject?.status === 'completed') {
+        const wasEndState = selectedProject?.status === 'completed' || selectedProject?.status === 'terminate';
+        const isEndState = formData.status === 'completed' || formData.status === 'terminate';
+        if (formData.status === 'active' && wasEndState) {
           projectData.completedAt = null;
-        } else if (formData.status === 'completed' && selectedProject?.status !== 'completed') {
+        } else if (isEndState && !wasEndState) {
           projectData.completedAt = new Date().toISOString();
         }
       }
@@ -507,7 +514,7 @@ const ProjectManagement = () => {
   };
 
   const isProjectCompleted = useCallback((project) => {
-    return project.status === 'completed';
+    return project.status === 'completed' || project.status === 'terminate';
   }, []);
 
   const hasAllTasksCompleted = useCallback((project) => {
@@ -519,11 +526,15 @@ const ProjectManagement = () => {
   }, [tasks]);
 
   const activeProjects = useMemo(() => {
-    return projects?.filter(project => !project.status || project.status !== 'completed') || [];
+    return projects?.filter(project => project.status !== 'completed' && project.status !== 'terminate') || [];
   }, [projects]);
 
   const completedProjects = useMemo(() => {
-    return projects?.filter(project => project.status === 'completed') || [];
+    return projects?.filter(project => project.status === 'completed' || project.status === 'terminate') || [];
+  }, [projects]);
+
+  const terminatedProjects = useMemo(() => {
+    return projects?.filter(project => project.status === 'terminate') || [];
   }, [projects]);
 
   const filteredProjects = useMemo(() => {
@@ -533,6 +544,8 @@ const ProjectManagement = () => {
       baseProjects = activeProjects;
     } else if (projectFilter === 'completed') {
       baseProjects = completedProjects;
+    } else if (projectFilter === 'terminate') {
+      baseProjects = terminatedProjects;
     }
 
     return baseProjects
@@ -568,7 +581,20 @@ const ProjectManagement = () => {
         const dateB = new Date(b.createdAt || 0);
         return dateB - dateA;
       });
-  }, [projects, projectFilter, activeProjects, completedProjects, searchTerm, selectedManager, selectedProjectType, selectedPriority, allUsers]);
+  }, [projects, projectFilter, activeProjects, completedProjects, terminatedProjects, searchTerm, selectedManager, selectedProjectType, selectedPriority, allUsers]);
+
+  const displayProjectTypeCounts = useMemo(() => {
+    return (filteredProjects || []).reduce((counts, project) => {
+      const type = PROJECT_TYPE_KEYS.includes(project.projectType) ? project.projectType : 'freelance';
+      counts[type]++;
+      return counts;
+    }, { ...PROJECT_TYPE_COUNTS_INITIAL });
+  }, [filteredProjects]);
+
+  const displayStatsLabel = useMemo(() => {
+    const labels = { all: 'All', active: 'Active', completed: 'Completed', terminate: 'Terminated' };
+    return labels[projectFilter] || 'All';
+  }, [projectFilter]);
 
   const renderTeamMemberSelect = () => {
     const membersWithCommission = formData.teamMembers.filter(member => {
@@ -718,7 +744,7 @@ const ProjectManagement = () => {
   };
 
   return (
-    <div className="project-management">
+    <div className="page-container project-management">
       <PageTitle 
         title={currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? "Project Management" : "My Projects"}
         subtitle={currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? "Create and manage your team's projects" : "View your assigned projects"}
@@ -779,9 +805,24 @@ const ProjectManagement = () => {
         }
       />
 
-      <div className="projects-grid">
-        <div className="projects-grid-header">
-          <div className="project-filters-row">
+      <div className="projects-control-panel">
+        <div className="control-panel-stats">
+          <span className="stat-header">
+            <span className="stat-label">{displayStatsLabel}</span>
+            <span className="stat-num">{(filteredProjects || []).length}</span>
+          </span>
+          <span className="stat-divider" />
+          <span className="stat-item"><span className="stat-label">Contract</span><span className="stat-num">{displayProjectTypeCounts.contract}</span></span>
+          <span className="stat-divider" />
+          <span className="stat-item"><span className="stat-label">Full time</span><span className="stat-num">{displayProjectTypeCounts['full-time']}</span></span>
+          <span className="stat-divider" />
+          <span className="stat-item"><span className="stat-label">1099</span><span className="stat-num">{displayProjectTypeCounts['1099']}</span></span>
+          <span className="stat-divider" />
+          <span className="stat-item"><span className="stat-label">Freelance</span><span className="stat-num">{displayProjectTypeCounts.freelance}</span></span>
+          <span className="stat-divider" />
+          <span className="stat-item"><span className="stat-label">Internal</span><span className="stat-num">{displayProjectTypeCounts.internal}</span></span>
+        </div>
+        <div className="control-panel-filters">
             <div className="project-filter-dropdown">
               <Select
                 options={projectFilterOptions}
@@ -811,9 +852,10 @@ const ProjectManagement = () => {
                 placeholder="Priority"
               />
             </div>
-          </div>
         </div>
-        <div className="projects-grid-list">
+      </div>
+
+      <div className="projects-grid">
           {filteredProjects?.length > 0 ? (
             filteredProjects.map((project, index) => (
             <div key={project.id} className="project-card-container">
@@ -824,6 +866,7 @@ const ProjectManagement = () => {
                 index={index}
                 users={allUsers}
                 isCompleted={isProjectCompleted(project)}
+                isTerminated={project.status === 'terminate'}
               />
               {(() => {
                 const isCompleted = isProjectCompleted(project);
@@ -954,7 +997,6 @@ const ProjectManagement = () => {
             )}
           </div>
         )}
-        </div>
       </div>
 
       <Modal
@@ -1165,6 +1207,7 @@ const ProjectManagement = () => {
               >
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
+                <option value="terminate">Terminated</option>
               </select>
             </div>
           )}

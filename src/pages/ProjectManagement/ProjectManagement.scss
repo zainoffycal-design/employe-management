@@ -1,7 +1,6 @@
 @use '../../styles/_shared.scss'as *;
 
 .project-management {
-      padding: 2rem;
 
       .filters-container {
             @include flex-center;
@@ -22,83 +21,115 @@
             }
       }
 
-      .page-header {
-            @include flex-between;
-            margin-bottom: 2rem;
+      .projects-control-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            padding: 1.25rem 1.5rem;
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 1.5rem;
+      }
 
-            .header-content {
-                  h1 {
-                        font-size: 1.5rem;
+      .control-panel-stats {
+            display: flex;
+            align-items: center;
+            gap: 0 1.25rem;
+            flex-wrap: wrap;
+            font-size: 0.8125rem;
+
+            .stat-header {
+                  display: inline-flex;
+                  align-items: baseline;
+                  gap: 0.4rem;
+
+                  .stat-label {
                         font-weight: 600;
-                        color: var(--text-primary);
-                        @include flex-center;
-                        justify-content: flex-start;
-                        gap: 0.75rem;
-                        margin-bottom: 0.5rem;
-
-                        .header-icon {
-                              color: var(--text-primary);
-                        }
+                        color: var(--gray-600);
                   }
 
-                  p {
-                        color: var(--text-secondary);
-                        font-size: 0.9rem;
+                  .stat-num {
+                        font-weight: 700;
+                        color: var(--primary-color);
+                        font-variant-numeric: tabular-nums;
                   }
             }
 
+            .stat-item {
+                  display: inline-flex;
+                  align-items: baseline;
+                  gap: 0.35rem;
 
+                  .stat-label {
+                        color: var(--gray-500);
+                        font-weight: 500;
+                  }
+
+                  .stat-num {
+                        color: var(--primary-color);
+                        font-weight: 700;
+                        font-variant-numeric: tabular-nums;
+                  }
+            }
+
+            .stat-divider {
+                  width: 1px;
+                  height: 1rem;
+                  background: var(--gray-200);
+                  flex-shrink: 0;
+            }
+      }
+
+      .control-panel-filters {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+
+            .project-filter-dropdown {
+                  width: 160px;
+
+                  div {
+                        min-height: unset;
+                  }
+            }
       }
 
       .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
-
-            .projects-grid-header {
-                  @include flex-between;
-                  justify-content: flex-end;
-                  margin-bottom: 1rem;
-
-                  .project-filters-row {
-                        @include flex-center;
-                        gap: 0.75rem;
-                        flex-wrap: wrap;
-                  }
-
-                  .project-filter-dropdown {
-                        width: 180px;
-
-                        div {
-                              min-height: unset;
-                        }
-                  }
-            }
-
-            .projects-grid-list {
-                  display: grid;
-                  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                  gap: 1rem;
-            }
 
             .empty-state {
                   grid-column: 1 / -1;
-                  @include empty-state(300px, white);
+                  @include empty-state(280px, var(--white));
                   border: 2px dashed var(--gray-200);
-                  margin: 2rem 0;
+                  margin: 1.5rem 0;
+                  border-radius: var(--border-radius-lg);
+                  box-shadow: var(--shadow-sm);
 
                   .empty-state-icon {
                         @include flex-center;
-                        margin-bottom: 1.5rem;
+                        margin-bottom: 1.25rem;
+                        color: var(--gray-400);
                   }
 
                   h3 {
-                        margin-bottom: 0.75rem;
+                        margin-bottom: 0.5rem;
+                        font-size: 1.125rem;
                   }
 
                   p {
-                        margin-bottom: 2rem;
-                        max-width: 500px;
+                        margin-bottom: 1.5rem;
+                        max-width: 400px;
                         margin-left: auto;
                         margin-right: auto;
+                        font-size: 0.9rem;
                   }
 
                   .create-first-project-btn {
@@ -121,7 +152,7 @@
                   gap: 0.5rem;
                   opacity: 0;
                   transition: var(--transition);
-                  z-index: 2;
+                  z-index: 1;
 
                   .action-btn {
                         @include flex-center;
@@ -313,8 +344,24 @@
                   gap: 1rem;
             }
 
+            .projects-control-panel {
+                  flex-direction: column;
+                  align-items: stretch;
+                  padding: 1rem;
+            }
+
+            .control-panel-stats {
+                  padding-bottom: 1rem;
+                  border-bottom: 1px solid var(--gray-200);
+            }
+
+            .control-panel-filters .project-filter-dropdown {
+                  width: 100%;
+            }
+
             .projects-grid {
                   grid-template-columns: 1fr;
+                  gap: 1rem;
             }
       }
 

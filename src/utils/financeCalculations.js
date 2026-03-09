@@ -158,7 +158,7 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
   const hasThisMonthPayments = projectsWithThisMonthPayments.length > 0;
 
   const grandTotalReceived = projectPayments.reduce((sum, p) => sum + (p.received || 0), 0);
-  const grandTotalThisMonthReceived = projectsWithThisMonthPayments.reduce((sum, p) => sum + (p.thisMonthReceived || 0), 0);
+  const grandTotalThisMonthReceived = projectPayments.reduce((sum, p) => sum + (p.thisMonthReceived || 0), 0);
   
   const monthlyCalculatedEstimated = projectsWithThisMonthPayments.reduce((sum, p) => {
     if (p.budgetType === 'fixed') {
@@ -202,6 +202,7 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
   return {
     projectPayments: hasThisMonthPayments ? projectsWithThisMonthPayments : projectPayments,
     grandTotalReceived: hasThisMonthPayments ? grandTotalThisMonthReceived : grandTotalReceived,
+    grandTotalThisMonthReceived,
     grandTotalEstimated: monthlyCalculatedEstimated,
     calculatedEstimated: monthlyCalculatedEstimated,
     monthlyBudgetThisMonthOnly,
