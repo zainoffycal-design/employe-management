@@ -16,15 +16,15 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(135deg, rgba(21, 169, 112, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.92);
+  background-image: radial-gradient(circle at 20% 10%, rgba(21, 169, 112, 0.10), transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(21, 169, 112, 0.06), transparent 60%);
   z-index: 9999;
   
   &.small {
     position: relative;
     min-height: 100px;
     background: transparent;
-    backdrop-filter: none;
     
     .loading-spinner {
       transform: scale(0.6);

@@ -539,7 +539,7 @@ const Dashboard = () => {
             <div className="projects-container">
               {projects.length > 0 ? (
                 <>
-                  <div className="projects-grid mb-3">
+                  <div className="projects-grid dashboard-projects-grid mb-3">
                     {projects
                       .sort((a, b) => {
                         const dateA = new Date(a.createdAt || 0);

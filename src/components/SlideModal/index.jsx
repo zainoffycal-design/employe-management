@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import './SlideModal.scss';
@@ -26,25 +27,30 @@ const SlideModal = memo(({
     onClose();
   };
 
-  return (
+  const ease = [0.4, 0, 0.2, 1];
+  const transition = { duration: 0.22, ease };
+
+  const modalTree = (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div 
+            key="slide-modal-overlay"
             className="slide-modal-overlay"
             onClick={handleOverlayClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={transition}
           />
           <motion.div 
+            key="slide-modal-panel"
             className={`slide-modal ${className}`}
             style={{ width }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={transition}
             onClick={handleModalClick}
             {...props}
           >
@@ -67,8 +73,14 @@ const SlideModal = memo(({
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(modalTree, document.body);
 });
 
 SlideModal.displayName = 'SlideModal';
 
-export default SlideModal; 
+export default SlideModal;

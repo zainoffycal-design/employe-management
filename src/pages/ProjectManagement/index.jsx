@@ -232,6 +232,14 @@ const ProjectManagement = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
 
+  const getCommissionStartMonthForProject = (project) => {
+    const raw = project?.createdAt;
+    if (!raw) return getCurrentMonthYear();
+    const d = raw?.toDate ? raw.toDate() : new Date(raw);
+    if (Number.isNaN(d.getTime())) return getCurrentMonthYear();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
   const getMonthYearOptions = () => {
     const options = [];
     const now = new Date();
@@ -300,7 +308,7 @@ const ProjectManagement = () => {
               percentage: user.commissionPercentage,
               type: user.commissionType,
               recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
-              startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+              startMonth: commissionInfo.startMonth || getCommissionStartMonthForProject(null),
               isActive: true
             };
           }
@@ -387,7 +395,7 @@ const ProjectManagement = () => {
               percentage: user.commissionPercentage,
               type: user.commissionType,
               recurringMonths: user.commissionType === 'recurring' ? (parseInt(commissionInfo.recurringMonths, 10) || null) : null,
-              startMonth: commissionInfo.startMonth || getCurrentMonthYear(),
+              startMonth: commissionInfo.startMonth || getCommissionStartMonthForProject(selectedProject),
               isActive: true
             };
           }
@@ -687,7 +695,7 @@ const ProjectManagement = () => {
                                   type: user.commissionType,
                                   recurringMonths: prev.commissionData[member.value]?.recurringMonths || null,
                                   isActive: isActive,
-                                  startMonth: isActive ? getCurrentMonthYear() : null
+                                  startMonth: isActive ? getCommissionStartMonthForProject(showEditModal ? selectedProject : null) : null
                                 }
                               }
                             }));
