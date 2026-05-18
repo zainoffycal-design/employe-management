@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { permissionUtils } from "../../utils/permissionUtils";
 import { formatCurrency } from "../../utils/uiUtils";
-import { calculateAfterTax } from "../../utils/financeCalculations";
+import { calculateAfterTax, sumPaymentAmountsNetAfterTax } from "../../utils/financeCalculations";
 import SlideModal from "../SlideModal";
 import TaskDetails from "../TaskDetails";
 import "./ProjectCard.scss";
@@ -104,10 +104,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
       const totalBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
       const totalBudget = calculateAfterTax(totalBudgetBeforeTax, tax);
       
-      const totalReceivedBeforeTax = (project.budget.payments || []).reduce((sum, payment) => {
-        return sum + (parseFloat(payment.amount) || 0);
-      }, 0);
-      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+      const totalReceived = sumPaymentAmountsNetAfterTax(project.budget.payments || [], tax);
       
       const remaining = totalBudget - totalReceived;
       const receivedPercentage = totalBudget > 0 ? (totalReceived / totalBudget) * 100 : 0;
@@ -126,10 +123,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
       const hourlyRateAfterTax = calculateAfterTax(hourlyRateBeforeTax, tax);
       const estimatedBudget = totalProjectHours * hourlyRateAfterTax;
       
-      const totalReceivedBeforeTax = (project.budget.payments || []).reduce((sum, payment) => {
-        return sum + (parseFloat(payment.amount) || 0);
-      }, 0);
-      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+      const totalReceived = sumPaymentAmountsNetAfterTax(project.budget.payments || [], tax);
       
       const remaining = estimatedBudget - totalReceived;
       const receivedPercentage = estimatedBudget > 0 ? (totalReceived / estimatedBudget) * 100 : 0;

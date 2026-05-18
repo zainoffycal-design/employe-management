@@ -5,7 +5,7 @@ import { startOfMonth, endOfMonth, format, parse, isWithinInterval, isValid, add
 import { useAuth } from '../../contexts/AuthContext';
 import { useTask } from '../../contexts/TaskContext';
 import { userManagementService, commissionPaymentService } from '../../services/firebaseService';
-import { calculateAfterTax } from '../../utils/financeCalculations';
+import { sumPaymentAmountsNetAfterTax } from '../../utils/financeCalculations';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
 import Modal from '../../components/Modal';
@@ -129,22 +129,18 @@ const Commissions = () => {
       tax = project.projectType === 'freelance' ? 10 : 0;
     }
 
-    return project.budget.payments.reduce((sum, payment) => {
-      if (!payment.receivedAt || !payment.amount) return sum;
+    const paymentsInRange = project.budget.payments.filter((payment) => {
+      if (!payment.receivedAt || !payment.amount) return false;
       try {
         const paymentDate = new Date(payment.receivedAt);
-        if (!isValid(paymentDate)) return sum;
-        if (isWithinInterval(paymentDate, monthRange)) {
-          const paymentAmount = parseFloat(payment.amount) || 0;
-          const paymentAfterTax = calculateAfterTax(paymentAmount, tax);
-          return sum + paymentAfterTax;
-        }
+        if (!isValid(paymentDate)) return false;
+        return isWithinInterval(paymentDate, monthRange);
       } catch {
-        return sum;
+        return false;
       }
-      return sum;
-    }, 0);
-  }, [calculateAfterTax]);
+    });
+    return sumPaymentAmountsNetAfterTax(paymentsInRange, tax);
+  }, []);
 
   const isCommissionInRange = useCallback((commissionInfo, monthRange) => {
     if (!commissionInfo.startMonth) return false;
@@ -622,7 +618,7 @@ const Commissions = () => {
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Received Amount:</span>
-                        <span className="detail-value">${formatCurrency(projectComm.receivedAmount, 0, true)}</span>
+                        <span className="detail-value">${formatCurrency(projectComm.receivedAmount, 2, true)}</span>
                       </div>
                       <div className="detail-row">
                         <span className="detail-label">Commission (USD):</span>

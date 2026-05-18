@@ -21,7 +21,7 @@ import { permissionUtils } from '../../utils/permissionUtils';
 import { userManagementService } from '../../services/firebaseService';
 import { getRoleDisplayName } from '../../utils/permissionUtils';
 import { formatCurrency, reactSelectStyles } from '../../utils/uiUtils';
-import { calculateAfterTax } from '../../utils/financeCalculations';
+import { calculateAfterTax, sumPaymentAmountsNetAfterTax } from '../../utils/financeCalculations';
 import Select from 'react-select';
 import PageTitle from '../../components/PageTitle';
 import Avatar from '../../components/Avatar';
@@ -262,7 +262,7 @@ const EmployeePerformance = () => {
         tax = project.projectType === 'freelance' ? 10 : 0;
       }
       
-      const totalReceivedBeforeTax = (project.budget?.payments || []).filter(payment => {
+      const monthPayments = (project.budget?.payments || []).filter(payment => {
         if (!payment.receivedAt || !payment.amount) return false;
         try {
           const paymentDate = new Date(payment.receivedAt);
@@ -270,9 +270,9 @@ const EmployeePerformance = () => {
         } catch {
           return false;
         }
-      }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
-      
-      const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+      });
+
+      const totalReceived = sumPaymentAmountsNetAfterTax(monthPayments, tax);
 
       let commissionType = null;
       let recurringMonths = null;
@@ -449,7 +449,7 @@ const EmployeePerformance = () => {
       totalProjectBudget = totalSpentHours * hourlyRate;
     }
 
-    const totalReceivedBeforeTax = (project.budget?.payments || []).filter(payment => {
+    const monthPayments = (project.budget?.payments || []).filter(payment => {
       if (!payment.receivedAt || !payment.amount) return false;
       try {
         const paymentDate = new Date(payment.receivedAt);
@@ -457,9 +457,9 @@ const EmployeePerformance = () => {
       } catch {
         return false;
       }
-    }).reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
-    
-    const totalReceived = calculateAfterTax(totalReceivedBeforeTax, tax);
+    });
+
+    const totalReceived = sumPaymentAmountsNetAfterTax(monthPayments, tax);
 
     const bonus = totalReceived > totalProjectBudget ? totalReceived - totalProjectBudget : 0;
     const totalRevenue = totalProjectBudget + bonus;

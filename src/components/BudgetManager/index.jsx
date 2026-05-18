@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiClock, FiPlus, FiTrash2, FiCalendar, FiEdit3 } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/uiUtils';
-import { calculateAfterTax } from '../../utils/financeCalculations';
+import { calculateAfterTax, calculatePaymentNetAfterTax } from '../../utils/financeCalculations';
 import './BudgetManager.scss';
 
 const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) => {
@@ -340,7 +340,7 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
     if (payment && payment.amount) {
       const num = parseFloat(payment.amount);
       if (!isNaN(num)) {
-        const rounded = Math.round(num);
+        const rounded = Math.round(num * 100) / 100;
         const updatedPayments = payments.map(p =>
           p.id === paymentId ? { ...p, amount: rounded.toString() } : p
         );
@@ -362,10 +362,12 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
     return sum + (parseFloat(payment.amount) || 0);
   }, 0);
 
-  const totalReceivedAfterTax = payments.reduce((sum, payment) => {
-    const amount = parseFloat(payment.amount) || 0;
-    return sum + calculateAfterTax(amount, tax);
-  }, 0);
+  const totalReceivedAfterTax = Math.round(
+    payments.reduce((sum, payment) => {
+      const amount = parseFloat(payment.amount) || 0;
+      return sum + calculatePaymentNetAfterTax(amount, tax);
+    }, 0) * 100
+  ) / 100;
 
   const budgetAfterTax = calculateAfterTax(fixedBudget, tax);
   const remainingBudget = budgetAfterTax - totalReceivedAfterTax;
@@ -467,12 +469,12 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
               </div>
               <div className="summary-item">
                 <span className="summary-label">Received:</span>
-                <span className="summary-value received">${formatCurrency(totalReceivedAfterTax, 0, true)}</span>
+                <span className="summary-value received">${formatCurrency(totalReceivedAfterTax, 2, true)}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-label">{remainingBudget < 0 ? 'Bonus:' : 'Remaining:'}</span>
                 <span className={`summary-value ${remainingBudget < 0 ? 'bonus' : ''}`}>
-                  {remainingBudget < 0 ? `+$${formatCurrency(Math.abs(remainingBudget), 0, true)}` : `$${formatCurrency(remainingBudget, 0, true)}`}
+                  {remainingBudget < 0 ? `+$${formatCurrency(Math.abs(remainingBudget), 2, true)}` : `$${formatCurrency(remainingBudget, 2, true)}`}
                 </span>
               </div>
             </div>
@@ -505,7 +507,7 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
                             <span className="amount-value">
-                              ${formatCurrency(calculateAfterTax(parseFloat(payment.amount || 0), tax), 0, true)}
+                              {formatCurrency(calculatePaymentNetAfterTax(parseFloat(payment.amount || 0), tax), 2, true)}
                             </span>
                             {payment.receivedAt && (
                               <span className="payment-date">
@@ -549,7 +551,7 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
                                   onBlur={() => handlePaymentAmountBlur(payment.id)}
                                   placeholder="0"
                                   min="0"
-                                  step="1"
+                                  step="0.01"
                                   disabled={disabled}
                                   autoFocus={isEditing && !hasAmount}
                                 />
@@ -680,7 +682,7 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
                           <div className="payment-amount-display">
                             <FiDollarSign size={14} />
                             <span className="amount-value">
-                              ${formatCurrency(calculateAfterTax(parseFloat(payment.amount || 0), tax), 0, true)}
+                              {formatCurrency(calculatePaymentNetAfterTax(parseFloat(payment.amount || 0), tax), 2, true)}
                             </span>
                             {payment.receivedAt && (
                               <span className="payment-date">
@@ -724,7 +726,7 @@ const BudgetManager = ({ value, onChange, disabled = false, projectType = '' }) 
                                   onBlur={() => handlePaymentAmountBlur(payment.id)}
                                   placeholder="0"
                                   min="0"
-                                  step="1"
+                                  step="0.01"
                                   disabled={disabled}
                                   autoFocus={isEditing && !hasAmount}
                                 />

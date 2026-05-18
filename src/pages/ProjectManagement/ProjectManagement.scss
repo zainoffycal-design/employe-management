@@ -105,6 +105,14 @@
             gap: 1.5rem;
             margin-bottom: 2rem;
 
+            @media (max-width: 1399px) {
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            @media (max-width: 1100px) {
+                  grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
             .empty-state {
                   grid-column: 1 / -1;
                   @include empty-state(280px, var(--white));
@@ -450,6 +458,97 @@
                               font-weight: 600;
                               margin-left: 0.25rem;
                         }
+                  }
+            }
+      }
+}
+
+// Modal is rendered via portal (document.body), so these styles must not rely on
+// the `.project-management` ancestry.
+.commission-settings {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--gray-200);
+
+      .commission-item {
+            padding: 1rem;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            border: 1px solid var(--gray-200);
+
+            &:last-child {
+                  margin-bottom: 0;
+            }
+
+            .commission-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 0.75rem;
+                  justify-content: space-between;
+
+                  .commission-user-info {
+                        flex: 1;
+                        min-width: 0;
+
+                        .commission-name {
+                              font-weight: 500;
+                              color: var(--gray-800);
+                              font-size: 0.875rem;
+                              margin-bottom: 0.25rem;
+                        }
+
+                        .commission-info {
+                              font-size: 0.75rem;
+                              color: var(--gray-600);
+                        }
+                  }
+
+                  .commission-toggle {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        cursor: pointer;
+                        padding: 0.5rem;
+                        border-radius: var(--border-radius);
+                        transition: var(--transition);
+
+                        &:hover {
+                              background: var(--gray-100);
+                        }
+
+                        input[type="checkbox"] {
+                              width: 18px;
+                              height: 18px;
+                              cursor: pointer;
+                              accent-color: var(--primary-color);
+                        }
+
+                        span {
+                              font-size: 0.875rem;
+                              font-weight: 500;
+                              color: var(--gray-700);
+                              user-select: none;
+                        }
+                  }
+            }
+
+            .commission-month {
+                  font-size: 0.875rem;
+                  color: var(--gray-700);
+                  margin-top: 0.75rem;
+                  padding-top: 0.75rem;
+                  border-top: 1px solid var(--gray-200);
+                  font-weight: 500;
+            }
+
+            label {
+                  .required {
+                        color: #dc2626;
+                        font-weight: 600;
+                        margin-left: 0.25rem;
                   }
             }
       }

@@ -9,6 +9,27 @@ export const calculateAfterTax = (amount, taxPercent) => {
   return Math.round(amt - taxAmount);
 };
 
+export const calculatePaymentNetAfterTax = (amount, taxPercent) => {
+  if (amount === '' || amount === null || amount === undefined) return 0;
+  const amt = parseFloat(amount);
+  if (isNaN(amt) || amt === 0) return 0;
+  const taxPct = parseFloat(taxPercent) || 0;
+  if (taxPct <= 0) return Math.round(amt * 100) / 100;
+  const net = amt - (amt * taxPct) / 100;
+  return Math.floor(net * 100 + 1e-9) / 100;
+};
+
+export const sumPaymentAmountsNetAfterTax = (payments, taxPercent) => {
+  if (!payments || !Array.isArray(payments)) return 0;
+  const t = parseFloat(taxPercent);
+  const tax = isNaN(t) ? 0 : t;
+  const sum = payments.reduce(
+    (s, payment) => s + calculatePaymentNetAfterTax(parseFloat(payment.amount) || 0, tax),
+    0
+  );
+  return Math.round(sum * 100) / 100;
+};
+
 export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBudget = 0) => {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
@@ -53,20 +74,11 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
         if (isNaN(tax) || tax === null || tax === undefined) {
           tax = project.projectType === 'freelance' ? 10 : 0;
         }
-        const receivedBeforeTax = allPayments.reduce((sum, payment) => {
-          const amount = parseFloat(payment.amount) || 0;
-          return sum + amount;
-        }, 0);
-
-        const thisMonthReceivedBeforeTax = thisMonthPayments.reduce((sum, payment) => {
-          const amount = parseFloat(payment.amount) || 0;
-          return sum + amount;
-        }, 0);
 
         const totalBudgetBeforeTax = parseFloat(project.budget.fixedBudget || 0);
         const totalBudget = calculateAfterTax(totalBudgetBeforeTax, tax);
-        const received = calculateAfterTax(receivedBeforeTax, tax);
-        const thisMonthReceived = calculateAfterTax(thisMonthReceivedBeforeTax, tax);
+        const received = sumPaymentAmountsNetAfterTax(allPayments, tax);
+        const thisMonthReceived = sumPaymentAmountsNetAfterTax(thisMonthPayments, tax);
 
         return {
           projectId: project.id,
@@ -118,19 +130,9 @@ export const calculateMonthlyFinance = (projects, tasks, selectedDate, monthlyBu
         const hourlyRateBeforeTax = hourlyRate;
         const hourlyRateAfterTax = calculateAfterTax(hourlyRateBeforeTax, tax);
         const estimatedBudget = totalProjectHours * hourlyRateAfterTax;
-        
-        const receivedBeforeTax = allPayments.reduce((sum, payment) => {
-          const amount = parseFloat(payment.amount) || 0;
-          return sum + amount;
-        }, 0);
 
-        const thisMonthReceivedBeforeTax = thisMonthPayments.reduce((sum, payment) => {
-          const amount = parseFloat(payment.amount) || 0;
-          return sum + amount;
-        }, 0);
-
-        const received = calculateAfterTax(receivedBeforeTax, tax);
-        const thisMonthReceived = calculateAfterTax(thisMonthReceivedBeforeTax, tax);
+        const received = sumPaymentAmountsNetAfterTax(allPayments, tax);
+        const thisMonthReceived = sumPaymentAmountsNetAfterTax(thisMonthPayments, tax);
 
         return {
           projectId: project.id,

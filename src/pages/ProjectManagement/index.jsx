@@ -35,6 +35,9 @@ const ProjectManagement = () => {
   const isBdManager = useMemo(() => {
     return permissionUtils.isManagerOfType(currentUser, MANAGER_TYPES.BD);
   }, [currentUser]);
+  const canCreateProject = useMemo(() => {
+    return currentUser?.role === 'super_manager' || currentUser?.role === 'manager';
+  }, [currentUser]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -800,7 +803,7 @@ const ProjectManagement = () => {
                 </div>
               )}
             </div>
-            {isBdManager && (
+            {canCreateProject && (
               <Button 
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
@@ -993,7 +996,7 @@ const ProjectManagement = () => {
                 : "Get started by creating your first project to organize your team's work."
               }
             </p>
-            {isBdManager && !searchTerm.trim() && !selectedManager && !selectedProjectType && !selectedPriority && (
+            {canCreateProject && !searchTerm.trim() && !selectedManager && !selectedProjectType && !selectedPriority && (
               <Button 
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
