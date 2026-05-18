@@ -272,8 +272,8 @@ export const reactSelectStyles = {
       borderColor: '#9ca3af'
     },
     '&:focus-within': {
-      borderColor: '#15a970',
-      boxShadow: '0 0 0 3px rgba(21, 169, 112, 0.1)'
+      borderColor: '#118256',
+      boxShadow: '0 0 0 3px rgba(17, 130, 86, 0.1)'
     }
   }),
   option: (base, state) => ({

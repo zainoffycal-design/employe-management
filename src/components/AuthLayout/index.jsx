@@ -1,32 +1,33 @@
-import React, { memo } from 'react';
-import { motion } from 'framer-motion';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { memo } from 'react';
+import AuthShowcase from '../AuthShowcase';
 import logo from '../../assets/logo.svg';
 import './AuthLayout.scss';
 
-const AuthLayout = memo(({ 
-  children, 
-  title, 
-  subtitle, 
+const AuthLayout = memo(({
+  children,
+  title,
+  subtitle,
   className = '',
-  animationDelay = 0 
+  showAside = true
 }) => {
   return (
     <div className={`auth-page ${className}`}>
-      <div className="auth-container">
-        <motion.div 
-          className="auth-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: animationDelay }}
-        >
-          <div className="auth-header">
-            <img src={logo} alt="Logo" className="auth-logo" />
-            <h1>{title}</h1>
-            <p>{subtitle}</p>
+      <div className="auth-split">
+        {showAside && (
+          <aside className="auth-aside">
+            <AuthShowcase />
+          </aside>
+        )}
+        <div className="auth-panel">
+          <div className="auth-card">
+            <div className="auth-header">
+              <img src={logo} alt="Logo" className="auth-logo" />
+              <h1>{title}</h1>
+              <p>{subtitle}</p>
+            </div>
+            {children}
           </div>
-          {children}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -34,4 +35,4 @@ const AuthLayout = memo(({
 
 AuthLayout.displayName = 'AuthLayout';
 
-export default AuthLayout; 
+export default AuthLayout;

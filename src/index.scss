@@ -2,10 +2,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary-color: #15a970;
-  --primary-hover: #0f8a5a;
-  --primary-light: #1ed4a3;
-  --primary-dark: #0f8a5a;
+  --primary-color: #118256;
+  --primary-hover: #0d6d46;
+  --primary-light: #18b88a;
+  --primary-dark: #0a5638;
+  --primary-rgb: 17, 130, 86;
   --secondary-color: #6366f1;
   --accent-color: #3498db;
   --success-color: #10b981;
@@ -215,7 +216,7 @@ button.btn {
       &:focus {
         outline: none;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(21, 169, 112, 0.1);
+        box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
       }
     }
   }
@@ -824,7 +825,7 @@ input[type="checkbox"] {
 
   &.search-active {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(21, 169, 112, 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
   }
 
   svg {
@@ -873,7 +874,7 @@ input[type="checkbox"] {
 .form-group select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 .form-row {
   display: grid;

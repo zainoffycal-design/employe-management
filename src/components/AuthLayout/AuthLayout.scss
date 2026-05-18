@@ -1,51 +1,71 @@
 @use '../../styles/_shared.scss' as *;
 
 .auth-page {
-  @include flex-center;
-  min-height: 100vh;
-  padding: 2rem;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--gray-50);
 }
 
-.auth-container {
+.auth-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   width: 100%;
-  max-width: 500px;
+  min-height: 100dvh;
+}
+
+.auth-aside {
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.auth-panel {
+  @include flex-center;
+  width: 100%;
+  padding: 2rem;
+  background: var(--white);
+  box-sizing: border-box;
 }
 
 .auth-card {
-  background: var(--white);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-xl);
-  padding: 3rem 2rem;
-  text-align: center;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
 }
 
-.btn-link{
-      color: var(--primary-color);
-      &:hover{
-            box-shadow: none !important;
-            color: var(--primary-color) !important;
-      }
+.btn-link {
+  color: var(--primary-color);
+
+  &:hover {
+    box-shadow: none !important;
+    color: var(--primary-color) !important;
+  }
 }
 
 .auth-header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
 
   .auth-logo {
-    width: 140px;
-    margin-bottom: 1.5rem;
+    width: 120px;
+    margin-bottom: 1rem;
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--gray-800);
     margin-bottom: 0.5rem;
   }
 
   p {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--gray-600);
+    margin: 0;
   }
+}
+
+.auth-form {
+  text-align: left;
 }
 
 .error-message {
@@ -120,18 +140,25 @@
   margin-top: 1rem;
 }
 
-@media (max-width: 768px) {
-  .auth-page {
-    padding: 1rem;
+@media (max-width: 900px) {
+  .auth-split {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .auth-aside {
+    min-height: auto;
+    flex-shrink: 0;
+  }
+
+  .auth-panel {
+    flex: 1;
+    min-height: 0;
+    padding: 1.5rem 1rem 2rem;
   }
 
   .auth-card {
-    padding: 2rem 1.5rem;
+    max-width: 100%;
   }
-
-  .auth-header {
-    h1 {
-      font-size: 1.75rem;
-    }
-  }
-} 
+}

@@ -28,6 +28,14 @@ import './ProjectManagement.scss';
 const PROJECT_TYPE_KEYS = ['contract', 'full-time', '1099', 'freelance', 'internal'];
 const PROJECT_TYPE_COUNTS_INITIAL = { contract: 0, 'full-time': 0, '1099': 0, freelance: 0, internal: 0 };
 
+const getDefaultFiltersForRole = (role) => ({
+  searchTerm: '',
+  selectedManager: null,
+  projectFilter: 'active',
+  selectedProjectType: role === 'super_manager' ? { value: 'freelance', label: 'Freelance' } : null,
+  selectedPriority: role === 'super_manager' ? { value: 'high', label: 'High' } : null
+});
+
 const ProjectManagement = () => {
   const navigate = useNavigate();
   const { projects, createProject, updateProject, deleteProject, tasks } = useTask();
@@ -68,20 +76,13 @@ const ProjectManagement = () => {
   const FILTER_STORAGE_KEY = 'projectManagement_filters';
   const NAV_FLAG_KEY = 'projectManagement_fromProjectBoard';
 
-  const getDefaultFilters = () => ({
-    searchTerm: '',
-    selectedManager: null,
-    projectFilter: 'active',
-    selectedProjectType: { value: 'freelance', label: 'Freelance' },
-    selectedPriority: { value: 'high', label: 'High' }
-  });
-
   const loadSavedFilters = () => {
+    const defaults = getDefaultFiltersForRole(currentUser?.role);
     const isFromProjectBoard = sessionStorage.getItem(NAV_FLAG_KEY) === 'true';
-    
+
     if (!isFromProjectBoard) {
       sessionStorage.removeItem(FILTER_STORAGE_KEY);
-      return getDefaultFilters();
+      return defaults;
     }
 
     try {
@@ -92,25 +93,29 @@ const ProjectManagement = () => {
           searchTerm: filters.searchTerm !== undefined ? filters.searchTerm : '',
           selectedManager: filters.selectedManager !== undefined ? filters.selectedManager : null,
           projectFilter: filters.projectFilter !== undefined ? filters.projectFilter : 'active',
-          selectedProjectType: filters.selectedProjectType !== undefined ? filters.selectedProjectType : { value: 'freelance', label: 'Freelance' },
-          selectedPriority: filters.selectedPriority !== undefined ? filters.selectedPriority : { value: 'high', label: 'High' }
+          selectedProjectType: filters.selectedProjectType !== undefined
+            ? filters.selectedProjectType
+            : defaults.selectedProjectType,
+          selectedPriority: filters.selectedPriority !== undefined
+            ? filters.selectedPriority
+            : defaults.selectedPriority
         };
       }
     } catch (error) {
       console.error('Error loading saved filters:', error);
     }
-    
+
     sessionStorage.removeItem(NAV_FLAG_KEY);
-    return getDefaultFilters();
+    return defaults;
   };
 
-  const savedFilters = loadSavedFilters();
+  const [initialFilters] = useState(() => loadSavedFilters());
 
-  const [searchTerm, setSearchTerm] = useState(savedFilters.searchTerm);
-  const [selectedManager, setSelectedManager] = useState(savedFilters.selectedManager);
-  const [projectFilter, setProjectFilter] = useState(savedFilters.projectFilter);
-  const [selectedProjectType, setSelectedProjectType] = useState(savedFilters.selectedProjectType);
-  const [selectedPriority, setSelectedPriority] = useState(savedFilters.selectedPriority);
+  const [searchTerm, setSearchTerm] = useState(initialFilters.searchTerm);
+  const [selectedManager, setSelectedManager] = useState(initialFilters.selectedManager);
+  const [projectFilter, setProjectFilter] = useState(initialFilters.projectFilter);
+  const [selectedProjectType, setSelectedProjectType] = useState(initialFilters.selectedProjectType);
+  const [selectedPriority, setSelectedPriority] = useState(initialFilters.selectedPriority);
 
   useEffect(() => {
     sessionStorage.removeItem(NAV_FLAG_KEY);
@@ -126,8 +131,8 @@ const ProjectManagement = () => {
         );
         setUsers(activeUsers);
 
-        if (savedFilters.selectedManager && savedFilters.selectedManager.value && allUsersData.length > 0) {
-          const manager = allUsersData.find(u => u.id === savedFilters.selectedManager.value);
+        if (initialFilters.selectedManager && initialFilters.selectedManager.value && allUsersData.length > 0) {
+          const manager = allUsersData.find(u => u.id === initialFilters.selectedManager.value);
           if (manager && manager.isActive) {
             setSelectedManager({
               value: manager.id,
