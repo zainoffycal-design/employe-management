@@ -20,6 +20,7 @@ const ProjectManagement = lazy(() => import('./pages/ProjectManagement'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const AssetManager = lazy(() => import('./pages/AssetManager'));
 const EmployeePerformance = lazy(() => import('./pages/EmployeePerformance'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
 const Commissions = lazy(() => import('./pages/Commissions'));
 const ProjectCalculator = lazy(() => import('./pages/ProjectCalculator'));
@@ -58,10 +59,20 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const RouteGuard = ({ children }) => {
+  const { currentUser } = useAuth();
+  const location = useLocation();
+
+  if (!permissionUtils.canAccessRoute(currentUser, location.pathname)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { currentUser } = useAuth();
   const hideHeaderSidebar = location.pathname.startsWith('/setup-password');
 
   const handleMainContentClick = () => {
@@ -97,74 +108,57 @@ const AppLayout = () => {
           >
             <Suspense fallback={<LoadingSpinner size="large" />}>
               <Routes>
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/" element={<ProtectedRoute><RouteGuard><Dashboard /></RouteGuard></ProtectedRoute>} />
                 <Route path="/projects" element={
                   <ProtectedRoute>
-                    <ProjectManagement />
+                    <RouteGuard><ProjectManagement /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/project/:projectId/board" element={
                   <ProtectedRoute>
-                    <ProjectBoard />
+                    <RouteGuard><ProjectBoard /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/users" element={
                   <ProtectedRoute>
-                    {permissionUtils.canManageUsers(currentUser) ? (
-                      <UserManagement />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    <RouteGuard><UserManagement /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/assets" element={
                   <ProtectedRoute>
-                    <AssetManager />
+                    <RouteGuard><AssetManager /></RouteGuard>
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute>
+                    <RouteGuard><Analytics /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/employee-performance" element={
                   <ProtectedRoute>
-                    {permissionUtils.isSuperManager(currentUser) ? (
-                      <EmployeePerformance />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    <RouteGuard><EmployeePerformance /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/finance/overview" element={
                   <ProtectedRoute>
-                    {permissionUtils.canManageFinance(currentUser) ? (
-                      <FinanceManagement />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    <RouteGuard><FinanceManagement /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/finance/commissions" element={
                   <ProtectedRoute>
-                    {permissionUtils.canManageFinance(currentUser) ? (
-                      <Commissions />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    <RouteGuard><Commissions /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/payments" element={
                   <ProtectedRoute>
-                    {permissionUtils.canManageFinance(currentUser) ? (
+                    <RouteGuard>
                       <Navigate to="/finance/overview" replace />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    </RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="/calculator" element={
                   <ProtectedRoute>
-                    {permissionUtils.isSuperManager(currentUser) ? (
-                      <ProjectCalculator />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )}
+                    <RouteGuard><ProjectCalculator /></RouteGuard>
                   </ProtectedRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />

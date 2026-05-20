@@ -9,11 +9,24 @@ import {
   FiPackage,
   FiDollarSign,
   FiFileText,
+  FiActivity,
   FiChevronDown,
   FiChevronRight
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import { permissionUtils } from '../../utils/permissionUtils';
 import './Sidebar.scss';
+
+const NAV_ICONS = {
+  home: FiHome,
+  folder: FiFolder,
+  users: FiUserCheck,
+  package: FiPackage,
+  analytics: FiActivity,
+  barChart: FiBarChart2,
+  dollar: FiDollarSign,
+  fileText: FiFileText
+};
 
 const Sidebar = memo(({ sidebarOpen }) => {
   const { currentUser } = useAuth();
@@ -33,33 +46,12 @@ const Sidebar = memo(({ sidebarOpen }) => {
     }));
   }, []);
 
-  const navigation = useMemo(() => [
-    { path: '/', icon: FiHome, label: 'Dashboard' },
-    ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
-      { path: '/projects', icon: FiFolder, label: 'Project Management' }
-    ] : []),
-    ...(currentUser?.role === 'super_manager' || currentUser?.role === 'manager' ? [
-      { path: '/users', icon: FiUserCheck, label: 'User Management' }
-    ] : []),
-    { path: '/assets', icon: FiPackage, label: 'Asset Manager' },
-    ...(currentUser?.role === 'super_manager' ? [
-      { path: '/employee-performance', icon: FiBarChart2, label: 'Employee Performance' }
-    ] : []),
-    ...(currentUser?.role === 'super_manager' ? [
-      {
-        key: 'finance',
-        icon: FiDollarSign,
-        label: 'Finance',
-        subItems: [
-          { path: '/finance/overview', label: 'Financial Overview' },
-          { path: '/finance/commissions', label: 'Commissions' }
-        ]
-      }
-    ] : []),
-    ...(currentUser?.role === 'super_manager' ? [
-      { path: '/calculator', icon: FiFileText, label: 'Project Calculator' }
-    ] : [])
-  ], [currentUser]);
+  const navigation = useMemo(() => {
+    return permissionUtils.getSidebarNavigation(currentUser).map((item) => ({
+      ...item,
+      icon: NAV_ICONS[item.iconKey]
+    }));
+  }, [currentUser]);
 
   return (
     <motion.aside 

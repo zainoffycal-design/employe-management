@@ -193,17 +193,87 @@ export const permissionUtils = {
   },
 
   canAccessRoute: (user, route) => {
-    const routePermissions = {
-      '/users': () => user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER,
-      '/employee-performance': () => user?.role === ROLES.SUPER_MANAGER,
-      '/payments': () => user?.role === ROLES.SUPER_MANAGER,
-      '/assets': () => !!user,
-      '/projects': () => !!user,
-      '/': () => !!user
-    };
+    if (!user?.role) return false;
 
-    const checkPermission = routePermissions[route];
-    return checkPermission ? checkPermission() : !!user;
+    const path = (route || '').split('?')[0].replace(/\/$/, '') || '/';
+
+    if (path === '/' || path === '') return true;
+    if (path === '/projects') return true;
+    if (/^\/project\/[^/]+\/board$/.test(path)) return true;
+    if (path === '/users') return permissionUtils.canManageUsers(user);
+    if (path === '/assets') return true;
+    if (path === '/analytics') return permissionUtils.canViewAnalytics(user);
+    if (path === '/employee-performance') return permissionUtils.isSuperManager(user);
+    if (path === '/calculator') return permissionUtils.isSuperManager(user);
+    if (path === '/payments') return permissionUtils.canManageFinance(user);
+    if (path.startsWith('/finance')) return permissionUtils.canManageFinance(user);
+
+    return false;
+  },
+
+  getProjectsNavLabel: (user) => {
+    if (permissionUtils.canManageProjects(user) || permissionUtils.isManager(user)) {
+      return 'Project Management';
+    }
+    return 'My Projects';
+  },
+
+  getSidebarNavigation: (user) => {
+    if (!user?.role) return [];
+
+    const items = [];
+
+    if (permissionUtils.canAccessRoute(user, '/')) {
+      items.push({ path: '/', label: 'Dashboard', iconKey: 'home' });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/projects')) {
+      items.push({
+        path: '/projects',
+        label: permissionUtils.getProjectsNavLabel(user),
+        iconKey: 'folder'
+      });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/users')) {
+      items.push({ path: '/users', label: 'User Management', iconKey: 'users' });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/assets')) {
+      items.push({ path: '/assets', label: 'Asset Manager', iconKey: 'package' });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/analytics')) {
+      items.push({ path: '/analytics', label: 'Analytics', iconKey: 'analytics' });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/employee-performance')) {
+      items.push({
+        path: '/employee-performance',
+        label: 'Employee Performance',
+        iconKey: 'barChart'
+      });
+    }
+
+    const financeSubItems = [
+      { path: '/finance/overview', label: 'Financial Overview' },
+      { path: '/finance/commissions', label: 'Commissions' }
+    ].filter((sub) => permissionUtils.canAccessRoute(user, sub.path));
+
+    if (financeSubItems.length > 0) {
+      items.push({
+        key: 'finance',
+        label: 'Finance',
+        iconKey: 'dollar',
+        subItems: financeSubItems
+      });
+    }
+
+    if (permissionUtils.canAccessRoute(user, '/calculator')) {
+      items.push({ path: '/calculator', label: 'Project Calculator', iconKey: 'fileText' });
+    }
+
+    return items;
   },
 
   canEditUser: (currentUser, targetUser) => {
