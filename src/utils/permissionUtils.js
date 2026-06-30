@@ -7,8 +7,6 @@ export const PERMISSIONS = {
   ASSIGN_TASKS: 'assign_tasks',
   MANAGE_USERS: 'manage_users',
   VIEW_OWN_TASKS: 'view_own_tasks',
-  MANAGE_ASSETS: 'manage_assets',
-  VIEW_ALL_ASSETS: 'view_all_assets',
   MANAGE_FINANCE: 'manage_finance',
   VIEW_BUDGET: 'view_budget',
   MANAGE_PROJECTS: 'manage_projects'
@@ -38,8 +36,6 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.ASSIGN_TASKS,
     PERMISSIONS.MANAGE_USERS,
     PERMISSIONS.VIEW_OWN_TASKS,
-    PERMISSIONS.MANAGE_ASSETS,
-    PERMISSIONS.VIEW_ALL_ASSETS,
     PERMISSIONS.MANAGE_FINANCE,
     PERMISSIONS.VIEW_BUDGET,
     PERMISSIONS.MANAGE_PROJECTS
@@ -51,8 +47,7 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.MANAGE_TASKS,
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.ASSIGN_TASKS,
-    PERMISSIONS.MANAGE_USERS,
-    PERMISSIONS.VIEW_ALL_ASSETS
+    PERMISSIONS.MANAGE_USERS
   ],
   [ROLES.DESIGNER]: [
     PERMISSIONS.MOVE_TASKS,
@@ -144,14 +139,6 @@ export const permissionUtils = {
     return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
   },
 
-  canManageAssets: (user) => {
-    return user?.role === ROLES.SUPER_MANAGER;
-  },
-
-  canViewAllAssets: (user) => {
-    return user?.role === ROLES.SUPER_MANAGER || user?.role === ROLES.MANAGER;
-  },
-
   canManageFinance: (user) => {
     return user?.role === ROLES.SUPER_MANAGER;
   },
@@ -201,7 +188,6 @@ export const permissionUtils = {
     if (path === '/projects') return true;
     if (/^\/project\/[^/]+\/board$/.test(path)) return true;
     if (path === '/users') return permissionUtils.canManageUsers(user);
-    if (path === '/assets') return true;
     if (path === '/analytics') return permissionUtils.canViewAnalytics(user);
     if (path === '/employee-performance') return permissionUtils.isSuperManager(user);
     if (path === '/calculator') return permissionUtils.isSuperManager(user);
@@ -237,10 +223,6 @@ export const permissionUtils = {
 
     if (permissionUtils.canAccessRoute(user, '/users')) {
       items.push({ path: '/users', label: 'User Management', iconKey: 'users' });
-    }
-
-    if (permissionUtils.canAccessRoute(user, '/assets')) {
-      items.push({ path: '/assets', label: 'Asset Manager', iconKey: 'package' });
     }
 
     if (permissionUtils.canAccessRoute(user, '/analytics')) {

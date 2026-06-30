@@ -133,10 +133,10 @@
       max-height: calc(100vh - 255px);
 
       &.drag-over {
-        background-color: rgba(21, 169, 112, 0.05);
+        background-color: rgba(var(--primary-rgb), 0.05);
         border: 2px solid var(--primary-color);
        
-        box-shadow: 0 8px 32px rgba(21, 169, 112, 0.2);
+        box-shadow: 0 8px 32px rgba(var(--primary-rgb), 0.2);
       }
 
       &.restricted {
@@ -241,9 +241,9 @@
 
         &.drag-over-task {
           border: 2px solid var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.08);
+          background-color: rgba(var(--primary-rgb), 0.08);
           transform: scale(1.02);
-          box-shadow: 0 4px 12px rgba(21, 169, 112, 0.25);
+          box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
           transition: none;
         }
 
@@ -258,7 +258,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(21, 169, 112, 0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.1), transparent);
             animation: shimmer 1.5s infinite;
             border-radius: var(--border-radius);
           }
@@ -547,7 +547,7 @@
         
         &.drag-over {
           border-color: var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.1);
+          background-color: rgba(var(--primary-rgb), 0.1);
           height: 16px;
         }
       }
@@ -561,7 +561,7 @@
         
         &.drag-over {
           border-color: var(--primary-color);
-          background-color: rgba(21, 169, 112, 0.1);
+          background-color: rgba(var(--primary-rgb), 0.1);
           height: 16px;
         }
       }
@@ -680,7 +680,7 @@
 
     &:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(21, 169, 112, 0.1);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
       outline: none;
     }
   }

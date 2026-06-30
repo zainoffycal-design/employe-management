@@ -6,7 +6,6 @@ import {
   FiUserCheck,
   FiBarChart2,
   FiFolder,
-  FiPackage,
   FiDollarSign,
   FiFileText,
   FiActivity,
@@ -15,13 +14,13 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { permissionUtils } from '../../utils/permissionUtils';
+import Logo from '../Logo';
 import './Sidebar.scss';
 
 const NAV_ICONS = {
   home: FiHome,
   folder: FiFolder,
   users: FiUserCheck,
-  package: FiPackage,
   analytics: FiActivity,
   barChart: FiBarChart2,
   dollar: FiDollarSign,
@@ -61,7 +60,7 @@ const Sidebar = memo(({ sidebarOpen }) => {
       transition={{ duration: 0.3, ease: 'easeInOut' }}
     >
       <div className="sidebar-logo">
-        <span className="logo-icon">F</span>
+        <Logo variant="light" size="md" to="/" />
       </div>
       <nav className="sidebar-nav">
         <div className="nav-section">

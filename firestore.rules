@@ -35,16 +35,6 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     
-    // Assets collection - allow all operations for authenticated users
-    match /assets/{assetId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // Asset requests collection - allow all operations for authenticated users
-    match /asset_requests/{requestId} {
-      allow read, write: if isAuthenticated();
-    }
-    
     // Monthly budgets collection - allow authenticated users to read/write
     // We check userId in the application code for security
     match /monthly_budgets/{budgetId} {

@@ -1,0 +1,14 @@
+.creator-credit {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-align: center;
+
+  &--light {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  &--auth-panel {
+    margin-top: 1.5rem;
+  }
+}

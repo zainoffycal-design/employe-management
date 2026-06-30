@@ -16,9 +16,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.92);
-  background-image: radial-gradient(circle at 20% 10%, rgba(21, 169, 112, 0.10), transparent 55%),
-    radial-gradient(circle at 80% 90%, rgba(21, 169, 112, 0.06), transparent 60%);
+  background: rgba(255, 255, 255, 0.98);
   z-index: 9999;
   
   &.small {
@@ -54,13 +52,13 @@
   }
   
   &::after {
-    @include spinner-ring(calc(100% - 16px), 2px, rgba(21, 169, 112, 0.3), 0.8s linear reverse);
+    @include spinner-ring(calc(100% - 16px), 2px, rgba(var(--primary-rgb), 0.3), 0.8s linear reverse);
     top: 8px;
     left: 8px;
     width: calc(100% - 16px);
     height: calc(100% - 16px);
-    border-bottom: 2px solid rgba(21, 169, 112, 0.3);
-    border-left: 2px solid rgba(21, 169, 112, 0.3);
+    border-bottom: 2px solid rgba(var(--primary-rgb), 0.3);
+    border-left: 2px solid rgba(var(--primary-rgb), 0.3);
   }
 }
 

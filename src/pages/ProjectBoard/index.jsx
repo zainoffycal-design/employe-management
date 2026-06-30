@@ -621,7 +621,7 @@ const ProjectBoard = () => {
     { id: 'todo', title: 'Todo', color: '#8B5CF6', status: 'Todo' },
     { id: 'in-progress', title: 'Progress', color: '#3B82F6', status: 'Progress' },
     { id: 'in-review', title: 'In Review', color: '#F59E0B', status: 'In Review' },
-    { id: 'done', title: 'Complete', color: '#059669', status: 'Complete' }
+    { id: 'done', title: 'Complete', color: 'var(--primary-dark)', status: 'Complete' }
   ];
 
   const getTaskStatusColor = (status) => {
@@ -629,7 +629,7 @@ const ProjectBoard = () => {
       case 'Todo': return '#8B5CF6';
       case 'Progress': return '#3B82F6';
       case 'In Review': return '#F59E0B';
-      case 'Complete': return '#059669';
+      case 'Complete': return 'var(--primary-dark)';
       default: return '#6B7280';
     }
   };

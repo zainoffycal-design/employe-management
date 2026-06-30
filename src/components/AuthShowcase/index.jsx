@@ -4,11 +4,10 @@ import {
   FiFolder,
   FiLayout,
   FiClock,
-  FiPackage,
   FiDollarSign,
   FiBarChart2
 } from 'react-icons/fi';
-import logo from '../../assets/logo.svg';
+import Logo from '../Logo';
 import './AuthShowcase.scss';
 
 const SLIDES = [
@@ -34,13 +33,6 @@ const SLIDES = [
     description: 'Log hours on tasks and compare estimated vs actual time across projects.'
   },
   {
-    id: 'assets',
-    icon: FiPackage,
-    label: 'Assets',
-    title: 'Asset Manager',
-    description: 'Request, approve, and assign company assets with a full audit trail.'
-  },
-  {
     id: 'finance',
     icon: FiDollarSign,
     label: 'Finance',
@@ -57,43 +49,6 @@ const SLIDES = [
 ];
 
 const INTERVAL_MS = 6000;
-
-const RINGS = [
-  { className: 'auth-showcase__ring--1', duration: 5.5, drift: 90 },
-  { className: 'auth-showcase__ring--2', duration: 7, drift: 70 },
-  { className: 'auth-showcase__ring--3', duration: 6.2, drift: 55 }
-];
-
-const randomOffset = (range) => ({
-  x: Math.round((Math.random() - 0.5) * range * 2),
-  y: Math.round((Math.random() - 0.5) * range * 2)
-});
-
-const FloatingRing = ({ className, drift, duration, disabled }) => {
-  const [target, setTarget] = useState(() => randomOffset(drift));
-
-  useEffect(() => {
-    if (disabled) return undefined;
-
-    const tick = () => setTarget(randomOffset(drift));
-    const delay = duration * 1000;
-    const id = setInterval(tick, delay);
-    return () => clearInterval(id);
-  }, [drift, duration, disabled]);
-
-  if (disabled) {
-    return <div className={`auth-showcase__ring ${className}`} aria-hidden />;
-  }
-
-  return (
-    <motion.div
-      className={`auth-showcase__ring ${className}`}
-      aria-hidden
-      animate={{ x: target.x, y: target.y }}
-      transition={{ duration, ease: 'easeInOut' }}
-    />
-  );
-};
 
 const AuthShowcase = () => {
   const prefersReducedMotion = useReducedMotion();
@@ -125,17 +80,6 @@ const AuthShowcase = () => {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="auth-showcase__mesh" aria-hidden />
-      {RINGS.map((ring) => (
-        <FloatingRing
-          key={ring.className}
-          className={ring.className}
-          drift={ring.drift}
-          duration={ring.duration}
-          disabled={prefersReducedMotion}
-        />
-      ))}
-
       <div
         key={index}
         className={`auth-showcase__timer${paused ? ' auth-showcase__timer--paused' : ''}`}
@@ -144,8 +88,7 @@ const AuthShowcase = () => {
       />
 
       <header className="auth-showcase__header">
-        <img src={logo} alt="" className="auth-showcase__logo" />
-        <p className="auth-showcase__eyebrow">Fixelcloud · Pi Management</p>
+        <Logo variant="light" size="lg" className="auth-showcase__logo" />
       </header>
 
       <nav className="auth-showcase__nav" aria-label="Product features">

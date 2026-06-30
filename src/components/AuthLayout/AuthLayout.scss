@@ -3,7 +3,7 @@
 .auth-page {
   width: 100%;
   min-height: 100dvh;
-  background: var(--gray-50);
+  background: var(--app-bg);
 }
 
 .auth-split {
@@ -46,8 +46,9 @@
   text-align: center;
 
   .auth-logo {
-    width: 120px;
-    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
   }
 
   h1 {

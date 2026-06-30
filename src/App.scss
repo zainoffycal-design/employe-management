@@ -16,7 +16,7 @@
     padding-top: 100px;
     box-sizing: border-box;
     overflow-x: hidden;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: var(--app-bg);
     transition: var(--transition);
   }
 }

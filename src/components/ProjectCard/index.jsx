@@ -295,7 +295,7 @@ const ProjectCard = memo(({ project, taskCount = 0, index = 0, tasks = [], varia
                   className="info-progress-fill" 
                   style={{ 
                     width: `${Math.min(timeStats.progressPercentage, 100)}%`,
-                    backgroundColor: timeStats.actual > timeStats.estimated ? '#ef4444' : '#15A970'
+                    backgroundColor: timeStats.actual > timeStats.estimated ? '#ef4444' : 'var(--primary-color)'
                   }}
                 ></div>
               </div>

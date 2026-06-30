@@ -1,4 +1,5 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
+import { resolveAvatarUrl } from '../../utils/avatarUtils';
 import './Avatar.scss';
 
 const Avatar = memo(({ 
@@ -13,7 +14,14 @@ const Avatar = memo(({
   const [imageError, setImageError] = useState(false);
   
   const displayName = name && typeof name === 'string' ? name.trim() : 'User';
-  
+
+  const sizePx = size === 'small' ? 24 : size === 'large' ? 48 : size === 'xlarge' ? 64 : 32;
+
+  const avatarSrc = useMemo(
+    () => resolveAvatarUrl(src, displayName, sizePx),
+    [src, displayName, sizePx]
+  );
+
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') return '?';
     const trimmedName = name.trim();
@@ -38,35 +46,26 @@ const Avatar = memo(({
     }
   };
 
-  const getSizePx = () => {
-    switch (size) {
-      case 'small': return 24;
-      case 'large': return 48;
-      case 'xlarge': return 64;
-      default: return 32;
-    }
-  };
-
   return (
     <div 
       className={`avatar ${getSizeClass()} ${className}`}
       onClick={onClick}
       style={style}
     >
-      {src && !imageError ? (
+      {avatarSrc && !imageError ? (
         <img
-          src={src}
+          src={avatarSrc}
           alt={alt || displayName}
           onError={handleImageError}
-          style={{ width: `${getSizePx()}px`, height: `${getSizePx()}px` }}
+          style={{ width: `${sizePx}px`, height: `${sizePx}px` }}
         />
       ) : (
         <div 
           className="avatar-fallback"
           style={{ 
-            width: `${getSizePx()}px`, 
-            height: `${getSizePx()}px`,
-            fontSize: `${Math.max(10, getSizePx() * 0.4)}px`
+            width: `${sizePx}px`, 
+            height: `${sizePx}px`,
+            fontSize: `${Math.max(10, sizePx * 0.4)}px`
           }}
           title={displayName}
         >

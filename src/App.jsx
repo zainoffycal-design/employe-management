@@ -6,6 +6,8 @@ import { useTask } from './contexts/TaskContext';
 import { permissionUtils } from './utils/permissionUtils';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import AppFooter from './components/AppFooter';
+import AIChatbot from './components/AIChatbot';
 import LoadingSpinner from './components/LoadingSpinner';
 
 import { collection, getDocs } from 'firebase/firestore';
@@ -18,7 +20,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectBoard = lazy(() => import('./pages/ProjectBoard'));
 const ProjectManagement = lazy(() => import('./pages/ProjectManagement'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
-const AssetManager = lazy(() => import('./pages/AssetManager'));
 const EmployeePerformance = lazy(() => import('./pages/EmployeePerformance'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'));
@@ -124,11 +125,6 @@ const AppLayout = () => {
                     <RouteGuard><UserManagement /></RouteGuard>
                   </ProtectedRoute>
                 } />
-                <Route path="/assets" element={
-                  <ProtectedRoute>
-                    <RouteGuard><AssetManager /></RouteGuard>
-                  </ProtectedRoute>
-                } />
                 <Route path="/analytics" element={
                   <ProtectedRoute>
                     <RouteGuard><Analytics /></RouteGuard>
@@ -163,10 +159,12 @@ const AppLayout = () => {
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <AppFooter />
             </Suspense>
           </motion.div>
         </main>
       </div>
+      <AIChatbot />
     </div>
   );
 };

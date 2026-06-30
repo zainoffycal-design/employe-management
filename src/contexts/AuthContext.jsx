@@ -140,8 +140,6 @@ export const AuthProvider = ({ children }) => {
   const canAssignTasks = useCallback(() => permissionUtils.canAssignTasks(currentUser), [currentUser]);
   const canViewOwnTasks = useCallback(() => permissionUtils.canViewOwnTasks(currentUser), [currentUser]);
   const canViewAllTasks = useCallback(() => permissionUtils.canViewAllTasks(currentUser), [currentUser]);
-  const canManageAssets = useCallback(() => permissionUtils.canManageAssets(currentUser), [currentUser]);
-  const canViewAllAssets = useCallback(() => permissionUtils.canViewAllAssets(currentUser), [currentUser]);
   const canManageFinance = useCallback(() => permissionUtils.canManageFinance(currentUser), [currentUser]);
   const canViewBudget = useCallback(() => permissionUtils.canViewBudget(currentUser), [currentUser]);
   const canManageProjects = useCallback(() => permissionUtils.canManageProjects(currentUser), [currentUser]);
@@ -166,12 +164,10 @@ export const AuthProvider = ({ children }) => {
     canAssignTasks,
     canViewOwnTasks,
     canViewAllTasks,
-    canManageAssets,
-    canViewAllAssets,
     canManageFinance,
     canViewBudget,
     canManageProjects
-  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, resetPassword, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks, canManageAssets, canViewAllAssets, canManageFinance, canViewBudget, canManageProjects]);
+  }), [isAuthenticated, currentUser, loading, isFormSubmitting, login, logout, register, resetPassword, hasPermission, canEditTasks, canDeleteTasks, canMoveTasks, canManageTasks, canManageEmployees, canManageUsers, canViewAnalytics, canAssignTasks, canViewOwnTasks, canViewAllTasks, canManageFinance, canViewBudget, canManageProjects]);
 
   return (
     <AuthContext.Provider value={value}>

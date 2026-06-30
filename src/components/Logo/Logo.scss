@@ -1,0 +1,112 @@
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: default;
+  flex-shrink: 0;
+
+  &[href],
+  &[type='button'] {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.88;
+    }
+  }
+
+  &__mark {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  &__mark-bg {
+    fill: var(--primary-color);
+  }
+
+  &__mark-fg {
+    fill: #fff;
+    stroke: #fff;
+
+    &--muted {
+      opacity: 0.85;
+    }
+  }
+
+  &__wordmark {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    text-align: left;
+  }
+
+  &__line {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+
+    &--accent {
+      color: var(--primary-color);
+    }
+  }
+
+  &--default {
+    .app-logo__line:not(.app-logo__line--accent) {
+      color: var(--primary-dark);
+    }
+  }
+
+  &--light {
+    .app-logo__line {
+      color: #fff;
+    }
+
+    .app-logo__line--accent {
+      color: rgba(255, 255, 255, 0.92);
+    }
+  }
+
+  &--sm {
+    gap: 0.5rem;
+
+    .app-logo__mark {
+      width: 32px;
+      height: 32px;
+    }
+
+    .app-logo__line {
+      font-size: 0.7rem;
+    }
+  }
+
+  &--md {
+    .app-logo__mark {
+      width: 40px;
+      height: 40px;
+    }
+
+    .app-logo__line {
+      font-size: 0.8rem;
+    }
+  }
+
+  &--lg {
+    gap: 0.75rem;
+
+    .app-logo__mark {
+      width: 48px;
+      height: 48px;
+    }
+
+    .app-logo__line {
+      font-size: 0.95rem;
+    }
+  }
+}

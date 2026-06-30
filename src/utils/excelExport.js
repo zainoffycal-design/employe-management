@@ -16,13 +16,13 @@ const applyCellStyle = (ws, cellAddress, style) => {
 
 const createHeaderStyle = () => ({
   font: { bold: true, sz: 18, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF15A970' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF2563EB' }, patternType: 'solid' },
   alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
   border: {
-    top: { style: 'medium', color: { rgb: 'FF10B981' } },
-    bottom: { style: 'medium', color: { rgb: 'FF10B981' } },
-    left: { style: 'medium', color: { rgb: 'FF10B981' } },
-    right: { style: 'medium', color: { rgb: 'FF10B981' } }
+    top: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    bottom: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    left: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    right: { style: 'medium', color: { rgb: 'FF3B82F6' } }
   }
 });
 
@@ -70,13 +70,13 @@ const createValueStyle = () => ({
 
 const createExpenseHeaderStyle = () => ({
   font: { bold: true, sz: 11, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF0F766E' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF1E40AF' }, patternType: 'solid' },
   alignment: { horizontal: 'center', vertical: 'center' },
   border: {
-    top: { style: 'thin', color: { rgb: 'FF0D9488' } },
-    bottom: { style: 'thin', color: { rgb: 'FF0D9488' } },
-    left: { style: 'thin', color: { rgb: 'FF0D9488' } },
-    right: { style: 'thin', color: { rgb: 'FF0D9488' } }
+    top: { style: 'thin', color: { rgb: 'FF2563EB' } },
+    bottom: { style: 'thin', color: { rgb: 'FF2563EB' } },
+    left: { style: 'thin', color: { rgb: 'FF2563EB' } },
+    right: { style: 'thin', color: { rgb: 'FF2563EB' } }
   }
 });
 
@@ -107,75 +107,75 @@ const createExpenseAmountStyle = () => ({
 
 const createSummaryRowStyle = () => ({
   font: { bold: true, sz: 11, color: { rgb: 'FF111827' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FFECFDF5' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FFEFF6FF' }, patternType: 'solid' },
   alignment: { horizontal: 'left', vertical: 'center' },
   border: {
-    top: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    bottom: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    left: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    right: { style: 'thin', color: { rgb: 'FFD1FAE5' } }
+    top: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    bottom: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    left: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    right: { style: 'thin', color: { rgb: 'FFBFDBFE' } }
   }
 });
 
 const createSummaryValueStyle = () => ({
   font: { bold: true, sz: 11, color: { rgb: 'FF111827' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FFECFDF5' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FFEFF6FF' }, patternType: 'solid' },
   alignment: { horizontal: 'right', vertical: 'center' },
   border: {
-    top: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    bottom: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    left: { style: 'thin', color: { rgb: 'FFD1FAE5' } },
-    right: { style: 'thin', color: { rgb: 'FFD1FAE5' } }
+    top: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    bottom: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    left: { style: 'thin', color: { rgb: 'FFBFDBFE' } },
+    right: { style: 'thin', color: { rgb: 'FFBFDBFE' } }
   },
   numFmt: '"$"#,##0.00'
 });
 
 const createTotalStyle = () => ({
   font: { bold: true, sz: 12, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF15A970' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF2563EB' }, patternType: 'solid' },
   alignment: { horizontal: 'left', vertical: 'center' },
   border: {
-    top: { style: 'medium', color: { rgb: 'FF10B981' } },
-    bottom: { style: 'medium', color: { rgb: 'FF10B981' } },
-    left: { style: 'thin', color: { rgb: 'FF10B981' } },
-    right: { style: 'thin', color: { rgb: 'FF10B981' } }
+    top: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    bottom: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    left: { style: 'thin', color: { rgb: 'FF3B82F6' } },
+    right: { style: 'thin', color: { rgb: 'FF3B82F6' } }
   }
 });
 
 const createTotalValueStyle = () => ({
   font: { bold: true, sz: 12, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF15A970' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF2563EB' }, patternType: 'solid' },
   alignment: { horizontal: 'right', vertical: 'center' },
   border: {
-    top: { style: 'medium', color: { rgb: 'FF10B981' } },
-    bottom: { style: 'medium', color: { rgb: 'FF10B981' } },
-    left: { style: 'thin', color: { rgb: 'FF10B981' } },
-    right: { style: 'thin', color: { rgb: 'FF10B981' } }
+    top: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    bottom: { style: 'medium', color: { rgb: 'FF3B82F6' } },
+    left: { style: 'thin', color: { rgb: 'FF3B82F6' } },
+    right: { style: 'thin', color: { rgb: 'FF3B82F6' } }
   },
   numFmt: '"$"#,##0.00'
 });
 
 const createGrandTotalStyle = () => ({
   font: { bold: true, sz: 15, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF059669' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF1D4ED8' }, patternType: 'solid' },
   alignment: { horizontal: 'left', vertical: 'center' },
   border: {
-    top: { style: 'thick', color: { rgb: 'FF047857' } },
-    bottom: { style: 'thick', color: { rgb: 'FF047857' } },
-    left: { style: 'thick', color: { rgb: 'FF047857' } },
-    right: { style: 'thick', color: { rgb: 'FF047857' } }
+    top: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    bottom: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    left: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    right: { style: 'thick', color: { rgb: 'FF1E40AF' } }
   }
 });
 
 const createGrandTotalValueStyle = () => ({
   font: { bold: true, sz: 15, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
-  fill: { fgColor: { rgb: 'FF059669' }, patternType: 'solid' },
+  fill: { fgColor: { rgb: 'FF1D4ED8' }, patternType: 'solid' },
   alignment: { horizontal: 'right', vertical: 'center' },
   border: {
-    top: { style: 'thick', color: { rgb: 'FF047857' } },
-    bottom: { style: 'thick', color: { rgb: 'FF047857' } },
-    left: { style: 'thick', color: { rgb: 'FF047857' } },
-    right: { style: 'thick', color: { rgb: 'FF047857' } }
+    top: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    bottom: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    left: { style: 'thick', color: { rgb: 'FF1E40AF' } },
+    right: { style: 'thick', color: { rgb: 'FF1E40AF' } }
   },
   numFmt: '"$"#,##0.00'
 });

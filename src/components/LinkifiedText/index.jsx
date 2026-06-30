@@ -26,7 +26,7 @@ const LinkifiedText = ({ text, className = '', style = {} }) => {
               href={part.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#15A970', textDecoration: 'underline' }}
+              style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}
               onClick={(e) => e.stopPropagation()}
             >
               {part.text}
@@ -39,9 +39,9 @@ const LinkifiedText = ({ text, className = '', style = {} }) => {
               key={index}
               className="mention-tag"
               style={{
-                color: '#15A970',
+                color: 'var(--primary-color)',
                 fontWeight: 500,
-                backgroundColor: 'rgba(21, 169, 112, 0.1)',
+                backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
                 padding: '0.125rem 0.25rem',
                 borderRadius: '0.25rem',
                 display: 'inline-block'

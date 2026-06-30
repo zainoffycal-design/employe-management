@@ -14,7 +14,6 @@ import {
   FiUserPlus,
   FiUserCheck,
   FiCalendar,
-  FiPackage,
   FiMessageSquare,
   FiCheckCircle,
   FiActivity
@@ -278,7 +277,7 @@ const Dashboard = () => {
         title: 'Total Projects',
         value: projects.length,
         icon: FiFolder,
-        color: '#15A970',
+        color: 'var(--primary-color)',
         trendUp: projects.length > 0,
         trend: projects.length > 0 ? `${projects.length} active` : 'No projects'
       },
@@ -295,7 +294,7 @@ const Dashboard = () => {
         title: 'Completed Projects',
         value: completedProjects.length,
         icon: FiUserCheck,
-        color: '#10B981',
+        color: 'var(--primary-light)',
         trendUp: completedProjects.length > 0,
         trend: completedProjects.length > 0 ? 
           `${Math.round((completedProjects.length / projects.length) * 100)}% of projects` : 
@@ -321,14 +320,7 @@ const Dashboard = () => {
         title: 'Projects',
         description: 'Manage your projects',
         link: '/projects',
-        color: '#15A970'
-      },
-      {
-        icon: FiPackage,
-        title: 'Asset Manager',
-        description: 'Manage your office assets',
-        link: '/assets',
-        color: '#8B5CF6'
+        color: 'var(--primary-color)'
       }
     ];
 

@@ -152,7 +152,7 @@
 
     &.current-user {
       border-color: var(--primary-color);
-      background: linear-gradient(135deg, var(--white) 0%, #f0fdf4 100%);
+      background: linear-gradient(135deg, var(--white) 0%, var(--success-bg) 100%);
       box-shadow: var(--shadow-md);
 
       &::before {
@@ -275,15 +275,15 @@
         }
 
         &.primary {
-          background: #f0fdf4;
+          background: var(--success-bg);
           color: var(--primary-color);
-          border: 1px solid #bbf7d0;
+          border: 1px solid var(--success-border);
         }
 
         &.success {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #bbf7d0;
+          background: var(--success-bg);
+          color: var(--success-text);
+          border: 1px solid var(--success-border);
         }
 
         &.secondary {
@@ -304,9 +304,9 @@
         letter-spacing: 0.025em;
 
         &.active {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #bbf7d0;
+          background: var(--success-bg);
+          color: var(--success-text);
+          border: 1px solid var(--success-border);
         }
 
         &.invited {
@@ -333,9 +333,9 @@
         letter-spacing: 0.025em;
 
         &.active {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #bbf7d0;
+          background: var(--success-bg);
+          color: var(--success-text);
+          border: 1px solid var(--success-border);
         }
 
         &.inactive {
@@ -396,9 +396,9 @@
         }
 
         &.activate:hover {
-          background: #f0fdf4;
-          color: #16a34a;
-          border-color: #bbf7d0;
+          background: var(--success-bg);
+          color: var(--success-text);
+          border-color: var(--success-border);
         }
 
         &.deactivate:hover {

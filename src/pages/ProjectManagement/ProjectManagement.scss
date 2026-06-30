@@ -189,10 +189,10 @@
 
                         &.mark-done {
                               background: #dcfce7;
-                              color: #16a34a;
+                              color: var(--success-text);
 
                               &:hover {
-                                    background: #bbf7d0;
+                                    background: var(--success-border);
                                     color: #15803d;
                               }
                         }
@@ -327,10 +327,10 @@
 
                         &.mark-done {
                               background: #dcfce7;
-                              color: #16a34a;
+                              color: var(--success-text);
 
                               &:hover {
-                                    background: #bbf7d0;
+                                    background: var(--success-border);
                                     color: #15803d;
                               }
                         }

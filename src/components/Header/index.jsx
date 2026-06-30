@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { getRoleDisplayName } from '../../utils/permissionUtils';
-import logo from '../../assets/logo.svg';
+import Logo from '../Logo';
 import Modal from '../Modal';
 import Button from '../Button';
 import Avatar from '../Avatar';
@@ -114,12 +114,7 @@ const Header = memo(({ onMenuClick, sidebarOpen }) => {
     <header className="header navbar navbar-expand navbar-light bg-white border-bottom">
       <div className="container-fluid">
         <div className="navbar-brand">
-          <button 
-            className="logo-btn" 
-            onClick={() => navigate('/')}
-          >
-            <img src={logo} alt="Logo" className="logo-img" />
-          </button>
+          <Logo size="md" onClick={() => navigate('/')} className="header-logo" />
         </div>
         
         <div className="navbar-nav ms-auto align-items-center">

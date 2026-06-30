@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import AuthShowcase from '../AuthShowcase';
-import logo from '../../assets/logo.svg';
+import CreatorCredit from '../CreatorCredit';
+import Logo from '../Logo';
 import './AuthLayout.scss';
 
 const AuthLayout = memo(({
@@ -21,11 +22,12 @@ const AuthLayout = memo(({
         <div className="auth-panel">
           <div className="auth-card">
             <div className="auth-header">
-              <img src={logo} alt="Logo" className="auth-logo" />
+              <Logo size="lg" className="auth-logo" />
               <h1>{title}</h1>
               <p>{subtitle}</p>
             </div>
             {children}
+            <CreatorCredit variant="auth-panel" />
           </div>
         </div>
       </div>

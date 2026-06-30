@@ -384,7 +384,7 @@
               }
 
               &.bd {
-                background: #10b981;
+                background: var(--primary-light);
               }
 
               &.manager {
@@ -479,7 +479,7 @@
               }
 
               &.done .dot {
-                background: #10b981;
+                background: var(--primary-light);
               }
 
               &.todo {

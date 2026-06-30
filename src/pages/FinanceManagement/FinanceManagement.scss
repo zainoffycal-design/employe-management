@@ -48,7 +48,7 @@
       &:focus {
         outline: none;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
       }
     }
   }
@@ -85,7 +85,7 @@
       }
 
       &.received::before {
-        background: linear-gradient(90deg, #15a970, #10b981);
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
       }
 
       &.estimated::before {
@@ -135,8 +135,8 @@
       }
 
       &.received .summary-header svg {
-        color: #15a970;
-        background: rgba(21, 169, 112, 0.12);
+        color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.12);
       }
 
       &.estimated .summary-header svg {
@@ -159,7 +159,7 @@
       }
 
       &.received .summary-amount {
-        color: #15a970;
+        color: var(--primary-color);
       }
 
       &.estimated .summary-amount {
@@ -224,7 +224,7 @@
       .budget-progress-percentage {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #15a970;
+        color: var(--primary-color);
         font-variant-numeric: tabular-nums;
       }
     }
@@ -243,7 +243,7 @@
 
         .progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #15a970, #10b981);
+          background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
           border-radius: 999px;
           transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           display: block;
@@ -289,7 +289,7 @@
         right: 0;
         height: 4px;
         border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
-        background: linear-gradient(90deg, #15a970, #10b981);
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
       }
 
       .payment-header {
@@ -322,7 +322,7 @@
             font-size: 0.75rem;
 
             &.fixed {
-              background: rgba(21, 169, 112, 0.12);
+              background: rgba(var(--primary-rgb), 0.12);
               color: var(--primary-color);
             }
 
@@ -342,7 +342,7 @@
           .amount-received {
             font-size: 1.65rem;
             font-weight: 700;
-            color: #15a970;
+            color: var(--primary-color);
             line-height: 1.2;
             font-variant-numeric: tabular-nums;
           }
@@ -368,7 +368,7 @@
 
           .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #15a970, #10b981);
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
             border-radius: 999px;
             transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
           }
@@ -424,7 +424,7 @@
             font-variant-numeric: tabular-nums;
 
             &.received {
-              color: #15a970;
+              color: var(--primary-color);
             }
 
             &.estimated {

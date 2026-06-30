@@ -72,7 +72,7 @@ export const emailService = {
         to_name: name,
         role: getRoleDisplayName(role),
         invitation_link: invitationLink,
-        company_name: 'Task Manager',
+        company_name: 'Employee Management System',
         expiry_days: '7'
       };
 

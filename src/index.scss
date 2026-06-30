@@ -2,19 +2,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary-color: #118256;
-  --primary-hover: #0d6d46;
-  --primary-light: #18b88a;
-  --primary-dark: #0a5638;
-  --primary-rgb: 17, 130, 86;
-  --secondary-color: #6366f1;
-  --accent-color: #3498db;
-  --success-color: #10b981;
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #818cf8;
+  --primary-dark: #3730a3;
+  --primary-rgb: 99, 102, 241;
+  --secondary-color: #8b5cf6;
+  --accent-color: #a5b4fc;
+  --success-color: #6366f1;
+  --success-bg: #eef2ff;
+  --success-border: #c7d2fe;
+  --success-text: #4338ca;
   --warning-color: #f59e0b;
   --error-color: #ef4444;
-  --info-color: #3b82f6;
-  --light-color: #ecf0f1;
-  --dark-color: #1a1a1a;
+  --info-color: #6366f1;
+  --light-color: #f8fafc;
+  --dark-color: #0f172a;
+  --app-bg: #f1f5f9;
+  --sidebar-bg: #0f172a;
+  --surface-color: #ffffff;
   
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
@@ -51,6 +57,9 @@
   --z-header: 50;
   --z-modal: 1100;
   --z-tooltip: 1200;
+
+  --bs-success: #6366f1;
+  --bs-success-rgb: 99, 102, 241;
 }
 
 
@@ -67,7 +76,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--gray-50);
+  background-color: var(--app-bg);
   color: var(--text-primary);
   line-height: 1.6;
 }
@@ -257,8 +266,8 @@ button.btn {
   }
   
   &--bd {
-    background-color: #e8f5e8;
-    color: #388e3c;
+    background-color: var(--success-bg);
+    color: var(--primary-dark);
   }
   
   &--manager {
@@ -369,8 +378,8 @@ button.btn {
   }
   
   &--done {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: var(--success-bg);
+    color: var(--success-text);
   }
 }
 
@@ -384,8 +393,8 @@ button.btn {
   font-weight: 600;
   
   &--low {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: var(--success-bg);
+    color: var(--success-text);
   }
   
   &--medium {
@@ -445,9 +454,9 @@ input[type="checkbox"] {
   font-size: 0.875rem;
   
   &-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
   }
   
   &-danger {
@@ -473,9 +482,9 @@ input[type="checkbox"] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
   padding: 0.75rem 1rem;
   border-radius: var(--border-radius);
   margin-bottom: 1.5rem;
@@ -484,7 +493,7 @@ input[type="checkbox"] {
   
   svg {
     flex-shrink: 0;
-    color: #16a34a;
+    color: var(--success-text);
   }
   
   span {
@@ -522,19 +531,17 @@ input[type="checkbox"] {
 
 
 .text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--primary-color);
+  background: none;
+  -webkit-text-fill-color: currentColor;
 }
 
-
 .bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
 }
 
 .bg-gradient-success {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: var(--primary-color);
 }
 
 .bg-gradient-warning {
@@ -621,7 +628,7 @@ input[type="checkbox"] {
 
 .page-container {
   min-height: 100vh;
-  background-color: var(--gray-50);
+  background-color: var(--app-bg);
   padding: 2rem;
   
   @media (max-width: 768px) {

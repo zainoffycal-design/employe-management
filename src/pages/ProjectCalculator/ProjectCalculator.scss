@@ -60,7 +60,7 @@
       &:focus {
         outline: none;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
       }
 
       &:disabled {
@@ -203,7 +203,7 @@
   }
 
   .summary-section {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #10b981 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
     color: white;
     border: none;
 

@@ -38,7 +38,7 @@
 
       &:focus-within {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(21, 169, 112, 0.1);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
       }
 
       .calendar-icon {
@@ -125,7 +125,7 @@
 
           &.received {
             background: #dcfce7;
-            color: #16a34a;
+            color: var(--success-text);
           }
 
           &.cost {
@@ -134,8 +134,8 @@
           }
 
           &.hours {
-            background: #d1fae5;
-            color: #059669;
+            background: var(--success-border);
+            color: var(--primary-dark);
           }
 
           &.profit {
@@ -170,7 +170,7 @@
             color: var(--gray-800);
 
             &.positive {
-              color: #16a34a;
+              color: var(--success-text);
             }
 
             &.negative {
@@ -355,11 +355,11 @@
         color: var(--gray-800);
 
         &.revenue {
-          color: #16a34a;
+          color: var(--success-text);
         }
 
         &.profit {
-          color: #16a34a;
+          color: var(--success-text);
         }
 
         &.commission {
@@ -491,11 +491,11 @@
           color: var(--gray-800);
 
           &.revenue {
-            color: #16a34a;
+            color: var(--success-text);
           }
 
           &.profit {
-            color: #16a34a;
+            color: var(--success-text);
           }
 
           &.loss {
