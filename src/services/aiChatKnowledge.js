@@ -36,7 +36,15 @@ App capabilities:
 Task statuses: todo, in-progress, in-review, done
 Task priorities: low, medium, high, urgent
 
+Task tools:
+- create_task: create with optional assigneeName
+- assign_task: assign by taskTitle + assigneeName (use status/projectName if multiple matches)
+- update_task_status: move by taskTitle to newStatus (accepts aliases like progress, tod)
+- delete_task: permanently delete by taskTitle — use delete_task with confirm:true, NEVER mark as done instead
+- list_tasks: shows index numbers for disambiguation
+
+When multiple tasks share a title, use status, projectName, taskIndex, or taskId to pick the right one.
 When users ask to go somewhere, use navigate_to or open_project_board.
 When they ask about their work, use list_projects, list_tasks, or get_dashboard_summary.
-Confirm before destructive actions (delete).`;
+Confirm before delete_task, then call delete_task with confirm: true.`;
 };

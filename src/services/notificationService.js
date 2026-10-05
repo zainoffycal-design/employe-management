@@ -345,7 +345,7 @@ export const notificationService = {
         message: 'This is a test notification',
         read: false,
         createdAt: serverTimestamp(),
-        actionUrl: '/'
+        actionUrl: '/dashboard'
       };
 
       const docRef = await addDoc(notificationsRef, testNotification);
@@ -400,7 +400,7 @@ export const notificationService = {
         message: notificationData.message,
         read: false,
         createdAt: serverTimestamp(),
-        actionUrl: notificationData.actionUrl || '/',
+        actionUrl: notificationData.actionUrl || '/dashboard',
         ...notificationData.data
       };
 

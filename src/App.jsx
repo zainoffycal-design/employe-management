@@ -15,6 +15,7 @@ import { db } from './firebase';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.scss';
 
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectBoard = lazy(() => import('./pages/ProjectBoard'));
@@ -65,7 +66,7 @@ const RouteGuard = ({ children }) => {
   const location = useLocation();
 
   if (!permissionUtils.canAccessRoute(currentUser, location.pathname)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -109,7 +110,7 @@ const AppLayout = () => {
           >
             <Suspense fallback={<LoadingSpinner size="large" />}>
               <Routes>
-                <Route path="/" element={<ProtectedRoute><RouteGuard><Dashboard /></RouteGuard></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><RouteGuard><Dashboard /></RouteGuard></ProtectedRoute>} />
                 <Route path="/projects" element={
                   <ProtectedRoute>
                     <RouteGuard><ProjectManagement /></RouteGuard>
@@ -157,7 +158,7 @@ const AppLayout = () => {
                     <RouteGuard><ProjectCalculator /></RouteGuard>
                   </ProtectedRoute>
                 } />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
               <AppFooter />
             </Suspense>
@@ -167,6 +168,20 @@ const AppLayout = () => {
       <AIChatbot />
     </div>
   );
+};
+
+const LandingGate = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner size="large" text="Loading..." />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Landing />;
 };
 
 function App() {
@@ -203,6 +218,10 @@ function App() {
         <Route path="/signup" element={noUsers ? <Signup /> : <Navigate to="/login" replace />} />
         <Route path="/login" element={noUsers ? <Navigate to="/signup" replace /> : <Login />} />
         <Route path="/setup-password" element={<SetupPassword />} />
+        <Route
+          path="/"
+          element={noUsers ? <Navigate to="/signup" replace /> : <LandingGate />}
+        />
         <Route path="/*" element={
           noUsers ? (
             <Navigate to="/signup" replace />

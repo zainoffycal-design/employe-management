@@ -12,15 +12,119 @@ const findProject = (projects, { projectId, projectName }) => {
   return null;
 };
 
-const findTask = (tasks, { taskId, taskTitle, projectId }) => {
-  let pool = tasks;
-  if (projectId) pool = pool.filter((t) => t.projectId === projectId);
-  if (taskId) return pool.find((t) => t.id === taskId);
-  if (taskTitle) {
-    const term = taskTitle.toLowerCase();
-    return pool.find((t) => (t.title || '').toLowerCase().includes(term));
+const normalizeStatus = (status) => {
+  if (!status) return status;
+  const s = String(status).toLowerCase().trim().replace(/\s+/g, '-');
+  const map = {
+    todo: 'todo',
+    'to-do': 'todo',
+    tod: 'todo',
+    'in-progress': 'in-progress',
+    inprogress: 'in-progress',
+    progress: 'in-progress',
+    'in-review': 'in-review',
+    inreview: 'in-review',
+    review: 'in-review',
+    done: 'done',
+    complete: 'done',
+    completed: 'done'
+  };
+  return map[s] || s;
+};
+
+const resolveTask = (tasks, projects, args) => {
+  const project = findProject(projects, args);
+  const projectId = project?.id || args.projectId;
+
+  let pool = projectId ? tasks.filter((t) => t.projectId === projectId) : [...tasks];
+
+  if (args.taskId) {
+    const task = pool.find((t) => t.id === args.taskId);
+    if (!task) return { error: 'Task not found with that ID.' };
+    return { task };
   }
-  return null;
+
+  if (args.taskTitle) {
+    const term = args.taskTitle.toLowerCase();
+    pool = pool.filter((t) => (t.title || '').toLowerCase().includes(term));
+  }
+
+  if (args.status) {
+    const normalized = normalizeStatus(args.status);
+    pool = pool.filter((t) => t.status === normalized);
+  }
+
+  if (args.taskIndex != null && args.taskIndex !== '') {
+    const idx = Number(args.taskIndex) - 1;
+    if (idx >= 0 && idx < pool.length) {
+      return { task: pool[idx] };
+    }
+    return { error: `No task at position ${args.taskIndex} in the matching list.` };
+  }
+
+  if (pool.length === 0) {
+    return { error: 'Task not found. Use list_tasks to see available tasks, or provide projectName/status to narrow down.' };
+  }
+
+  if (pool.length === 1) {
+    return { task: pool[0] };
+  }
+
+  return {
+    error: 'Multiple tasks match. Specify status, projectName, taskId, or taskIndex (1-based from a list_tasks result).',
+    matches: pool.slice(0, 10).map((t, i) => ({
+      index: i + 1,
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      projectName: projects.find((p) => p.id === t.projectId)?.name
+    }))
+  };
+};
+
+const resolveAssigneeIds = async (assigneeName, assigneeNames) => {
+  const users = await userManagementService.getAllUsers();
+  const activeUsers = users.filter((u) => u.isActive !== false && u.status !== 'invited');
+  const names = assigneeNames?.length ? assigneeNames : assigneeName ? [assigneeName] : [];
+
+  if (!names.length) {
+    return { error: 'Provide assigneeName or assigneeNames.' };
+  }
+
+  const ids = [];
+
+  for (const name of names) {
+    const term = name.toLowerCase();
+    const matches = activeUsers.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term)
+    );
+
+    if (matches.length === 0) {
+      return { error: `No active user found matching "${name}".` };
+    }
+
+    if (matches.length > 1) {
+      return {
+        error: `Multiple users match "${name}". Be more specific.`,
+        matches: matches.slice(0, 5).map((u) => ({ name: u.name, email: u.email }))
+      };
+    }
+
+    ids.push(matches[0].id || matches[0].uid);
+  }
+
+  return { ids: [...new Set(ids)] };
+};
+
+const taskToolParams = {
+  projectId: { type: 'string' },
+  projectName: { type: 'string' },
+  taskId: { type: 'string' },
+  taskTitle: { type: 'string', description: 'Find task by title (partial match)' },
+  status: { type: 'string', description: 'Filter by current status when multiple tasks share a title' },
+  taskIndex: { type: 'number', description: '1-based index from list_tasks when disambiguating' }
 };
 
 export const AI_TOOL_DEFINITIONS = [
@@ -78,7 +182,7 @@ export const AI_TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'list_tasks',
-      description: 'List tasks with optional filters',
+      description: 'List tasks with optional filters. Use to disambiguate tasks with the same title.',
       parameters: {
         type: 'object',
         properties: {
@@ -96,7 +200,7 @@ export const AI_TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'create_task',
-      description: 'Create a new task in a project',
+      description: 'Create a new task in a project. Can assign users by name on creation.',
       parameters: {
         type: 'object',
         properties: {
@@ -105,7 +209,9 @@ export const AI_TOOL_DEFINITIONS = [
           title: { type: 'string' },
           description: { type: 'string' },
           priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
-          status: { type: 'string', enum: ['todo', 'in-progress', 'in-review', 'done'] }
+          status: { type: 'string', enum: ['todo', 'in-progress', 'in-review', 'done'] },
+          assigneeName: { type: 'string', description: 'Assign to user by name or email (partial match)' },
+          assigneeNames: { type: 'array', items: { type: 'string' }, description: 'Assign multiple users by name' }
         },
         required: ['title']
       }
@@ -115,16 +221,50 @@ export const AI_TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'update_task_status',
-      description: 'Move a task to a new status on the board',
+      description: 'Move a task to a new status. Find by taskTitle (and optional status/projectName to disambiguate).',
       parameters: {
         type: 'object',
         properties: {
-          projectId: { type: 'string' },
-          taskId: { type: 'string' },
-          taskTitle: { type: 'string' },
-          status: { type: 'string', enum: ['todo', 'in-progress', 'in-review', 'done'] }
+          ...taskToolParams,
+          newStatus: {
+            type: 'string',
+            enum: ['todo', 'in-progress', 'in-review', 'done'],
+            description: 'Target status (also accepts aliases like progress, tod, review)'
+          }
         },
-        required: ['status']
+        required: ['newStatus']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'assign_task',
+      description: 'Assign a task to one or more users by name. Find task by taskTitle with optional status/projectName.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ...taskToolParams,
+          assigneeName: { type: 'string' },
+          assigneeNames: { type: 'array', items: { type: 'string' } },
+          replaceAssignees: { type: 'boolean', description: 'If false, add to existing assignees. Default true.' }
+        },
+        required: ['assigneeName']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_task',
+      description: 'Permanently delete a task. Find by taskTitle. Requires confirm:true after user explicitly confirms.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ...taskToolParams,
+          confirm: { type: 'boolean', description: 'Must be true after user confirms deletion' }
+        },
+        required: ['confirm']
       }
     }
   },
@@ -168,12 +308,14 @@ export const executeAITool = async (name, args, ctx) => {
     notifications,
     navigate,
     createTask,
-    updateTask
+    updateTask,
+    deleteTask
   } = ctx;
 
   switch (name) {
     case 'navigate_to': {
-      const path = (args.path || '').split('?')[0];
+      let path = (args.path || '').split('?')[0];
+      if (path === '/' || path === '') path = '/dashboard';
       if (!permissionUtils.canAccessRoute(currentUser, path)) {
         return { error: `You do not have access to ${path}` };
       }
@@ -241,7 +383,7 @@ export const executeAITool = async (name, args, ctx) => {
       let list = [...tasks];
       const project = findProject(projects, args);
       if (project) list = list.filter((t) => t.projectId === project.id);
-      if (args.status) list = list.filter((t) => t.status === args.status);
+      if (args.status) list = list.filter((t) => t.status === normalizeStatus(args.status));
       if (args.assignedToMe) {
         list = list.filter((t) => {
           const assignees = Array.isArray(t.assignee) ? t.assignee : t.assignee ? [t.assignee] : [];
@@ -255,18 +397,25 @@ export const executeAITool = async (name, args, ctx) => {
         );
       }
       const limit = Math.min(args.limit || 10, 20);
+      const users = await userManagementService.getAllUsers();
       return {
         count: list.length,
-        tasks: list.slice(0, limit).map((t) => {
+        tasks: list.slice(0, limit).map((t, i) => {
           const proj = projects.find((p) => p.id === t.projectId);
+          const assignees = Array.isArray(t.assignee) ? t.assignee : t.assignee ? [t.assignee] : [];
+          const assigneeNames = assignees
+            .map((id) => users.find((u) => u.id === id || u.uid === id)?.name)
+            .filter(Boolean);
           return {
+            index: i + 1,
             id: t.id,
             title: t.title,
             status: t.status,
             priority: t.priority,
             deadline: t.deadline,
             projectId: t.projectId,
-            projectName: proj?.name
+            projectName: proj?.name,
+            assignees: assigneeNames.length ? assigneeNames : undefined
           };
         })
       };
@@ -282,27 +431,121 @@ export const executeAITool = async (name, args, ctx) => {
       }
       const project = findProject(projects, args);
       if (!project) return { error: 'Project not found. Provide projectId or projectName.' };
+
+      let assignee = [];
+      if (args.assigneeName || args.assigneeNames?.length) {
+        if (!permissionUtils.canAssignTasks(currentUser)) {
+          return { error: 'You do not have permission to assign tasks' };
+        }
+        const resolved = await resolveAssigneeIds(args.assigneeName, args.assigneeNames);
+        if (resolved.error) return resolved;
+        assignee = resolved.ids;
+      }
+
       const taskId = await createTask(project.id, {
         title: args.title,
         description: args.description || '',
-        status: args.status || 'todo',
+        status: normalizeStatus(args.status) || 'todo',
         priority: args.priority || 'medium',
-        assignee: [],
+        assignee,
         createdAt: new Date().toISOString(),
         createdBy: currentUser.uid
       });
-      return { success: true, taskId, projectId: project.id, title: args.title };
+
+      return {
+        success: true,
+        taskId,
+        projectId: project.id,
+        projectName: project.name,
+        title: args.title,
+        assignees: assignee.length ? assignee : undefined
+      };
     }
 
     case 'update_task_status': {
       if (!permissionUtils.canMoveTasks(currentUser)) {
         return { error: 'You do not have permission to move tasks' };
       }
-      const project = findProject(projects, args);
-      const task = findTask(tasks, { ...args, projectId: project?.id || args.projectId });
-      if (!task) return { error: 'Task not found' };
-      await updateTask(task.projectId, task.id, { status: args.status });
-      return { success: true, taskId: task.id, title: task.title, status: args.status };
+      const newStatus = normalizeStatus(args.newStatus || args.status);
+      if (!['todo', 'in-progress', 'in-review', 'done'].includes(newStatus)) {
+        return { error: `Invalid status "${args.newStatus}". Use todo, in-progress, in-review, or done.` };
+      }
+
+      const resolved = resolveTask(tasks, projects, args);
+      if (resolved.error) {
+        return resolved.matches ? { error: resolved.error, matches: resolved.matches } : { error: resolved.error };
+      }
+
+      const { task } = resolved;
+      await updateTask(task.projectId, task.id, { status: newStatus });
+      return {
+        success: true,
+        taskId: task.id,
+        title: task.title,
+        previousStatus: task.status,
+        status: newStatus,
+        projectName: projects.find((p) => p.id === task.projectId)?.name
+      };
+    }
+
+    case 'assign_task': {
+      if (!permissionUtils.canAssignTasks(currentUser)) {
+        return { error: 'You do not have permission to assign tasks' };
+      }
+
+      const resolved = resolveTask(tasks, projects, args);
+      if (resolved.error) {
+        return resolved.matches ? { error: resolved.error, matches: resolved.matches } : { error: resolved.error };
+      }
+
+      const assigneeResult = await resolveAssigneeIds(args.assigneeName, args.assigneeNames);
+      if (assigneeResult.error) return assigneeResult;
+
+      const { task } = resolved;
+      const existing = Array.isArray(task.assignee) ? task.assignee : task.assignee ? [task.assignee] : [];
+      const assignee = args.replaceAssignees === false
+        ? [...new Set([...existing, ...assigneeResult.ids])]
+        : assigneeResult.ids;
+
+      await updateTask(task.projectId, task.id, { assignee });
+
+      const users = await userManagementService.getAllUsers();
+      const assigneeNames = assignee
+        .map((id) => users.find((u) => u.id === id || u.uid === id)?.name)
+        .filter(Boolean);
+
+      return {
+        success: true,
+        taskId: task.id,
+        title: task.title,
+        assignees: assigneeNames,
+        projectName: projects.find((p) => p.id === task.projectId)?.name
+      };
+    }
+
+    case 'delete_task': {
+      if (!permissionUtils.canDeleteTasks(currentUser)) {
+        return { error: 'You do not have permission to delete tasks' };
+      }
+      if (!args.confirm) {
+        return {
+          error: 'Deletion requires user confirmation. Ask the user to confirm, then call delete_task again with confirm: true.'
+        };
+      }
+
+      const resolved = resolveTask(tasks, projects, args);
+      if (resolved.error) {
+        return resolved.matches ? { error: resolved.error, matches: resolved.matches } : { error: resolved.error };
+      }
+
+      const { task } = resolved;
+      await deleteTask(task.projectId, task.id);
+      return {
+        success: true,
+        taskId: task.id,
+        title: task.title,
+        message: `Deleted task "${task.title}"`
+      };
     }
 
     case 'get_my_permissions': {
@@ -313,6 +556,8 @@ export const executeAITool = async (name, args, ctx) => {
         canManageUsers: permissionUtils.canManageUsers(currentUser),
         canManageTasks: permissionUtils.canManageTasks(currentUser),
         canMoveTasks: permissionUtils.canMoveTasks(currentUser),
+        canAssignTasks: permissionUtils.canAssignTasks(currentUser),
+        canDeleteTasks: permissionUtils.canDeleteTasks(currentUser),
         canViewAnalytics: permissionUtils.canViewAnalytics(currentUser),
         canManageFinance: permissionUtils.canManageFinance(currentUser),
         canManageProjects: permissionUtils.canManageProjects(currentUser)

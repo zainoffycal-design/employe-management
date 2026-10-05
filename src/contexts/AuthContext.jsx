@@ -14,6 +14,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = firebaseUtils.onAuthStateChanged(async (user) => {
+      const onSetupPasswordPage = window.location.pathname.startsWith('/setup-password');
+
+      if (onSetupPasswordPage && user) {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
       if (user) {
         let userData = await firebaseUtils.getDocument('users', user.uid);
         
@@ -22,7 +31,11 @@ export const AuthProvider = ({ children }) => {
         }
         
         if (userData) {
-          if (userData.isActive === false) {
+          if (userData.status === 'invited') {
+            // Let setup-password finish migrating the invited profile to the auth uid.
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+          } else if (userData.isActive === false) {
             setCurrentUser(null);
             setIsAuthenticated(false);
             await firebaseUtils.signOut();

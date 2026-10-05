@@ -17,6 +17,7 @@ const SetupPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [userData, setUserData] = useState(null);
   const [tokenValid, setTokenValid] = useState(false);
 
@@ -64,12 +65,12 @@ const SetupPassword = () => {
     try {
       setLoading(true);
       await emailService.activateUserAccount(email, formData.password);
-      
+      setSuccess(true);
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (error) {
-      setError(error.message || 'Failed to activate account. Please try again.');
+    } catch (activationError) {
+      setError(activationError.message || 'Failed to activate account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -140,6 +141,16 @@ const SetupPassword = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="auth-form">
+        {success && (
+          <motion.div
+            className="success-message"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <span>Account activated! Redirecting to login...</span>
+          </motion.div>
+        )}
+
         {error && (
           <motion.div 
             className="error-message"
@@ -200,8 +211,9 @@ const SetupPassword = () => {
           loading={loading}
           loadingText="Activating Account..."
           className="submit-btn"
+          disabled={success}
         >
-          Activate Account
+          {success ? 'Account Activated' : 'Activate Account'}
         </Button>
       </form>
     </AuthLayout>

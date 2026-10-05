@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import AuthLayout from '../../components/AuthLayout';
 
@@ -38,7 +38,7 @@ const Login = () => {
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        navigate('/');
+        navigate('/dashboard');
       } else {
         setError(result.error || 'Login failed');
       }
@@ -153,6 +153,11 @@ const Login = () => {
         >
           Sign In
         </Button>
+        <p className="text-center mt-3 mb-0">
+          <Link to="/" className="btn btn-link p-0">
+            Back to home
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   );

@@ -9,11 +9,11 @@ import { sendAIChatMessage, isAIChatConfigured } from '../../services/aiChatServ
 import { APP_NAME } from '../../constants/app';
 import './AIChatbot.scss';
 
-const WELCOME = `Hi! I'm EMS Assistant. I can help you with ${APP_NAME} — navigate pages, check projects & tasks, create or move tasks, list users, and explain what you can do based on your role.`;
+const WELCOME = `Hi! I'm EMS Assistant. I can help you with ${APP_NAME} — navigate pages, check projects & tasks, create/assign/move/delete tasks by title, list users, and explain what you can do based on your role.`;
 
 const AIChatbot = memo(() => {
   const { currentUser } = useAuth();
-  const { projects, tasks, createTask, updateTask } = useTask();
+  const { projects, tasks, createTask, updateTask, deleteTask } = useTask();
   const { notifications } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,8 +49,9 @@ const AIChatbot = memo(() => {
     navigate,
     createTask,
     updateTask,
+    deleteTask,
     currentPath: location.pathname
-  }), [currentUser, projects, tasks, notifications, navigate, createTask, updateTask, location.pathname]);
+  }), [currentUser, projects, tasks, notifications, navigate, createTask, updateTask, deleteTask, location.pathname]);
 
   const handleSend = async () => {
     const text = input.trim();

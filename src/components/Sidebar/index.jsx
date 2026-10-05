@@ -60,7 +60,7 @@ const Sidebar = memo(({ sidebarOpen }) => {
       transition={{ duration: 0.3, ease: 'easeInOut' }}
     >
       <div className="sidebar-logo">
-        <Logo variant="light" size="md" to="/" />
+        <Logo variant="light" size="md" to="/dashboard" />
       </div>
       <nav className="sidebar-nav">
         <div className="nav-section">

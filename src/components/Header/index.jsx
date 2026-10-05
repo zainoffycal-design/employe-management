@@ -114,7 +114,7 @@ const Header = memo(({ onMenuClick, sidebarOpen }) => {
     <header className="header navbar navbar-expand navbar-light bg-white border-bottom">
       <div className="container-fluid">
         <div className="navbar-brand">
-          <Logo size="md" onClick={() => navigate('/')} className="header-logo" />
+          <Logo size="md" onClick={() => navigate('/dashboard')} className="header-logo" />
         </div>
         
         <div className="navbar-nav ms-auto align-items-center">

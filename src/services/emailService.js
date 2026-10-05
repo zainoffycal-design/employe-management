@@ -2,7 +2,7 @@ import { doc, setDoc, serverTimestamp, getDoc, updateDoc, deleteDoc, collection,
 import { db } from '../firebase';
 import { generateAvatarUrl } from '../utils/avatarUtils';
 import toast from 'react-hot-toast';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import emailjs from '@emailjs/browser';
 
 export const emailService = {
@@ -125,21 +125,40 @@ export const emailService = {
   },
 
   activateUserAccount: async (email, password) => {
+    const auth = getAuth();
+    let userCredential;
+
     try {
-      const auth = getAuth();
-      
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      try {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+          userCredential = await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          throw error;
+        }
+      }
+
       const uid = userCredential.user.uid;
-      
       const userRef = doc(db, 'users', email);
       const userDoc = await getDoc(userRef);
-      
+
       if (!userDoc.exists()) {
-        throw new Error('User profile not found');
+        const uidDoc = await getDoc(doc(db, 'users', uid));
+        if (uidDoc.exists() && uidDoc.data()?.status === 'active') {
+          await signOut(auth);
+          throw new Error('This account is already activated. Please sign in.');
+        }
+        throw new Error('User profile not found. Please contact your administrator.');
       }
-      
+
       const userData = userDoc.data();
-      
+
+      if (userData.status !== 'invited') {
+        await signOut(auth);
+        throw new Error('This invitation has already been used. Please sign in.');
+      }
+
       const newUserProfile = {
         name: userData.name,
         email: userData.email,
@@ -155,25 +174,35 @@ export const emailService = {
       if (userData.managerType) {
         newUserProfile.managerType = userData.managerType;
       }
-      
+
+      if (userData.hasCommission) {
+        newUserProfile.hasCommission = userData.hasCommission;
+        newUserProfile.commissionPercentage = userData.commissionPercentage || 0;
+        newUserProfile.commissionType = userData.commissionType || 'fixed';
+      }
+
+      // Write the uid profile before cleanup so auth stays valid for Firestore writes.
       await setDoc(doc(db, 'users', uid), newUserProfile);
-      
       await deleteDoc(userRef);
-      
-      const invitationsRef = collection(db, 'user_invitations');
-      const invitationsQuery = query(invitationsRef, where('email', '==', email));
-      const invitationsSnapshot = await getDocs(invitationsQuery);
-      
-      await Promise.all(invitationsSnapshot.docs.map(doc => deleteDoc(doc.ref)));
-      
+
+      try {
+        const invitationsRef = collection(db, 'user_invitations');
+        const invitationsQuery = query(invitationsRef, where('email', '==', email));
+        const invitationsSnapshot = await getDocs(invitationsQuery);
+        await Promise.all(invitationsSnapshot.docs.map((invitationDoc) => deleteDoc(invitationDoc.ref)));
+      } catch (invitationError) {
+        console.warn('Could not clean up invitation records:', invitationError);
+      }
+
       await signOut(auth);
-      
+
       toast.success('Account activated successfully! You can now sign in.');
       return userCredential.user;
     } catch (error) {
       console.error('Error activating user account:', error);
-      toast.error('Failed to activate account. Please try again.');
-      throw error;
+      const message = getActivationErrorMessage(error);
+      toast.error(message);
+      throw new Error(message);
     }
   },
 
@@ -246,6 +275,29 @@ export const emailService = {
 
 const generateInvitationToken = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+const getActivationErrorMessage = (error) => {
+  const code = error?.code || '';
+
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'This email is already registered. Try signing in, or use the password from your first activation attempt.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Use at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Invalid email address.';
+    case 'auth/wrong-password':
+      return 'An account already exists with a different password. Contact your administrator to resend the invitation.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a few minutes and try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Check your connection and try again.';
+    case 'permission-denied':
+      return 'Could not save your account. Please try again or contact your administrator.';
+    default:
+      return error?.message || 'Failed to activate account. Please try again.';
+  }
 };
 
 const getRoleDisplayName = (role) => {

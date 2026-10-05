@@ -105,3 +105,4 @@ ui-debug.log
 
 # Local Netlify folder
 .netlify 
+.vercel

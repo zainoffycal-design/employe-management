@@ -184,7 +184,7 @@ export const permissionUtils = {
 
     const path = (route || '').split('?')[0].replace(/\/$/, '') || '/';
 
-    if (path === '/' || path === '') return true;
+    if (path === '/' || path === '' || path === '/dashboard') return true;
     if (path === '/projects') return true;
     if (/^\/project\/[^/]+\/board$/.test(path)) return true;
     if (path === '/users') return permissionUtils.canManageUsers(user);
@@ -209,8 +209,8 @@ export const permissionUtils = {
 
     const items = [];
 
-    if (permissionUtils.canAccessRoute(user, '/')) {
-      items.push({ path: '/', label: 'Dashboard', iconKey: 'home' });
+    if (permissionUtils.canAccessRoute(user, '/dashboard')) {
+      items.push({ path: '/dashboard', label: 'Dashboard', iconKey: 'home' });
     }
 
     if (permissionUtils.canAccessRoute(user, '/projects')) {

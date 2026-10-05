@@ -181,7 +181,7 @@ const ProjectBoard = () => {
   useEffect(() => {
     if (isProjectNotFound) {
       const timer = setTimeout(() => {
-        navigate('/');
+        navigate('/dashboard');
       }, 2000);
       return () => clearTimeout(timer);
     }
