@@ -40,6 +40,43 @@ const toGeminiContents = (messages) =>
       parts: [{ text: m.content || '' }]
     }));
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isOverloadedError = (status, message) =>
+  status === 429 ||
+  status === 503 ||
+  /overload|high demand|unavailable/i.test(message || '');
+
+const MAX_RETRIES = 3;
+
+const callGemini = async (body, apiKey) => {
+  let lastError;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    const response = await fetch(`${getApiUrl()}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (response.ok) {
+      return response.json();
+    }
+
+    const err = await response.json().catch(() => ({}));
+    const message = err.error?.message || `Gemini request failed (${response.status})`;
+    lastError = new Error(message);
+
+    if (!isOverloadedError(response.status, message) || attempt === MAX_RETRIES) {
+      throw lastError;
+    }
+
+    await sleep(2 ** attempt * 1000);
+  }
+
+  throw lastError;
+};
+
 export const sendAIChatMessage = async (messages, ctx) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -53,10 +90,8 @@ export const sendAIChatMessage = async (messages, ctx) => {
   while (rounds < MAX_TOOL_ROUNDS) {
     rounds += 1;
 
-    const response = await fetch(`${getApiUrl()}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const data = await callGemini(
+      {
         systemInstruction: {
           parts: [{ text: buildSystemPrompt(ctx.currentUser, ctx.currentPath) }]
         },
@@ -64,15 +99,9 @@ export const sendAIChatMessage = async (messages, ctx) => {
         tools: toGeminiTools(),
         toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
         generationConfig: { temperature: 0.4 }
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Gemini request failed (${response.status})`);
-    }
-
-    const data = await response.json();
+      },
+      apiKey
+    );
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts;
 
