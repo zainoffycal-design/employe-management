@@ -1,91 +1,105 @@
 import { AI_TOOL_DEFINITIONS, executeAITool } from './aiChatTools';
 import { buildSystemPrompt } from './aiChatKnowledge';
 
-const API_URL = 'https://api.openai.com/v1/chat/completions';
 const MAX_TOOL_ROUNDS = 6;
 
-const getApiKey = () => import.meta.env.VITE_OPENAI_API_KEY;
-const getModel = () => import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
+const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
+const getModel = () => import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+const getApiUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/${getModel()}:generateContent`;
 
 export const isAIChatConfigured = () => Boolean(getApiKey());
+
+const upperSchemaTypes = (schema) => {
+  if (!schema || typeof schema !== 'object') return schema;
+  const out = { ...schema };
+  if (typeof out.type === 'string') out.type = out.type.toUpperCase();
+  if (out.properties) {
+    out.properties = Object.fromEntries(
+      Object.entries(out.properties).map(([key, value]) => [key, upperSchemaTypes(value)])
+    );
+  }
+  if (out.items) out.items = upperSchemaTypes(out.items);
+  return out;
+};
+
+const toGeminiTools = () => [
+  {
+    functionDeclarations: AI_TOOL_DEFINITIONS.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: upperSchemaTypes(tool.parameters)
+    }))
+  }
+];
+
+const toGeminiContents = (messages) =>
+  messages
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content || '' }]
+    }));
 
 export const sendAIChatMessage = async (messages, ctx) => {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error('OpenAI API key is missing. Add VITE_OPENAI_API_KEY to .env.local');
+    throw new Error('Gemini API key is missing. Add VITE_GEMINI_API_KEY to .env.local');
   }
 
-  const conversation = [
-    {
-      role: 'system',
-      content: buildSystemPrompt(ctx.currentUser, ctx.currentPath)
-    },
-    ...messages
-  ];
+  const contents = toGeminiContents(messages);
 
   let rounds = 0;
 
   while (rounds < MAX_TOOL_ROUNDS) {
     rounds += 1;
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${getApiUrl()}?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: getModel(),
-        messages: conversation,
-        tools: AI_TOOL_DEFINITIONS,
-        tool_choice: 'auto',
-        temperature: 0.4
+        systemInstruction: {
+          parts: [{ text: buildSystemPrompt(ctx.currentUser, ctx.currentPath) }]
+        },
+        contents,
+        tools: toGeminiTools(),
+        toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
+        generationConfig: { temperature: 0.4 }
       })
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `OpenAI request failed (${response.status})`);
+      throw new Error(err.error?.message || `Gemini request failed (${response.status})`);
     }
 
     const data = await response.json();
-    const choice = data.choices?.[0]?.message;
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts;
 
-    if (!choice) {
+    if (!parts) {
       throw new Error('No response from AI');
     }
 
-    if (choice.tool_calls?.length) {
-      conversation.push({
-        role: 'assistant',
-        content: choice.content || null,
-        tool_calls: choice.tool_calls
-      });
+    const functionCalls = parts.filter((p) => p.functionCall);
 
-      for (const toolCall of choice.tool_calls) {
-        const fn = toolCall.function;
-        let args = {};
-        try {
-          args = JSON.parse(fn.arguments || '{}');
-        } catch {
-          args = {};
-        }
+    if (functionCalls.length) {
+      contents.push({ role: 'model', parts });
 
-        const result = await executeAITool(fn.name, args, ctx);
-        conversation.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: JSON.stringify(result)
+      const responseParts = [];
+      for (const part of functionCalls) {
+        const { name, args } = part.functionCall;
+        const result = await executeAITool(name, args || {}, ctx);
+        responseParts.push({
+          functionResponse: { name, response: result }
         });
       }
+      contents.push({ role: 'function', parts: responseParts });
 
       continue;
     }
 
-    return {
-      content: choice.content || 'Done.',
-      raw: choice
-    };
+    const text = parts.map((p) => p.text || '').join('').trim();
+    return { content: text || 'Done.', raw: candidate };
   }
 
   return { content: 'I completed the actions. Let me know if you need anything else.' };

@@ -129,174 +129,138 @@ const taskToolParams = {
 
 export const AI_TOOL_DEFINITIONS = [
   {
-    type: 'function',
-    function: {
-      name: 'navigate_to',
-      description: 'Navigate the user to an app route they can access',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Route path e.g. /, /projects, /users' }
-        },
-        required: ['path']
+    name: 'navigate_to',
+    description: 'Navigate the user to an app route they can access',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Route path e.g. /, /projects, /users' }
+      },
+      required: ['path']
+    }
+  },
+  {
+    name: 'open_project_board',
+    description: 'Open a project Kanban board by project id or name',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string' },
+        projectName: { type: 'string' }
       }
     }
   },
   {
-    type: 'function',
-    function: {
-      name: 'open_project_board',
-      description: 'Open a project Kanban board by project id or name',
-      parameters: {
-        type: 'object',
-        properties: {
-          projectId: { type: 'string' },
-          projectName: { type: 'string' }
+    name: 'get_dashboard_summary',
+    description: 'Get summary counts for projects, tasks, overdue items',
+    parameters: { type: 'object', properties: {} }
+  },
+  {
+    name: 'list_projects',
+    description: 'List projects the user can see',
+    parameters: {
+      type: 'object',
+      properties: {
+        search: { type: 'string' },
+        status: { type: 'string', enum: ['active', 'completed', 'all'] }
+      }
+    }
+  },
+  {
+    name: 'list_tasks',
+    description: 'List tasks with optional filters. Use to disambiguate tasks with the same title.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string' },
+        projectName: { type: 'string' },
+        status: { type: 'string' },
+        assignedToMe: { type: 'boolean' },
+        overdueOnly: { type: 'boolean' },
+        limit: { type: 'number' }
+      }
+    }
+  },
+  {
+    name: 'create_task',
+    description: 'Create a new task in a project. Can assign users by name on creation.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string' },
+        projectName: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+        status: { type: 'string', enum: ['todo', 'in-progress', 'in-review', 'done'] },
+        assigneeName: { type: 'string', description: 'Assign to user by name or email (partial match)' },
+        assigneeNames: { type: 'array', items: { type: 'string' }, description: 'Assign multiple users by name' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'update_task_status',
+    description: 'Move a task to a new status. Find by taskTitle (and optional status/projectName to disambiguate).',
+    parameters: {
+      type: 'object',
+      properties: {
+        ...taskToolParams,
+        newStatus: {
+          type: 'string',
+          enum: ['todo', 'in-progress', 'in-review', 'done'],
+          description: 'Target status (also accepts aliases like progress, tod, review)'
         }
+      },
+      required: ['newStatus']
+    }
+  },
+  {
+    name: 'assign_task',
+    description: 'Assign a task to one or more users by name. Find task by taskTitle with optional status/projectName.',
+    parameters: {
+      type: 'object',
+      properties: {
+        ...taskToolParams,
+        assigneeName: { type: 'string' },
+        assigneeNames: { type: 'array', items: { type: 'string' } },
+        replaceAssignees: { type: 'boolean', description: 'If false, add to existing assignees. Default true.' }
+      },
+      required: ['assigneeName']
+    }
+  },
+  {
+    name: 'delete_task',
+    description: 'Permanently delete a task. Find by taskTitle. Requires confirm:true after user explicitly confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        ...taskToolParams,
+        confirm: { type: 'boolean', description: 'Must be true after user confirms deletion' }
+      },
+      required: ['confirm']
+    }
+  },
+  {
+    name: 'get_my_permissions',
+    description: 'Explain what the current user can access and do',
+    parameters: { type: 'object', properties: {} }
+  },
+  {
+    name: 'list_users',
+    description: 'List team users (managers only)',
+    parameters: {
+      type: 'object',
+      properties: {
+        role: { type: 'string' },
+        activeOnly: { type: 'boolean' }
       }
     }
   },
   {
-    type: 'function',
-    function: {
-      name: 'get_dashboard_summary',
-      description: 'Get summary counts for projects, tasks, overdue items',
-      parameters: { type: 'object', properties: {} }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_projects',
-      description: 'List projects the user can see',
-      parameters: {
-        type: 'object',
-        properties: {
-          search: { type: 'string' },
-          status: { type: 'string', enum: ['active', 'completed', 'all'] }
-        }
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_tasks',
-      description: 'List tasks with optional filters. Use to disambiguate tasks with the same title.',
-      parameters: {
-        type: 'object',
-        properties: {
-          projectId: { type: 'string' },
-          projectName: { type: 'string' },
-          status: { type: 'string' },
-          assignedToMe: { type: 'boolean' },
-          overdueOnly: { type: 'boolean' },
-          limit: { type: 'number' }
-        }
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'create_task',
-      description: 'Create a new task in a project. Can assign users by name on creation.',
-      parameters: {
-        type: 'object',
-        properties: {
-          projectId: { type: 'string' },
-          projectName: { type: 'string' },
-          title: { type: 'string' },
-          description: { type: 'string' },
-          priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
-          status: { type: 'string', enum: ['todo', 'in-progress', 'in-review', 'done'] },
-          assigneeName: { type: 'string', description: 'Assign to user by name or email (partial match)' },
-          assigneeNames: { type: 'array', items: { type: 'string' }, description: 'Assign multiple users by name' }
-        },
-        required: ['title']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'update_task_status',
-      description: 'Move a task to a new status. Find by taskTitle (and optional status/projectName to disambiguate).',
-      parameters: {
-        type: 'object',
-        properties: {
-          ...taskToolParams,
-          newStatus: {
-            type: 'string',
-            enum: ['todo', 'in-progress', 'in-review', 'done'],
-            description: 'Target status (also accepts aliases like progress, tod, review)'
-          }
-        },
-        required: ['newStatus']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'assign_task',
-      description: 'Assign a task to one or more users by name. Find task by taskTitle with optional status/projectName.',
-      parameters: {
-        type: 'object',
-        properties: {
-          ...taskToolParams,
-          assigneeName: { type: 'string' },
-          assigneeNames: { type: 'array', items: { type: 'string' } },
-          replaceAssignees: { type: 'boolean', description: 'If false, add to existing assignees. Default true.' }
-        },
-        required: ['assigneeName']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'delete_task',
-      description: 'Permanently delete a task. Find by taskTitle. Requires confirm:true after user explicitly confirms.',
-      parameters: {
-        type: 'object',
-        properties: {
-          ...taskToolParams,
-          confirm: { type: 'boolean', description: 'Must be true after user confirms deletion' }
-        },
-        required: ['confirm']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_my_permissions',
-      description: 'Explain what the current user can access and do',
-      parameters: { type: 'object', properties: {} }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_users',
-      description: 'List team users (managers only)',
-      parameters: {
-        type: 'object',
-        properties: {
-          role: { type: 'string' },
-          activeOnly: { type: 'boolean' }
-        }
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_notifications_summary',
-      description: 'Get unread and recent notifications for the user',
-      parameters: { type: 'object', properties: {} }
-    }
+    name: 'get_notifications_summary',
+    description: 'Get unread and recent notifications for the user',
+    parameters: { type: 'object', properties: {} }
   }
 ];
 
