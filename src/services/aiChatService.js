@@ -42,12 +42,10 @@ const toGeminiContents = (messages) =>
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const isOverloadedError = (status, message) =>
-  status === 429 ||
-  status === 503 ||
-  /overload|high demand|unavailable/i.test(message || '');
+const isRetryableOverload = (status, message) =>
+  status === 503 || /overload|high demand|unavailable/i.test(message || '');
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
 
 const callGemini = async (body, apiKey) => {
   let lastError;
@@ -65,9 +63,16 @@ const callGemini = async (body, apiKey) => {
 
     const err = await response.json().catch(() => ({}));
     const message = err.error?.message || `Gemini request failed (${response.status})`;
+
+    if (response.status === 429) {
+      throw new Error(
+        "You're sending messages faster than this AI plan allows (free-tier rate limit). Wait about a minute and try again, or upgrade billing on your Gemini API key."
+      );
+    }
+
     lastError = new Error(message);
 
-    if (!isOverloadedError(response.status, message) || attempt === MAX_RETRIES) {
+    if (!isRetryableOverload(response.status, message) || attempt === MAX_RETRIES) {
       throw lastError;
     }
 
