@@ -63,7 +63,7 @@ const AIChatbot = memo(() => {
         { role: 'user', content: text },
         {
           role: 'assistant',
-          content: 'AI is not configured. Add VITE_GEMINI_API_KEY to your .env.local file and restart the dev server.'
+          content: 'AI is not configured. Add VITE_OPENAI_API_KEY to your .env.local file and restart the dev server.'
         }
       ]);
       setInput('');

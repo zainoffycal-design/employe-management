@@ -10,7 +10,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "deploy:firebase": "npm run build && firebase deploy --only hosting,firestore:rules",
-    "deploy:vercel": "npm run build && vercel --prod"
+    "deploy:vercel": "node scripts/sync-vercel-env.mjs && npm run build && vercel --prod"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
