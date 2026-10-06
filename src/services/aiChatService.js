@@ -4,7 +4,7 @@ import { buildSystemPrompt } from './aiChatKnowledge';
 const MAX_TOOL_ROUNDS = 6;
 
 const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
-const getModel = () => import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+const getModel = () => import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.8-flash';
 const getApiUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/${getModel()}:generateContent`;
 
 export const isAIChatConfigured = () => Boolean(getApiKey());
