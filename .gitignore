@@ -106,3 +106,9 @@ ui-debug.log
 # Local Netlify folder
 .netlify 
 .vercel
+
+# graphify — commit the graph; keep machine-local artifacts out
+graphify-out/cost.json
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root

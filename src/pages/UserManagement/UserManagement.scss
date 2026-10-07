@@ -263,9 +263,9 @@
         }
 
         &.purple {
-          background: #f5f3ff;
-          color: #7c3aed;
-          border: 1px solid #ddd6fe;
+          background: var(--success-bg);
+          color: var(--primary-dark);
+          border: 1px solid var(--success-border);
         }
 
         &.info {

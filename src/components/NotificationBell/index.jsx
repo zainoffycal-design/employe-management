@@ -88,7 +88,7 @@ const NotificationBell = memo(() => {
       case 'task_assignment':
         return 'var(--primary-color)';
       case 'project_invitation':
-        return '#8b5cf6';
+        return 'var(--estimate-color)';
       case 'task_completion':
         return 'var(--primary-dark)';
       case 'comment_mention':

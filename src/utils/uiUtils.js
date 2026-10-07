@@ -1,8 +1,9 @@
 export const THEME_COLORS = {
-  primary: '#6366f1',
-  primaryLight: '#818cf8',
-  primaryDark: '#4338ca',
-  primaryHover: '#4f46e5'
+  primary: '#1f6f68',
+  primaryLight: '#3d948b',
+  primaryDark: '#134841',
+  primaryHover: '#185850',
+  estimate: '#3d6f8f'
 };
 
 export const getRoleBadgeColor = (role) => {
@@ -27,9 +28,9 @@ export const getPriorityColor = (priority) => {
 
 export const getStatusColor = (status) => {
   const colors = { 
-    'todo': '#8B5CF6', 
-    'in-progress': THEME_COLORS.primary, 
-    'in-review': '#F59E0B', 
+    'todo': '#5d6b76',
+    'in-progress': THEME_COLORS.primary,
+    'in-review': '#d97706',
     'done': THEME_COLORS.primaryDark
   };
   return colors[status] || '#6B7280';
@@ -47,9 +48,9 @@ export const getStatusDisplayName = (status) => {
 
 export const getColumnColorByStatus = (status) => {
   switch (status) {
-    case 'todo': return '#8B5CF6';
-    case 'in-progress': return '#3B82F6';
-    case 'in-review': return '#F59E0B';
+    case 'todo': return '#5d6b76';
+    case 'in-progress': return THEME_COLORS.primary;
+    case 'in-review': return '#d97706';
     case 'done': return THEME_COLORS.primaryDark;
     default: return '#6B7280';
   }
@@ -279,8 +280,8 @@ export const reactSelectStyles = {
       borderColor: '#9ca3af'
     },
     '&:focus-within': {
-      borderColor: '#6366f1',
-      boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.12)'
+      borderColor: THEME_COLORS.primary,
+      boxShadow: '0 0 0 3px rgba(31, 111, 104, 0.14)'
     }
   }),
   option: (base, state) => ({

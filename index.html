@@ -8,44 +8,16 @@
     <title>Employee Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <script>
 
       (function () {
-        function getTheme() {
-
-          const savedTheme = localStorage.getItem('theme');
-          if (savedTheme) {
-            return savedTheme;
-          }
-
-
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-          }
-
-          return 'light';
-        }
-
-        function applyTheme(theme) {
-          document.documentElement.setAttribute('data-theme', theme);
-        }
-
-
-        const theme = getTheme();
-        applyTheme(theme);
-
-
-        if (window.matchMedia) {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
-            const savedTheme = localStorage.getItem('theme');
-            if (!savedTheme) {
-              applyTheme(e.matches ? 'dark' : 'light');
-            }
-          });
-        }
+        document.documentElement.setAttribute('data-theme', 'light');
+        try {
+          localStorage.setItem('theme', 'light');
+        } catch (e) {}
       })();
     </script>
   </head>

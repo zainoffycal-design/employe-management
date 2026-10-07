@@ -1,0 +1,20 @@
+{
+  "0": "useAuth",
+  "1": "App.jsx",
+  "2": "firebaseService.js",
+  "3": "Package scripts",
+  "4": "ProjectBoard/index.jsx",
+  "5": "useTask",
+  "6": "UserManagement/index.jsx",
+  "7": "Runtime dependencies",
+  "8": "ProjectCalculator/index.jsx",
+  "9": "Dev tooling",
+  "10": "Landing/index.jsx",
+  "11": "main.jsx",
+  "12": "Sound effects",
+  "13": "Vercel env sync",
+  "14": "Theme bootstrap",
+  "15": "Date formatting",
+  "16": "Deploy script",
+  "17": "Vercel rewrites"
+}

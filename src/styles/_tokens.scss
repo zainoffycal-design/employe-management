@@ -1,0 +1,63 @@
+// Single source of color, type, and surface tokens.
+// Components should read these variables instead of hardcoded brand hex values.
+
+:root,
+[data-theme='light'] {
+  --font-sans: 'Source Sans 3', sans-serif;
+  --font-display: 'Newsreader', Georgia, serif;
+
+  --primary-color: #1f6f68;
+  --primary-hover: #185850;
+  --primary-light: #3d948b;
+  --primary-dark: #134841;
+  --primary-rgb: 31, 111, 104;
+  --secondary-color: #1c2833;
+  --accent-color: #d7ebe8;
+
+  --success-color: #1f6f68;
+  --success-bg: #e7f3f1;
+  --success-border: #b7ddd7;
+  --success-text: #134841;
+  --warning-color: #d97706;
+  --error-color: #dc2626;
+  --info-color: #1f6f68;
+  --estimate-color: #3d6f8f;
+
+  --light-color: #f5f7f8;
+  --dark-color: #1c2833;
+  --app-bg: #f6f8fa;
+  --sidebar-bg: #243140;
+  --surface-color: #ffffff;
+
+  --gray-50: #f7f8fa;
+  --gray-100: #eef1f4;
+  --gray-200: #e3e8ec;
+  --gray-300: #d0d7de;
+  --gray-400: #9aa6b2;
+  --gray-500: #6b7785;
+  --gray-600: #4e5b68;
+  --gray-700: #3d4c5c;
+  --gray-800: #2a3846;
+  --gray-900: #1c2833;
+
+  --white: #ffffff;
+  --black: #000000;
+  --text-primary: #1c2833;
+  --text-secondary: #5d6b76;
+
+  --bg-color: #ffffff;
+  --text-color: #1c2833;
+  --border-color: #e3e8ec;
+
+  --shadow-sm: 0 1px 2px rgb(28 40 51 / 0.05);
+  --shadow-md: 0 8px 24px rgb(28 40 51 / 0.06);
+  --shadow-lg: 0 16px 40px rgb(28 40 51 / 0.08);
+  --shadow-xl: 0 24px 56px rgb(28 40 51 / 0.12);
+
+  --border-radius: 10px;
+  --border-radius-lg: 14px;
+  --border-radius-xl: 20px;
+
+  --bs-success: #1f6f68;
+  --bs-success-rgb: 31, 111, 104;
+}

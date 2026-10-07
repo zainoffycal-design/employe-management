@@ -92,8 +92,8 @@
                   }
 
                   &.project-badge--internal {
-                        background: #e0e7ff;
-                        color: #3730a3;
+                        background: var(--success-bg);
+                        color: var(--primary-dark);
                   }
             }
 

@@ -126,7 +126,7 @@
           font-weight: 400;
 
           &.estimated {
-            color: #8b5cf6;
+            color: var(--estimate-color);
             font-weight: 600;
           }
         }

@@ -1,4 +1,4 @@
-const AVATAR_BG = '6366f1';
+const AVATAR_BG = '1f6f68';
 
 export const generateAvatarUrl = (name, size = 200) => {
   if (!name) return null;
